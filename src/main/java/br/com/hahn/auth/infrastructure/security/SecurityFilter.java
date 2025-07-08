@@ -7,7 +7,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,8 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
@@ -34,19 +31,16 @@ public class SecurityFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         var token = this.recoverToken(request);
         if (token != null) {
-            var email = tokenService.validateToken(token);
-            if (email != null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            DecodedJWT decodedJWT = JWT.decode(token);
+            String userId = decodedJWT.getClaim("user_id").asString();
+            String email = decodedJWT.getSubject();
 
-                DecodedJWT decodedJWT = JWT.decode(token);
-                List<String> roles = decodedJWT.getClaim("roles").asList(String.class);
-
-                List<SimpleGrantedAuthority> authorities = roles.stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+            String validatedEmail = tokenService.validateToken(token, userId, email);
+            if (validatedEmail != null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(validatedEmail);
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }

@@ -1,15 +1,16 @@
 package br.com.hahn.auth.infrastructure.security;
 
 import br.com.hahn.auth.domain.model.User;
-import br.com.hahn.auth.domain.model.Role;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.auth0.jwt.interfaces.RSAKeyProvider;
 import org.springframework.stereotype.Service;
 
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -17,44 +18,101 @@ import java.time.ZoneOffset;
 @Service
 public class TokenService {
 
-    @Value("${api.security.token.secret}")
-    private String secret;
+    private static final String ISSUER = "AuthenticationService";
+    private static final int EXPIRATION_MINUTES = 15;
+    private static final ZoneOffset ZONE_OFFSET = ZoneOffset.of("-03:00");
+
+    private final KeyManager keyManager;
+
+    public TokenService(KeyManager keyManager) {
+        this.keyManager = keyManager;
+    }
 
     public String generateToken(User user) {
         try {
-            Algorithm algorithm = Algorithm.HMAC256(secret);
+            String kid = keyManager.getCurrentKeyId();
+            Algorithm algorithm = Algorithm.RSA256(new RSAKeyProvider() {
+                @Override
+                public RSAPublicKey getPublicKeyById(String keyId) {
+                    return (RSAPublicKey) keyManager.getPublicKeys().get(keyId);
+                }
 
-            String roleName = user.getRole() != null ? user.getRole().getRoleName() : null;
+                @Override
+                public RSAPrivateKey getPrivateKey() {
+                    return (RSAPrivateKey) keyManager.getCurrentKeyPair().getPrivate();
+                }
 
-            String token = JWT.create()
-                    .withIssuer("AuhenticationService")
+                @Override
+                public String getPrivateKeyId() {
+                    return kid;
+                }
+            });
+
+            return JWT.create()
+                    .withIssuer(ISSUER)
                     .withSubject(user.getEmail())
-                    .withClaim("role", roleName)
+                    .withClaim("user_id", user.getUserId() != null ? user.getUserId().toString() : null)
+                    .withClaim("username", user.getUsername())
+                    .withClaim("firstName", user.getFirstName())
+                    .withClaim("lastName", user.getLastName())
                     .withExpiresAt(this.generateExpirationDate())
+                    .withKeyId(kid)
                     .sign(algorithm);
-
-            return token;
         } catch (JWTCreationException e) {
-            throw new RuntimeException("Error authenticating token");
+            throw new IllegalStateException("Error while creating JWT token", e);
         }
     }
 
     private Instant generateExpirationDate() {
-        return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
+        return LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES).toInstant(ZONE_OFFSET);
     }
 
-    public String validateToken(String token) {
+    public String validateToken(String token, String expectedUserId, String expectedEmail) {
         try {
-            Algorithm algorithm = Algorithm.HMAC256(secret);
-            return JWT.require(algorithm).withIssuer("SMBuilding")
-                    .build()
-                    .verify(token)
-                    .getSubject();
+            Algorithm algorithm = Algorithm.RSA256(new RSAKeyProvider() {
+                @Override
+                public RSAPublicKey getPublicKeyById(String keyId) {
+                    return (RSAPublicKey) keyManager.getPublicKeys().get(keyId);
+                }
 
-        }catch (JWTVerificationException e){
+                @Override
+                public RSAPrivateKey getPrivateKey() {
+                    return null; // Not needed for verification
+                }
+
+                @Override
+                public String getPrivateKeyId() {
+                    return null;
+                }
+            });
+
+            var verifier = JWT.require(algorithm)
+                    .withIssuer(ISSUER)
+                    .withSubject(expectedEmail)
+                    .build();
+
+            var decodedJWT = verifier.verify(token);
+
+            Instant expiresAt = decodedJWT.getExpiresAt().toInstant();
+            if (expiresAt.isBefore(Instant.now())) {
+                return null;
+            }
+
+            String tokenUserId = decodedJWT.getClaim("user_id").asString();
+            String tokenEmail = decodedJWT.getSubject();
+            if (!expectedUserId.equals(tokenUserId) || !expectedEmail.equals(tokenEmail)) {
+                return null;
+            }
+
+            return tokenEmail;
+        } catch (JWTVerificationException _) {
+            // Log the exception if a logger is available
             return null;
         }
     }
 
+    public String renewToken(User user) {
+        return generateToken(user);
+    }
 
 }

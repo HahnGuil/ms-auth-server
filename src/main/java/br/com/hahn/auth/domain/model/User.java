@@ -18,37 +18,24 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID user_id;
+    private UUID userId;
 
     @Column(name = "User_name", nullable = false)
     private String username;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password")
     private String password;
 
     @Column(name = "User_email", nullable = false)
     private String email;
 
-    @ManyToOne
-    @JoinColumn(name = "role_id")
-    private Role role;
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
 
-    @ManyToOne
-    @JoinColumn(name = "city_id")
-    private City city;
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
 
-    @Column(name = "Identification_number")
-    private String identificationNumber;
-
-    @Column(name = "telephone_number")
-    private String telephoneNumber;
-
-    @Column(name = "isFirstAccess")
-    private  boolean isFirstAccess;
-
-
-
-
-
+    @Column(name = "picture_url")
+    private String pictureUrl;
 
 }

@@ -16,12 +16,7 @@ The **auth-server** will be responsible for handling authentication across other
 ## ✨ Features
 
 - 🔐 Authentication using **Spring Security** with **JWT**
-- 👥 Role-based access with 4 distinct roles:
-  - 🛠️ `admin`
-  - 👨‍🏫 `tutor`
-  - 🧑‍⚕️ `vet`
-  - 🏥 `vet_clinic`
-
+- 
 ---
 
 ## 🚀 Deployment
