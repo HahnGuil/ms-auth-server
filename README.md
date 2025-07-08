@@ -16,7 +16,7 @@ The **auth-server** will be responsible for handling authentication across other
 ## ✨ Features
 
 - 🔐 Authentication using **Spring Security** with **JWT**
-- 
+- 📧 Integration with **OAuth2** for authentication **Gmail**
 ---
 
 ## 🚀 Deployment
