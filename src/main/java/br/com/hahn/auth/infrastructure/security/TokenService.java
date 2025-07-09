@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
@@ -63,7 +62,7 @@ public class TokenService {
 
             var decodedJWT = verifier.verify(refreshToken);
             return decodedJWT.getSubject();
-        } catch (JWTVerificationException e) {
+        } catch (JWTVerificationException _) {
             return null;
         }
     }
@@ -79,7 +78,7 @@ public class TokenService {
 
             var decodedJWT = verifier.verify(token);
             return decodedJWT.getSubject();
-        } catch (JWTVerificationException e) {
+        } catch (JWTVerificationException _) {
             return null;
         }
     }
