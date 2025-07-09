@@ -41,6 +41,34 @@
         }
       }
     },
+    "/auth/refresh" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "refreshToken",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login" : {
       "post" : {
         "tags" : [ "auth-controller" ],
@@ -69,7 +97,7 @@
         }
       }
     },
-    "/.well-known/jwks" : {
+    "/public-key/jwks" : {
       "get" : {
         "tags" : [ "public-key-controller" ],
         "operationId" : "getPublicKeys",
@@ -125,10 +153,6 @@
           },
           "password" : {
             "type" : "string"
-          },
-          "applicationId" : {
-            "type" : "integer",
-            "format" : "int64"
           }
         }
       },
@@ -139,6 +163,9 @@
             "type" : "string"
           },
           "token" : {
+            "type" : "string"
+          },
+          "refreshToken" : {
             "type" : "string"
           }
         }

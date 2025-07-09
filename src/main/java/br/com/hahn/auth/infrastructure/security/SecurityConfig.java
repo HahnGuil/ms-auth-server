@@ -51,7 +51,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/public-key").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/public-key/jwks").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/auth/oauth2/**").permitAll()
                         .anyRequest().authenticated()
@@ -104,12 +104,14 @@ public class SecurityConfig {
             OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
             OAuth2User oAuth2User = token.getPrincipal();
 
-
             String jwtToken = userService.processOAuth2User(oAuth2User);
+
+            String email = oAuth2User.getAttribute("email");
+            String refresnToken = userService.generateRefreshToken(email);
 
             // Return the token in the response
             response.setContentType("application/json");
-            response.getWriter().write("{\"token\": \"" + jwtToken + "\"}");
+            response.getWriter().write("{\"token\": \"" + jwtToken + "\", \"refreshToken\": \"" + refresnToken + "\"}");
         };
     }
 }

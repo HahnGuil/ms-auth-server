@@ -1,9 +1,6 @@
 package br.com.hahn.auth.presentation.exception;
 
-import br.com.hahn.auth.application.execption.InvalidCredentialsException;
-import br.com.hahn.auth.application.execption.InvalidFormatException;
-import br.com.hahn.auth.application.execption.ResourceNotFoundException;
-import br.com.hahn.auth.application.execption.UserAlreadyExistException;
+import br.com.hahn.auth.application.execption.*;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,4 +41,11 @@ public class GlobalControllerHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(ERROR_MESSAGE, ex.getMessage()));
     }
+
+    @ExceptionHandler(KeyRotationException.class)
+    public ResponseEntity<Map<String, String>> handleKeyRotationException(InvalidFormatException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(ERROR_MESSAGE, ex.getMessage()));
+    }
+
 }

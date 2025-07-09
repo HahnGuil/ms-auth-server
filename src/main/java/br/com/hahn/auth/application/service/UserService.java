@@ -39,7 +39,12 @@ public class UserService {
             throw new InvalidCredentialsException("Incorrect email or password");
         }
 
-        return new LoginResponseDTO(user.getEmail(), this.tokenService.generateToken(user));
+        return new LoginResponseDTO(user.getEmail(), this.tokenService.generateToken(user), this.tokenService.generateRefreshToken(user));
+    }
+
+    public String generateRefreshToken(String email){
+        User user = findByEmail(email);
+        return tokenService.generateRefreshToken(user);
     }
 
     public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
@@ -48,13 +53,13 @@ public class UserService {
         return new UserResponseDTO(user.getUsername(), user.getEmail());
     }
 
-    protected boolean validadePassword(String loginPassword, String userPassword) {
-        return passwordEncoder.matches(loginPassword, userPassword);
-    }
-
-    protected User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserAlreadyExistException("User not found. Check email and password or register a new user."));
+    public String refreshAccessToken(String refreshToken) {
+        String email = tokenService.validateRefreshToken(refreshToken);
+        if (email == null) {
+            throw new InvalidCredentialsException("Invalid refresh token");
+        }
+        User user = findByEmail(email);
+        return tokenService.generateToken(user);
     }
 
     public User convertToEntity(UserRequestDTO userRequestDTO) {
@@ -70,6 +75,22 @@ public class UserService {
         return user;
     }
 
+    public String processOAuth2User(OAuth2User oAuth2User) {
+        String email = oAuth2User.getAttribute("email");
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> createNewUserFromOAuth(oAuth2User));
+        return generateTokenForUser(user);
+    }
+
+    protected boolean validadePassword(String loginPassword, String userPassword) {
+        return passwordEncoder.matches(loginPassword, userPassword);
+    }
+
+    protected User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserAlreadyExistException("User not found. Check email and password or register a new user."));
+    }
+
     protected void saveUser(User user) {
         userRepository.save(user);
     }
@@ -83,15 +104,6 @@ public class UserService {
         User newUser = convertToEntity(userRequestDTO);
         saveUser(newUser);
         return newUser;
-    }
-
-    public String processOAuth2User(OAuth2User oAuth2User) {
-        String email = oAuth2User.getAttribute("email");
-
-        User user = userRepository.findByEmail(email)
-                .orElseGet(() -> createNewUserFromOAuth(oAuth2User));
-
-        return generateTokenForUser(user);
     }
 
     private UserRequestDTO convertOAuthUserToRequestDTO(OAuth2User oAuth2User){

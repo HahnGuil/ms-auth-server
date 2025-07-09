@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/.well-known")
+@RequestMapping("/public-key")
 public class PublicKeyController {
     
     private final KeyManager keyManager;

@@ -26,11 +26,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(@RequestBody UserRequestDTO body) {
-
         userService.existsByEmail(body.email());
-
         UserResponseDTO userResponseDTO = userService.createUser(body);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "User successfully registered", "user", userResponseDTO));
     }
 
@@ -38,5 +35,11 @@ public class AuthController {
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO body) {
         LoginResponseDTO loginResponseDTO = userService.userlogin(body);
         return ResponseEntity.ok(loginResponseDTO);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<String> refreshToken(@RequestBody String refreshToken) {
+        String newAccessToken = userService.refreshAccessToken(refreshToken);
+        return ResponseEntity.ok(newAccessToken);
     }
 }
