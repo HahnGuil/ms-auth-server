@@ -43,7 +43,13 @@ public class GlobalControllerHandler {
     }
 
     @ExceptionHandler(KeyRotationException.class)
-    public ResponseEntity<Map<String, String>> handleKeyRotationException(InvalidFormatException ex) {
+    public ResponseEntity<Map<String, String>> handleKeyRotationException(KeyRotationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(ERROR_MESSAGE, ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidOperationExecption.class)
+    public ResponseEntity<Map<String, String>> handleOperationException(InvalidOperationExecption ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(ERROR_MESSAGE, ex.getMessage()));
     }

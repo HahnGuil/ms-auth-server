@@ -1,10 +1,12 @@
 package br.com.hahn.auth.application.service;
 
+import br.com.hahn.auth.application.dto.request.ChangePasswordRequestDTO;
 import br.com.hahn.auth.application.dto.request.LoginRequestDTO;
 import br.com.hahn.auth.application.dto.request.UserRequestDTO;
 import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.application.execption.InvalidCredentialsException;
+import br.com.hahn.auth.application.execption.InvalidOperationExecption;
 import br.com.hahn.auth.application.execption.UserAlreadyExistException;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.UserRepository;
@@ -66,7 +68,7 @@ public class UserService {
 
         User user = new User();
         user.setUsername(userRequestDTO.userName());
-        user.setPassword(passwordEncoder.encode(userRequestDTO.password()));
+        user.setPassword(encodePassword(userRequestDTO.password()));
         user.setEmail(userRequestDTO.email());
         user.setFirstName(userRequestDTO.firstName());
         user.setLastName(userRequestDTO.lastName());
@@ -82,6 +84,17 @@ public class UserService {
         return generateTokenForUser(user);
     }
 
+    public void updatePassword(ChangePasswordRequestDTO changePasswordRequestDTO) {
+        User user = findByEmail(changePasswordRequestDTO.email());
+        user.setPassword(encodePassword(changePasswordRequestDTO.newPassword()));
+
+        try {
+            userRepository.save(user);
+        } catch (Exception _) {
+            throw new InvalidOperationExecption("Operation not allowed, please try again later");
+        }
+    }
+
     protected boolean validadePassword(String loginPassword, String userPassword) {
         return passwordEncoder.matches(loginPassword, userPassword);
     }
@@ -93,6 +106,10 @@ public class UserService {
 
     protected void saveUser(User user) {
         userRepository.save(user);
+    }
+
+    private String encodePassword(String password) {
+        return passwordEncoder.encode(password);
     }
 
     private String generateTokenForUser(User user) {

@@ -1,5 +1,6 @@
 package br.com.hahn.auth.application.authentication;
 
+import br.com.hahn.auth.application.dto.request.ChangePasswordRequestDTO;
 import br.com.hahn.auth.application.dto.request.LoginRequestDTO;
 import br.com.hahn.auth.application.dto.request.UserRequestDTO;
 import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
@@ -7,10 +8,7 @@ import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.application.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -34,12 +32,18 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO body) {
         LoginResponseDTO loginResponseDTO = userService.userlogin(body);
-        return ResponseEntity.ok(loginResponseDTO);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(loginResponseDTO);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<String> refreshToken(@RequestBody String refreshToken) {
         String newAccessToken = userService.refreshAccessToken(refreshToken);
-        return ResponseEntity.ok(newAccessToken);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(newAccessToken);
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<Map<String, Object>> changePassword(@RequestBody ChangePasswordRequestDTO changePasswordRequestDTO){
+        userService.updatePassword(changePasswordRequestDTO);
+        return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Password successfully changed"));
     }
 }
