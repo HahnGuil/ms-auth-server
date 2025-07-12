@@ -2,6 +2,7 @@ package br.com.hahn.auth.application.authentication;
 
 import br.com.hahn.auth.application.dto.request.ChangePasswordRequestDTO;
 import br.com.hahn.auth.application.dto.request.LoginRequestDTO;
+import br.com.hahn.auth.application.dto.request.ResetPasswordRequestDTO;
 import br.com.hahn.auth.application.dto.request.UserRequestDTO;
 import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
@@ -45,5 +46,11 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> changePassword(@RequestBody ChangePasswordRequestDTO changePasswordRequestDTO){
         userService.updatePassword(changePasswordRequestDTO);
         return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Password successfully changed"));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> resetPassord(@RequestBody String email) {
+        String response = userService.requestResetPassword(email);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

@@ -3,8 +3,10 @@ package br.com.hahn.auth.application.service;
 import br.com.hahn.auth.application.dto.request.UserRequestDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.domain.model.User;
+import br.com.hahn.auth.domain.respository.ResetPasswordRepository;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
+import br.com.hahn.auth.infrastructure.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +29,17 @@ class UserServiceTest {
     @Autowired
     private TokenService tokenService;
 
+    @Autowired
+    private ResetPasswordRepository resetPasswordService;
+
+    @Autowired
+    private EmailService emailService;
+
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, passwordEncoder, tokenService);
+        userService = new UserService(userRepository, passwordEncoder, tokenService, resetPasswordService, emailService);
     }
 
     @Test

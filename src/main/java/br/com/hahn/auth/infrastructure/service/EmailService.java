@@ -26,7 +26,7 @@ public class EmailService {
     @Value("${resend.sender}")
     private String sender;
 
-    public Mono<Void> enviarEmail(String to, String assunto, String corpoHtml) {
+    public Mono<Void> enviarEmail(String to, String subject, String corpoHtml) {
         return webClient.post()
                 .uri("/emails")
                 .header("Authorization", "Bearer " + apiKey)
@@ -34,7 +34,7 @@ public class EmailService {
                 .bodyValue(Map.of(
                         "from", sender,
                         "to", to,
-                        "subject", assunto,
+                        "subject", subject,
                         "html", corpoHtml
                 ))
                 .retrieve()
