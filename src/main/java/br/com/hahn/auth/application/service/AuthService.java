@@ -1,10 +1,8 @@
 package br.com.hahn.auth.application.service;
 
-import br.com.hahn.auth.application.dto.request.ChangePasswordRequestDTO;
-import br.com.hahn.auth.application.dto.request.LoginRequestDTO;
-import br.com.hahn.auth.application.dto.request.ResetPasswordRequestDTO;
-import br.com.hahn.auth.application.dto.request.UserRequestDTO;
+import br.com.hahn.auth.application.dto.request.*;
 import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
+import br.com.hahn.auth.application.dto.response.ResetPasswordResponseDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.application.execption.InvalidCredentialsException;
 import br.com.hahn.auth.application.execption.InvalidOperationExecption;
@@ -20,38 +18,40 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Random;
 
 @Service
-public class UserService {
+public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
-    private final ResetPasswordRepository resetPasswordService;
     private final EmailService emailService;
+    private final ResetPasswordRepository resetPasswordRepository;
 
     private final Random random = new Random();
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService, ResetPasswordRepository resetPasswordService, EmailService emailService) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, ResetPasswordRepository resetPasswordRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
-        this.resetPasswordService = resetPasswordService;
         this.emailService = emailService;
+        this.resetPasswordRepository = resetPasswordRepository;
     }
-    public void existsByEmail(String email) {
-        if(userRepository.existsByEmail(email)) {
-            throw new UserAlreadyExistException("User already exists with email, please use other or try to recover your password");
-        }
+
+    public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
+        User user = convertToEntity(userRequestDTO);
+        saveUser(user);
+        return new UserResponseDTO(user.getUsername(), user.getEmail());
     }
 
     public LoginResponseDTO userlogin(LoginRequestDTO bodyRequest) {
         User user = findByEmail(bodyRequest.email());
 
-        if (!validadePassword(bodyRequest.password(), user.getPassword())) {
-            throw new InvalidCredentialsException("Incorrect email or password");
+        if (isPasswordInvalid(bodyRequest.password(), user.getPassword())) {
+            throw new InvalidCredentialsException("Email or password invalid");
         }
 
         return new LoginResponseDTO(user.getEmail(), this.tokenService.generateToken(user), this.tokenService.generateRefreshToken(user));
@@ -62,12 +62,6 @@ public class UserService {
         return tokenService.generateRefreshToken(user);
     }
 
-    public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
-        User user = convertToEntity(userRequestDTO);
-        saveUser(user);
-        return new UserResponseDTO(user.getUsername(), user.getEmail());
-    }
-
     public String refreshAccessToken(String refreshToken) {
         String email = tokenService.validateRefreshToken(refreshToken);
         if (email == null) {
@@ -75,6 +69,12 @@ public class UserService {
         }
         User user = findByEmail(email);
         return tokenService.generateToken(user);
+    }
+
+    public void existsUserByEmail(String email) {
+        if(userRepository.existsByEmail(email)) {
+            throw new UserAlreadyExistException("User already exists with email, please use other or try to recover your password");
+        }
     }
 
     public User convertToEntity(UserRequestDTO userRequestDTO) {
@@ -99,6 +99,11 @@ public class UserService {
 
     public void updatePassword(ChangePasswordRequestDTO changePasswordRequestDTO) {
         User user = findByEmail(changePasswordRequestDTO.email());
+
+        if (isPasswordInvalid(changePasswordRequestDTO.oldPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Old password is invalid");
+        }
+
         user.setPassword(encodePassword(changePasswordRequestDTO.newPassword()));
 
         try {
@@ -108,29 +113,17 @@ public class UserService {
         }
     }
 
-    public String resetPassword(ResetPasswordRequestDTO resetPasswordRequestDTO) {
-        User user = findByEmail(resetPasswordRequestDTO.email());
+    public String forgotPassword(RequestForgotPasswordDTO requestForgotPasswordDTO) {
+        User user = findByEmail(requestForgotPasswordDTO.email());
+        String recorverCode = gerenateRecoverCode();
 
         try {
-            userRepository.save(user);
-        } catch (Exception _) {
-            throw new InvalidOperationExecption("Operation not allowed, please try again later");
-        }
-
-        return "Password successfully changed.";
-
-    }
-
-    public String requestResetPassword(String email) {
-        User user = findByEmail(email);
-
-        try {
-            ResetPassword resetPassword = createResetPassword(user);
-            resetPasswordService.save(resetPassword);
+            ResetPassword resetPassword = createResetPassword(user, recorverCode);
+            resetPasswordRepository.save(resetPassword);
 
             String subject = "Password Reset Request";
-            String htmlBody = String.format("<p>Hello %s,</p><p>Your password reset code is: <strong>%s</strong></p><p>This code will expire in 30 minutes.</p>",
-                    user.getUsername(), resetPassword.getRecoverCode());
+            String htmlBody = String.format("<p>Hello %s,</p><p> Your password reset code is: <strong>%s</strong></p><p>This code will expire in 30 minutes.</p>",
+                    user.getUsername(), recorverCode);
 
             sendEmail(user.getEmail(), subject, htmlBody); // Extracted method
         } catch (DataAccessException _) {
@@ -140,17 +133,32 @@ public class UserService {
         return "Password reset code sent to your email.";
     }
 
-    private ResetPassword createResetPassword(User user){
+    public ResetPasswordResponseDTO checkRecoverCode(ResetPasswordRequestDTO resetPasswordRequestDTO){
+        ResetPassword resetPassword = resetPasswordRepository.findByUserEmail(resetPasswordRequestDTO.email()).orElseThrow(() -> new InvalidCredentialsException("Invalid Recorver Code for this email"));
+
+        if(!isExpirationDateValid(resetPassword.getExpirationDate())){
+            throw new InvalidCredentialsException("Expired recovery code");
+        }
+
+        return new ResetPasswordResponseDTO(true);
+    }
+
+    private ResetPassword createResetPassword(User user, String recorverCode){
         ResetPassword resetPassword = new ResetPassword();
-        resetPassword.setRecoverCode(passwordEncoder.encode(gerenateRecoverCode()));
+        resetPassword.setRecoverCode(passwordEncoder.encode(recorverCode));
         resetPassword.setUserEmail(user.getEmail());
         resetPassword.setExpirationDate(generateExpirationDate());
 
         return resetPassword;
     }
 
-    private boolean validadePassword(String loginPassword, String userPassword) {
-        return passwordEncoder.matches(loginPassword, userPassword);
+    private boolean isExpirationDateValid(LocalDateTime expirationDate) {
+        LocalDateTime now = LocalDateTime.now();
+        return Duration.between(now, expirationDate).toMinutes() <= 30;
+    }
+
+    private boolean isPasswordInvalid(String loginPassword, String userPassword) {
+        return !passwordEncoder.matches(loginPassword, userPassword);
     }
 
     private User findByEmail(String email) {

@@ -1,6 +1,6 @@
 package br.com.hahn.auth.infrastructure.security;
 
-import br.com.hahn.auth.application.service.UserService;
+import br.com.hahn.auth.application.service.AuthService;
 import br.com.hahn.auth.infrastructure.exception.CustomAccessDeniedHandler;
 import br.com.hahn.auth.infrastructure.exception.CustomAuthenticationEntryPointHandler;
 import org.springframework.context.annotation.Bean;
@@ -33,13 +33,13 @@ public class SecurityConfig {
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomAuthenticationEntryPointHandler customAuthenticationEntryPointHandler;
     private final SecurityFilter securityFilter;
-    private final UserService userService;
+    private final AuthService authService;
 
-    public SecurityConfig(CustomAccessDeniedHandler customAccessDeniedHandler, CustomAuthenticationEntryPointHandler customAuthenticationEntryPointHandler, SecurityFilter securityFilter, @Lazy UserService userService) {
+    public SecurityConfig(CustomAccessDeniedHandler customAccessDeniedHandler, CustomAuthenticationEntryPointHandler customAuthenticationEntryPointHandler, SecurityFilter securityFilter, @Lazy AuthService authService) {
         this.customAccessDeniedHandler = customAccessDeniedHandler;
         this.customAuthenticationEntryPointHandler = customAuthenticationEntryPointHandler;
         this.securityFilter = securityFilter;
-        this.userService = userService;
+        this.authService = authService;
     }
 
     @Bean
@@ -51,6 +51,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/forgot-password").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/reset-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/public-key/jwks").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/auth/oauth2/**").permitAll()
@@ -76,13 +78,13 @@ public class SecurityConfig {
                 // Use OidcUserService for OIDC requests
                 OidcUserService oidcUserService = new OidcUserService();
                 OAuth2User oidcUser = oidcUserService.loadUser(oidcUserRequest);
-                userService.processOAuth2User(oidcUser); // Save the user in the database
+                authService.processOAuth2User(oidcUser); // Save the user in the database
                 return oidcUser;
             } else {
                 // Handle generic OAuth2 requests
                 DefaultOAuth2UserService defaultOAuth2UserService = new DefaultOAuth2UserService();
                 OAuth2User oAuth2User = defaultOAuth2UserService.loadUser(userRequest);
-                userService.processOAuth2User(oAuth2User); // Save the user in the database
+                authService.processOAuth2User(oAuth2User); // Save the user in the database
                 return oAuth2User;
             }
         };
@@ -104,10 +106,10 @@ public class SecurityConfig {
             OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
             OAuth2User oAuth2User = token.getPrincipal();
 
-            String jwtToken = userService.processOAuth2User(oAuth2User);
+            String jwtToken = authService.processOAuth2User(oAuth2User);
 
             String email = oAuth2User.getAttribute("email");
-            String refresnToken = userService.generateRefreshToken(email);
+            String refresnToken = authService.generateRefreshToken(email);
 
             // Return the token in the response
             response.setContentType("application/json");

@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ActiveProfiles("test")
 @SpringBootTest
-class UserServiceTest {
+class AuthServiceTest {
 
     @Autowired
     private UserRepository userRepository;
@@ -30,23 +30,23 @@ class UserServiceTest {
     private TokenService tokenService;
 
     @Autowired
-    private ResetPasswordRepository resetPasswordService;
-
-    @Autowired
     private EmailService emailService;
 
-    private UserService userService;
+    @Autowired
+    private ResetPasswordRepository resetPasswordRepository;
+
+    private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, passwordEncoder, tokenService, resetPasswordService, emailService);
+        authService = new AuthService(userRepository, passwordEncoder, tokenService, emailService, resetPasswordRepository);
     }
 
     @Test
     void testCreateUser() {
         UserRequestDTO userRequestDTO = new UserRequestDTO("testUser", "test@example.com", "password", "Test", "User", null);
 
-        UserResponseDTO userResponseDTO = userService.createUser(userRequestDTO);
+        UserResponseDTO userResponseDTO = authService.createUser(userRequestDTO);
 
         assertEquals("testUser", userResponseDTO.userName());
         assertEquals("test@example.com", userResponseDTO.email());
