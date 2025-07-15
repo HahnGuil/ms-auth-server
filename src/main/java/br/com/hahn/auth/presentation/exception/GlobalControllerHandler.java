@@ -14,8 +14,8 @@ public class GlobalControllerHandler {
 
     private static final String ERROR_MESSAGE = "error";
 
-    @ExceptionHandler(UserAlreadyExistException.class)
-    public ResponseEntity<Map<String, String>> userAlreadyExistForApplicationException(UserAlreadyExistException ex) {
+    @ExceptionHandler(ResourceAlreadyExistException.class)
+    public ResponseEntity<Map<String, String>> userAlreadyExistForApplicationException(ResourceAlreadyExistException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of(ERROR_MESSAGE, ex.getMessage()));
     }

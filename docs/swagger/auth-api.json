@@ -236,8 +236,8 @@
       "ResetPasswordResponseDTO" : {
         "type" : "object",
         "properties" : {
-          "valid" : {
-            "type" : "boolean"
+          "recoverToken" : {
+            "type" : "string"
           }
         }
       },

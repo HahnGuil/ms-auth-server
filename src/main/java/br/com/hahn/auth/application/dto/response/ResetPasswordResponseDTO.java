@@ -1,4 +1,4 @@
 package br.com.hahn.auth.application.dto.response;
 
-public record ResetPasswordResponseDTO(boolean valid) {
+public record ResetPasswordResponseDTO(String recoverToken) {
 }

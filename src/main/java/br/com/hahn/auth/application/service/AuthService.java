@@ -6,7 +6,7 @@ import br.com.hahn.auth.application.dto.response.ResetPasswordResponseDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.application.execption.InvalidCredentialsException;
 import br.com.hahn.auth.application.execption.InvalidOperationExecption;
-import br.com.hahn.auth.application.execption.UserAlreadyExistException;
+import br.com.hahn.auth.application.execption.ResourceAlreadyExistException;
 import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.ResetPasswordRepository;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Random;
 
 @Service
@@ -50,7 +51,7 @@ public class AuthService {
     public LoginResponseDTO userlogin(LoginRequestDTO bodyRequest) {
         User user = findByEmail(bodyRequest.email());
 
-        if (isPasswordInvalid(bodyRequest.password(), user.getPassword())) {
+        if (!validadeCredentials(bodyRequest.password(), user.getPassword())) {
             throw new InvalidCredentialsException("Email or password invalid");
         }
 
@@ -73,7 +74,7 @@ public class AuthService {
 
     public void existsUserByEmail(String email) {
         if(userRepository.existsByEmail(email)) {
-            throw new UserAlreadyExistException("User already exists with email, please use other or try to recover your password");
+            throw new ResourceAlreadyExistException("User already exists with email, please use other or try to recover your password");
         }
     }
 
@@ -100,7 +101,7 @@ public class AuthService {
     public void updatePassword(ChangePasswordRequestDTO changePasswordRequestDTO) {
         User user = findByEmail(changePasswordRequestDTO.email());
 
-        if (isPasswordInvalid(changePasswordRequestDTO.oldPassword(), user.getPassword())) {
+        if (validadeCredentials(changePasswordRequestDTO.oldPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Old password is invalid");
         }
 
@@ -114,18 +115,19 @@ public class AuthService {
     }
 
     public String forgotPassword(RequestForgotPasswordDTO requestForgotPasswordDTO) {
+        checkExistingResetToken(requestForgotPasswordDTO);
         User user = findByEmail(requestForgotPasswordDTO.email());
-        String recorverCode = gerenateRecoverCode();
+        String recoverCode = gerenateRecoverCode();
 
         try {
-            ResetPassword resetPassword = createResetPassword(user, recorverCode);
+            ResetPassword resetPassword = createResetPassword(user, recoverCode);
             resetPasswordRepository.save(resetPassword);
 
             String subject = "Password Reset Request";
-            String htmlBody = String.format("<p>Hello %s,</p><p> Your password reset code is: <strong>%s</strong></p><p>This code will expire in 30 minutes.</p>",
-                    user.getUsername(), recorverCode);
+            String htmlBody = String.format("<p>Hello %s,</p><p>Your password reset code is: <strong>%s</strong></p><p>This code will expire in 30 minutes.</p>",
+                    user.getUsername(), recoverCode);
 
-            sendEmail(user.getEmail(), subject, htmlBody); // Extracted method
+            sendEmail(user.getEmail(), subject, htmlBody);
         } catch (DataAccessException _) {
             throw new InvalidOperationExecption("Operation not allowed, please try again later.");
         }
@@ -136,11 +138,30 @@ public class AuthService {
     public ResetPasswordResponseDTO checkRecoverCode(ResetPasswordRequestDTO resetPasswordRequestDTO){
         ResetPassword resetPassword = resetPasswordRepository.findByUserEmail(resetPasswordRequestDTO.email()).orElseThrow(() -> new InvalidCredentialsException("Invalid Recorver Code for this email"));
 
-        if(!isExpirationDateValid(resetPassword.getExpirationDate())){
-            throw new InvalidCredentialsException("Expired recovery code");
+        if (!validateRecoverRequest(resetPassword, resetPasswordRequestDTO)) {
+            throw new InvalidCredentialsException("Recorve code expired or invalid.");
         }
 
-        return new ResetPasswordResponseDTO(true);
+        String recoverToken = tokenService.generateRecorverToken(resetPassword);
+
+        resetPasswordRepository.deleteById(resetPassword.getId());
+
+        return new ResetPasswordResponseDTO(recoverToken);
+    }
+
+    private void checkExistingResetToken(RequestForgotPasswordDTO requestForgotPasswordDTO) {
+        Optional<ResetPassword> existingResetPassword = resetPasswordRepository.findByUserEmail(requestForgotPasswordDTO.email());
+        if (existingResetPassword.isPresent()) {
+            ResetPassword resetPassword = existingResetPassword.get();
+            if (isExpirationDateValid(resetPassword.getExpirationDate())) {
+                throw new ResourceAlreadyExistException("A code already exists for this email");
+            }
+        }
+    }
+
+    private boolean validateRecoverRequest(ResetPassword resetPassword, ResetPasswordRequestDTO resetPasswordRequestDTO) {
+        return isExpirationDateValid(resetPassword.getExpirationDate())
+                && validadeCredentials(resetPasswordRequestDTO.recorverCode(), resetPassword.getRecoverCode());
     }
 
     private ResetPassword createResetPassword(User user, String recorverCode){
@@ -157,13 +178,13 @@ public class AuthService {
         return Duration.between(now, expirationDate).toMinutes() <= 30;
     }
 
-    private boolean isPasswordInvalid(String loginPassword, String userPassword) {
-        return !passwordEncoder.matches(loginPassword, userPassword);
+    private boolean validadeCredentials(String loginPassword, String userPassword) {
+        return passwordEncoder.matches(loginPassword, userPassword);
     }
 
     private User findByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserAlreadyExistException("User not found. Check email and password or register a new user."));
+                .orElseThrow(() -> new ResourceAlreadyExistException("User not found. Check email and password or register a new user."));
     }
 
     private void saveUser(User user) {

@@ -1,5 +1,6 @@
 package br.com.hahn.auth.infrastructure.security;
 
+import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -22,6 +23,18 @@ public class TokenService {
 
     public TokenService(KeyManager keyManager) {
         this.keyManager = keyManager;
+    }
+
+    public String generateRecorverToken(ResetPassword resetPassword){
+        try {
+            Algorithm algorithm = createAlgorithm();
+            return JWT.create()
+                    .withIssuer(ISSUER)
+                    .withSubject(resetPassword.getUserEmail())
+                    .sign(algorithm);
+        }catch (JWTCreationException e){
+            throw new IllegalStateException("Error while creating RecoverToken", e);
+        }
     }
 
     public String generateToken(User user) {
