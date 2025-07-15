@@ -31,6 +31,8 @@ public class TokenService {
             return JWT.create()
                     .withIssuer(ISSUER)
                     .withSubject(resetPassword.getUserEmail())
+                    .withAudience("frindlyPaw")
+                    .withClaim("scope", "recoverCode")
                     .sign(algorithm);
         }catch (JWTCreationException e){
             throw new IllegalStateException("Error while creating RecoverToken", e);
@@ -43,7 +45,9 @@ public class TokenService {
             return JWT.create()
                     .withIssuer(ISSUER)
                     .withSubject(user.getEmail())
+                    .withAudience("frindlyPaw")
                     .withClaim("user_id", user.getUserId() != null ? user.getUserId().toString() : null)
+                    .withClaim("scope", "login_token")
                     .withExpiresAt(LocalDateTime.now().plusMinutes(15).toInstant(ZONE_OFFSET))
                     .sign(algorithm);
         } catch (JWTCreationException e) {
