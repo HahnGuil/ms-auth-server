@@ -1,3 +1,7 @@
+## 🇧🇷 Versão em Português
+
+Se preferir, você pode conferir a versão em português deste README aqui: [`README_PT.md`](./README_PT.md)
+
 # 🔐 Auth-server
 
 Welcome to **auth-server**!  
@@ -67,7 +71,7 @@ To enable login with Gmail using OAuth2, follow these steps:
 To start the PostgreSQL database using Docker:
 
 ```bash
-  docker compose -f docs/containers/docker-compose.postgres.yml up -d
+docker compose -f docs/containers/docker-compose.postgres.yml up -d
 ```
 
 📁 File: [`docs/containers/docker-compose.postgres.yml`](docs/containers/docker-compose.postgres.yml)
@@ -138,3 +142,4 @@ To enable Resend, follow these steps:
 
 - 📦 Email Service Layer: `src/main/java/.../service/EmailService.java`
 - ⚙️ Properties: `src/main/resources/application.properties`
+
