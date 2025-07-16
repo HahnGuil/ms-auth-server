@@ -18,7 +18,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ChangePasswordRequestDTO"
+                "$ref" : "#/components/schemas/PasswordOperationRequestDTO"
               }
             }
           },
@@ -49,7 +49,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ResetPasswordRequestDTO"
+                "$ref" : "#/components/schemas/PasswordOperationRequestDTO"
               }
             }
           },
@@ -159,12 +159,12 @@
     "/auth/forgot-password" : {
       "post" : {
         "tags" : [ "auth-controller" ],
-        "operationId" : "forgotPassord",
+        "operationId" : "forgotPassword",
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/RequestForgotPasswordDTO"
+                "$ref" : "#/components/schemas/PasswordOperationRequestDTO"
               }
             }
           },
@@ -208,7 +208,7 @@
   },
   "components" : {
     "schemas" : {
-      "ChangePasswordRequestDTO" : {
+      "PasswordOperationRequestDTO" : {
         "type" : "object",
         "properties" : {
           "email" : {
@@ -219,16 +219,8 @@
           },
           "newPassword" : {
             "type" : "string"
-          }
-        }
-      },
-      "ResetPasswordRequestDTO" : {
-        "type" : "object",
-        "properties" : {
-          "email" : {
-            "type" : "string"
           },
-          "recorverCode" : {
+          "recoverCode" : {
             "type" : "string"
           }
         }
@@ -286,14 +278,6 @@
             "type" : "string"
           },
           "refreshToken" : {
-            "type" : "string"
-          }
-        }
-      },
-      "RequestForgotPasswordDTO" : {
-        "type" : "object",
-        "properties" : {
-          "email" : {
             "type" : "string"
           }
         }

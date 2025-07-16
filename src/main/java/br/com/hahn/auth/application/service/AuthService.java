@@ -4,27 +4,24 @@ import br.com.hahn.auth.application.dto.request.*;
 import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
 import br.com.hahn.auth.application.dto.response.ResetPasswordResponseDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
-import br.com.hahn.auth.application.execption.InvalidCredentialsException;
-import br.com.hahn.auth.application.execption.InvalidOperationExecption;
-import br.com.hahn.auth.application.execption.ResourceAlreadyExistException;
+import br.com.hahn.auth.application.execption.*;
 import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.ResetPasswordRepository;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
 import br.com.hahn.auth.infrastructure.service.EmailService;
-import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.Random;
 
 @Service
 public class AuthService {
+
+    private final Random random = new Random();
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -32,7 +29,6 @@ public class AuthService {
     private final EmailService emailService;
     private final ResetPasswordRepository resetPasswordRepository;
 
-    private final Random random = new Random();
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, ResetPasswordRepository resetPasswordRepository) {
         this.userRepository = userRepository;
@@ -48,14 +44,14 @@ public class AuthService {
         return new UserResponseDTO(user.getUsername(), user.getEmail());
     }
 
-    public LoginResponseDTO userlogin(LoginRequestDTO bodyRequest) {
+    public LoginResponseDTO userLogin(LoginRequestDTO bodyRequest) {
         User user = findByEmail(bodyRequest.email());
 
         if (!validadeCredentials(bodyRequest.password(), user.getPassword())) {
             throw new InvalidCredentialsException("Email or password invalid");
         }
 
-        return new LoginResponseDTO(user.getEmail(), this.tokenService.generateToken(user), this.tokenService.generateRefreshToken(user));
+        return new LoginResponseDTO(user.getEmail(), tokenService.generateToken(user), tokenService.generateRefreshToken(user));
     }
 
     public String generateRefreshToken(String email){
@@ -66,7 +62,8 @@ public class AuthService {
     public String refreshAccessToken(String refreshToken) {
         String email = tokenService.validateRefreshToken(refreshToken);
         if (email == null) {
-            throw new InvalidCredentialsException("Invalid refresh token");
+            throw new InvalidRefreshTokenException("Invalid refresh token");
+
         }
         User user = findByEmail(email);
         return tokenService.generateToken(user);
@@ -74,7 +71,7 @@ public class AuthService {
 
     public void existsUserByEmail(String email) {
         if(userRepository.existsByEmail(email)) {
-            throw new ResourceAlreadyExistException("User already exists with email, please use other or try to recover your password");
+            throw new EmailAlreadyExistException("User already exists with email, please use other or try to recover your password");
         }
     }
 
@@ -98,88 +95,75 @@ public class AuthService {
         return generateTokenForUser(user);
     }
 
-    public void updatePassword(ChangePasswordRequestDTO changePasswordRequestDTO) {
-        User user = findByEmail(changePasswordRequestDTO.email());
+    public void updatePassword(PasswordOperationRequestDTO request) {
+        User user = findByEmail(request.email());
 
-        if (validadeCredentials(changePasswordRequestDTO.oldPassword(), user.getPassword())) {
-            throw new InvalidCredentialsException("Old password is invalid");
+        if (validadeCredentials(request.oldPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Password is ivalid");
         }
 
-        user.setPassword(encodePassword(changePasswordRequestDTO.newPassword()));
-
-        try {
-            userRepository.save(user);
-        } catch (Exception _) {
-            throw new InvalidOperationExecption("Operation not allowed, please try again later");
-        }
+        user.setPassword(encodePassword(request.newPassword()));
+        saveUser(user);
     }
 
-    public String forgotPassword(RequestForgotPasswordDTO requestForgotPasswordDTO) {
-        checkExistingResetToken(requestForgotPasswordDTO);
-        User user = findByEmail(requestForgotPasswordDTO.email());
-        String recoverCode = gerenateRecoverCode();
-
-        try {
-            ResetPassword resetPassword = createResetPassword(user, recoverCode);
-            resetPasswordRepository.save(resetPassword);
-
-            String subject = "Password Reset Request";
-            String htmlBody = String.format("<p>Hello %s,</p><p>Your password reset code is: <strong>%s</strong></p><p>This code will expire in 30 minutes.</p>",
-                    user.getUsername(), recoverCode);
-
-            sendEmail(user.getEmail(), subject, htmlBody);
-        } catch (DataAccessException _) {
-            throw new InvalidOperationExecption("Operation not allowed, please try again later.");
-        }
-
+    public String forgotPassword(PasswordOperationRequestDTO request) {
+        checkExistingResetToken(request.email());
+        User user = findByEmail(request.email());
+        String recoverCode = generateRecoverCode();
+        saveResetPassword(user, recoverCode);
+        sendEmail(user.getEmail(), buildResetEmailBody(user.getUsername(), recoverCode));
         return "Password reset code sent to your email.";
     }
 
-    public ResetPasswordResponseDTO checkRecoverCode(ResetPasswordRequestDTO resetPasswordRequestDTO){
-        ResetPassword resetPassword = resetPasswordRepository.findByUserEmail(resetPasswordRequestDTO.email()).orElseThrow(() -> new InvalidCredentialsException("Invalid Recorver Code for this email"));
-
-        if (!validateRecoverRequest(resetPassword, resetPasswordRequestDTO)) {
-            throw new InvalidCredentialsException("Recorve code expired or invalid.");
-        }
-
-        String recoverToken = tokenService.generateRecorverToken(resetPassword);
-
+    public ResetPasswordResponseDTO resetPassword(PasswordOperationRequestDTO request) {
+        ResetPassword resetPassword = findResetPasswordByEmail(request.email());
+        validateRecoverCode(resetPassword, request.recoverCode());
         resetPasswordRepository.deleteById(resetPassword.getId());
-
-        return new ResetPasswordResponseDTO(recoverToken);
+        User user = findByEmail(resetPassword.getUserEmail());
+        return new ResetPasswordResponseDTO(tokenService.generateToken(user));
     }
 
-    private void checkExistingResetToken(RequestForgotPasswordDTO requestForgotPasswordDTO) {
-        Optional<ResetPassword> existingResetPassword = resetPasswordRepository.findByUserEmail(requestForgotPasswordDTO.email());
-        if (existingResetPassword.isPresent()) {
-            ResetPassword resetPassword = existingResetPassword.get();
-            if (isExpirationDateValid(resetPassword.getExpirationDate())) {
-                throw new ResourceAlreadyExistException("A code already exists for this email");
-            }
+    private void validateRecoverCode(ResetPassword resetPassword, String recoverCode) {
+        if (!passwordEncoder.matches(recoverCode, resetPassword.getRecoverCode())) {
+            throw new InvalidCredentialsException("Invalid recover code.");
+        }
+        if (resetPassword.getExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new InvalidOperationExecption("Recover code has expired.");
         }
     }
 
-    private boolean validateRecoverRequest(ResetPassword resetPassword, ResetPasswordRequestDTO resetPasswordRequestDTO) {
-        return isExpirationDateValid(resetPassword.getExpirationDate())
-                && validadeCredentials(resetPasswordRequestDTO.recorverCode(), resetPassword.getRecoverCode());
-    }
-
-    private ResetPassword createResetPassword(User user, String recorverCode){
+    private void saveResetPassword(User user, String recoverCode) {
         ResetPassword resetPassword = new ResetPassword();
-        resetPassword.setRecoverCode(passwordEncoder.encode(recorverCode));
+        resetPassword.setRecoverCode(passwordEncoder.encode(recoverCode));
         resetPassword.setUserEmail(user.getEmail());
-        resetPassword.setExpirationDate(generateExpirationDate());
-
-        return resetPassword;
+        resetPassword.setExpirationDate(LocalDateTime.now().plusMinutes(30));
+        resetPasswordRepository.save(resetPassword);
     }
 
-    private boolean isExpirationDateValid(LocalDateTime expirationDate) {
-        LocalDateTime now = LocalDateTime.now();
-        return Duration.between(now, expirationDate).toMinutes() <= 30;
+    private ResetPassword findResetPasswordByEmail(String email) {
+        return resetPasswordRepository.findByUserEmail(email)
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid recover code for this email."));
+    }
+
+    private void checkExistingResetToken(String email) {
+        resetPasswordRepository.findByUserEmail(email).ifPresent(resetPassword -> {
+            if (resetPassword.getExpirationDate().isAfter(LocalDateTime.now())) {
+                throw new ResourceAlreadyExistException("A code already exists for this email.");
+            }
+        });
+    }
+
+    private String generateRecoverCode() {
+        int code = random.nextInt(900000) + 100000; // Gera um número entre 100000 e 999999
+        return String.valueOf(code);
+    }
+
+    private String buildResetEmailBody(String username, String recoverCode) {
+        return String.format("<p>Hello %s,</p><p>Your password reset code is: <strong>%s</strong></p><p>This code will expire in 30 minutes.</p>", username, recoverCode);
     }
 
     private boolean validadeCredentials(String loginPassword, String userPassword) {
-        return passwordEncoder.matches(loginPassword, userPassword);
+        return !passwordEncoder.matches(loginPassword, userPassword);
     }
 
     private User findByEmail(String email) {
@@ -191,21 +175,12 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    private void sendEmail(String email, String subject, String htmlBody) {
+    private void sendEmail(String email, String htmlBody) {
         try {
-            emailService.enviarEmail(email, subject, htmlBody).block();
+            emailService.enviarEmail(email, "Password Reset Request", htmlBody).block();
         } catch (Exception _) {
             throw new InvalidOperationExecption("Failed to send email. Please try again later.");
         }
-    }
-
-    private String gerenateRecoverCode() {
-        Integer code = random.nextInt(999999 - 100000 + 1) + 100000;
-        return String.valueOf(code);
-    }
-
-    private LocalDateTime generateExpirationDate() {
-        return LocalDateTime.now().plusMinutes(30);
     }
 
     private String encodePassword(String password) {

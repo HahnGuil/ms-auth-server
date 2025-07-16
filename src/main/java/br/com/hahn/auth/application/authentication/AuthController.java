@@ -30,7 +30,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO body) {
-        LoginResponseDTO loginResponseDTO = authService.userlogin(body);
+        LoginResponseDTO loginResponseDTO = authService.userLogin(body);
         return ResponseEntity.status(HttpStatus.OK).body(loginResponseDTO);
     }
 
@@ -41,21 +41,21 @@ public class AuthController {
     }
 
     @PutMapping("/change-password")
-    public ResponseEntity<Map<String, Object>> changePassword(@RequestBody ChangePasswordRequestDTO changePasswordRequestDTO){
-        authService.updatePassword(changePasswordRequestDTO);
+    public ResponseEntity<Map<String, Object>> changePassword(@RequestBody PasswordOperationRequestDTO request) {
+        authService.updatePassword(request);
         return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Password successfully changed"));
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassord(@RequestBody RequestForgotPasswordDTO requestForgotPasswordDTO) {
-        String response = authService.forgotPassword(requestForgotPasswordDTO);
+    public ResponseEntity<String> forgotPassword(@RequestBody PasswordOperationRequestDTO request) {
+        String response = authService.forgotPassword(request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<ResetPasswordResponseDTO> resetPassword(@RequestBody ResetPasswordRequestDTO resetPasswordRequestDTO){
-        ResetPasswordResponseDTO resetPasswordResponseDTO = authService.checkRecoverCode(resetPasswordRequestDTO);
-        return ResponseEntity.status(HttpStatus.OK).body(resetPasswordResponseDTO);
+    public ResponseEntity<ResetPasswordResponseDTO> resetPassword(@RequestBody PasswordOperationRequestDTO request) {
+        ResetPasswordResponseDTO response = authService.resetPassword(request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 }

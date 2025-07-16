@@ -43,14 +43,14 @@ class AuthControllerTest {
         LoginRequestDTO loginRequestDTO = new LoginRequestDTO("test@example.com", "password");
         LoginResponseDTO loginResponseDTO = new LoginResponseDTO("test@example.com", "token", "refreshToken");
 
-        when(authService.userlogin(loginRequestDTO)).thenReturn(loginResponseDTO);
+        when(authService.userLogin(loginRequestDTO)).thenReturn(loginResponseDTO);
 
         ResponseEntity<LoginResponseDTO> response = authController.login(loginRequestDTO);
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals(loginResponseDTO, response.getBody());
 
-        verify(authService, times(1)).userlogin(loginRequestDTO);
+        verify(authService, times(1)).userLogin(loginRequestDTO);
     }
 }
 
