@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -28,14 +29,16 @@ public class AuthService {
     private final TokenService tokenService;
     private final EmailService emailService;
     private final ResetPasswordRepository resetPasswordRepository;
+    private final UserService userService;
 
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, ResetPasswordRepository resetPasswordRepository) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, ResetPasswordRepository resetPasswordRepository, UserService userService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.resetPasswordRepository = resetPasswordRepository;
+        this.userService = userService;
     }
 
     public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
@@ -103,7 +106,7 @@ public class AuthService {
     public void updatePassword(PasswordOperationRequestDTO request) {
         User user = findByEmail(request.email());
         validateOldPassword(request.oldPassword(), user.getPassword());
-        updateUserPassword(user, request.newPassword());
+        updateUserPassword(user.getEmail(), user.getUserId(), request.newPassword());
     }
 
     public String forgotPassword(PasswordOperationRequestDTO request) {
@@ -126,9 +129,7 @@ public class AuthService {
     public String resetPassword(PasswordOperationRequestDTO passwordOperationRequestDTO) {
         ResetPassword resetPassword = findResetPasswordByEmail(passwordOperationRequestDTO.email());
         User user = findByEmail(resetPassword.getUserEmail());
-
-        updateUserPassword(user, passwordOperationRequestDTO.newPassword());
-
+        updateUserPassword(user.getEmail(), user.getUserId(), passwordOperationRequestDTO.newPassword());
         return "Password reset successfully";
     }
 
@@ -138,10 +139,9 @@ public class AuthService {
         }
     }
 
-    protected void updateUserPassword(User user, String newPassword) {
-        user.setPassword(encodePassword(newPassword));
-        userRepository.save(user);
-    }
+   private void updateUserPassword(String email, UUID id, String newPassword){
+        userService.updatePassword(email, id, newPassword);
+   }
 
     private void validateRecoverCodeValues(ResetPassword resetPassword, PasswordOperationRequestDTO requestRecoverCode){
         if(!passwordEncoder.matches(requestRecoverCode.recoverCode(), resetPassword.getRecoverCode())){

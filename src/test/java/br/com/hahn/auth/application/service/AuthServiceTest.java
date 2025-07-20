@@ -35,11 +35,15 @@ class AuthServiceTest {
     @Autowired
     private ResetPasswordRepository resetPasswordRepository;
 
+    @Autowired
     private AuthService authService;
+
+    @Autowired
+    private UserService userService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, tokenService, emailService, resetPasswordRepository);
+        authService = new AuthService(userRepository, passwordEncoder, tokenService, emailService, resetPasswordRepository, userService);
     }
 
     @Test
