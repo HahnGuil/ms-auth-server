@@ -7,8 +7,6 @@ import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.application.execption.*;
 import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
-import br.com.hahn.auth.domain.respository.ResetPasswordRepository;
-import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
 import br.com.hahn.auth.infrastructure.service.EmailService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,46 +22,49 @@ public class AuthService {
 
     private final Random random = new Random();
 
-    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final EmailService emailService;
-    private final ResetPasswordRepository resetPasswordRepository;
     private final UserService userService;
+    private final ResetPasswordService resetPasswordService;
 
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, ResetPasswordRepository resetPasswordRepository, UserService userService) {
-        this.userRepository = userRepository;
+    public AuthService(PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, UserService userService, ResetPasswordService resetPasswordService) {
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.emailService = emailService;
-        this.resetPasswordRepository = resetPasswordRepository;
         this.userService = userService;
+
+        this.resetPasswordService = resetPasswordService;
     }
 
     public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
-        User user = convertToEntity(userRequestDTO);
+        User user = userService.convertToEntity(userRequestDTO,encodePassword(userRequestDTO.password()));
 
-        if(userRepository.existsByEmail(user.getEmail())){
+        if(userService.existsByEmail(user.getEmail())){
             throw new UserAlreadyExistException("Email already registered. Please log in or recover your password.");
         }
 
-        saveUser(user);
+        userService.saveUser(user);
         return new UserResponseDTO(user.getUsername(), user.getEmail());
     }
 
     public LoginResponseDTO userLogin(LoginRequestDTO bodyRequest) {
-        User user = findByEmail(bodyRequest.email());
+        User user = userService.findByEmail(bodyRequest.email());
 
-        if (!validadeCredentials(bodyRequest.password(), user.getPassword())) {
-            throw new InvalidCredentialsException("Email or password invalid");
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            throw new InvalidCredentialsException("Direct login is not allowed for users created via OAuth.");
+        }
+
+        if (validadeCredentials(bodyRequest.password(), user.getPassword())) {
+            throw new InvalidCredentialsException("Invalid email or password.");
         }
 
         return new LoginResponseDTO(user.getEmail(), tokenService.generateToken(user), tokenService.generateRefreshToken(user));
     }
 
     public String generateRefreshToken(String email){
-        User user = findByEmail(email);
+        User user = userService.findByEmail(email);
         return tokenService.generateRefreshToken(user);
     }
 
@@ -73,69 +74,58 @@ public class AuthService {
             throw new InvalidRefreshTokenException("Invalid refresh token");
 
         }
-        User user = findByEmail(email);
+        User user = userService.findByEmail(email);
         return tokenService.generateToken(user);
     }
 
     public void existsUserByEmail(String email) {
-        if(userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyExistException("User already exists with email, please use other or try to recover your password");
+        if(userService.existsByEmail(email)) {
+            throw new EmailAlreadyExistException("A user already exists with this email. Please use another email or try to recover your password.");
         }
-    }
-
-    public User convertToEntity(UserRequestDTO userRequestDTO) {
-
-        User user = new User();
-        user.setUsername(userRequestDTO.userName());
-        user.setPassword(encodePassword(userRequestDTO.password()));
-        user.setEmail(userRequestDTO.email());
-        user.setFirstName(userRequestDTO.firstName());
-        user.setLastName(userRequestDTO.lastName());
-        user.setPictureUrl(userRequestDTO.pictureUrl());
-
-        return user;
     }
 
     public String processOAuth2User(OAuth2User oAuth2User) {
         String email = oAuth2User.getAttribute("email");
-        User user = userRepository.findByEmail(email)
-                .orElseGet(() -> createNewUserFromOAuth(oAuth2User));
+        User user;
+        try {
+            user = userService.findByEmail(email);
+        } catch (ResourceAlreadyExistException _) {
+            user = createNewUserFromOAuth(oAuth2User);
+        }
         return generateTokenForUser(user);
     }
 
     public void updatePassword(PasswordOperationRequestDTO request) {
-        User user = findByEmail(request.email());
+        User user = userService.findByEmail(request.email());
         validateOldPassword(request.oldPassword(), user.getPassword());
         updateUserPassword(user.getEmail(), user.getUserId(), request.newPassword());
     }
 
     public String forgotPassword(PasswordOperationRequestDTO request) {
-        checkExistingResetToken(request.email());
-        User user = findByEmail(request.email());
+        resetPasswordService.checkExistingResetToken(request.email());
+        User user = userService.findByEmail(request.email());
         String recoverCode = generateRecoverCode();
-        saveResetPassword(user, recoverCode);
+        resetPasswordService.createResetPassword(user, encodePassword(recoverCode));
         sendEmail(user.getEmail(), buildResetEmailBody(user.getUsername(), recoverCode));
         return "Password reset code sent to your email.";
     }
 
     public ResetPasswordResponseDTO validateRecoverCode(PasswordOperationRequestDTO requestRecoverCode) {
-        ResetPassword resetPassword = findResetPasswordByEmail(requestRecoverCode.email());
-
+        ResetPassword resetPassword = resetPasswordService.findByEmail(requestRecoverCode.email());
         validateRecoverCodeValues(resetPassword, requestRecoverCode);
-
         return new ResetPasswordResponseDTO(tokenService.generateRecorverToken(resetPassword));
     }
 
     public String resetPassword(PasswordOperationRequestDTO passwordOperationRequestDTO) {
-        ResetPassword resetPassword = findResetPasswordByEmail(passwordOperationRequestDTO.email());
-        User user = findByEmail(resetPassword.getUserEmail());
+        ResetPassword resetPassword = resetPasswordService.findByEmail(passwordOperationRequestDTO.email());
+        User user = userService.findByEmail(resetPassword.getUserEmail());
         updateUserPassword(user.getEmail(), user.getUserId(), passwordOperationRequestDTO.newPassword());
         return "Password reset successfully";
     }
 
     private void validateOldPassword(String oldPassword, String currentPassword) {
-        if (!validadeCredentials(oldPassword, currentPassword)) {
-            throw new InvalidCredentialsException("Password is invalid");
+        if (validadeCredentials(oldPassword, currentPassword)) {
+            throw new InvalidCredentialsException("Invalid password.");
         }
     }
 
@@ -145,34 +135,12 @@ public class AuthService {
 
     private void validateRecoverCodeValues(ResetPassword resetPassword, PasswordOperationRequestDTO requestRecoverCode){
         if(!passwordEncoder.matches(requestRecoverCode.recoverCode(), resetPassword.getRecoverCode())){
-            throw new InvalidRecorveCodeExcpetion("Invalid recovercode");
+            throw new InvalidRecorveCodeExcpetion("Invalid recovery code.");
         }
 
         if(resetPassword.getExpirationDate().isBefore(LocalDateTime.now())){
-            throw new InvalidRecorveCodeExcpetion("Invalid recovercode");
+            throw new InvalidRecorveCodeExcpetion("Recovery code has expired.");
         }
-
-    }
-
-    private void saveResetPassword(User user, String recoverCode) {
-        ResetPassword resetPassword = new ResetPassword();
-        resetPassword.setRecoverCode(passwordEncoder.encode(recoverCode));
-        resetPassword.setUserEmail(user.getEmail());
-        resetPassword.setExpirationDate(LocalDateTime.now().plusMinutes(30));
-        resetPasswordRepository.save(resetPassword);
-    }
-
-    private ResetPassword findResetPasswordByEmail(String email) {
-        return resetPasswordRepository.findByUserEmail(email)
-                .orElseThrow(() -> new InvalidEmailNotFoundException("Invalid recover code for this email."));
-    }
-
-    private void checkExistingResetToken(String email) {
-        resetPasswordRepository.findByUserEmail(email).ifPresent(resetPassword -> {
-            if (resetPassword.getExpirationDate().isAfter(LocalDateTime.now())) {
-                throw new ResourceAlreadyExistException("A code already exists for this email.");
-            }
-        });
     }
 
     private String generateRecoverCode() {
@@ -185,16 +153,7 @@ public class AuthService {
     }
 
     private boolean validadeCredentials(String loginPassword, String userPassword) {
-        return !passwordEncoder.matches(loginPassword, userPassword);
-    }
-
-    private User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceAlreadyExistException("User not found. Check email and password or register a new user."));
-    }
-
-    private void saveUser(User user) {
-        userRepository.save(user);
+        return passwordEncoder.matches(loginPassword, userPassword);
     }
 
     private void sendEmail(String email, String htmlBody) {
@@ -214,20 +173,10 @@ public class AuthService {
     }
 
     private User createNewUserFromOAuth(OAuth2User oAuth2User) {
-        UserRequestDTO userRequestDTO = convertOAuthUserToRequestDTO(oAuth2User);
-        User newUser = convertToEntity(userRequestDTO);
-        saveUser(newUser);
+        UserRequestDTO userRequestDTO = userService.convertOAuthUserToRequestDTO(oAuth2User);
+        User newUser = userService.convertToEntity(userRequestDTO, encodePassword(""));
+        userService.saveUser(newUser);
         return newUser;
     }
 
-    private UserRequestDTO convertOAuthUserToRequestDTO(OAuth2User oAuth2User){
-        return new UserRequestDTO(
-                oAuth2User.getAttribute("name"),
-                oAuth2User.getAttribute("email"),
-                "",
-                oAuth2User.getAttribute("given_name"), // First name
-                oAuth2User.getAttribute("family_name"), // Last name
-                oAuth2User.getAttribute("picture") // Picture URL
-        );
-    }
 }

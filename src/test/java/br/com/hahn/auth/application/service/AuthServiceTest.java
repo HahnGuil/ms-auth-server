@@ -3,8 +3,6 @@ package br.com.hahn.auth.application.service;
 import br.com.hahn.auth.application.dto.request.UserRequestDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.domain.model.User;
-import br.com.hahn.auth.domain.respository.ResetPasswordRepository;
-import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
 import br.com.hahn.auth.infrastructure.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,9 +19,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class AuthServiceTest {
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -33,17 +28,19 @@ class AuthServiceTest {
     private EmailService emailService;
 
     @Autowired
-    private ResetPasswordRepository resetPasswordRepository;
+    private UserService userService;
+
+    @Autowired
+    private ResetPasswordService resetPasswordService;
 
     @Autowired
     private AuthService authService;
 
-    @Autowired
-    private UserService userService;
+
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, tokenService, emailService, resetPasswordRepository, userService);
+        authService = new AuthService(passwordEncoder, tokenService, emailService, userService, resetPasswordService);
     }
 
     @Test
@@ -55,7 +52,7 @@ class AuthServiceTest {
         assertEquals("testUser", userResponseDTO.userName());
         assertEquals("test@example.com", userResponseDTO.email());
 
-        User savedUser = userRepository.findByEmail("test@example.com").orElse(null);
+        User savedUser = userService.findByEmail("test@example.com");
         assertNotNull(savedUser);
         assertEquals("testUser", savedUser.getUsername());
         assertTrue(passwordEncoder.matches("password", savedUser.getPassword()));
