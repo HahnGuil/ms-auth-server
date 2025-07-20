@@ -52,10 +52,18 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @PostMapping("/validate-recoverToken")
+    public ResponseEntity<ResetPasswordResponseDTO> validateToken(@RequestBody PasswordOperationRequestDTO passwordOperationRequestDTO){
+        ResetPasswordResponseDTO resetPasswordResponseDTO = authService.validateRecoverCode(passwordOperationRequestDTO);
+        return ResponseEntity.status(HttpStatus.OK).body(resetPasswordResponseDTO);
+    }
+
     @PostMapping("/reset-password")
-    public ResponseEntity<ResetPasswordResponseDTO> resetPassword(@RequestBody PasswordOperationRequestDTO request) {
-        ResetPasswordResponseDTO response = authService.resetPassword(request);
+    public ResponseEntity<String> resetePassword(@RequestBody PasswordOperationRequestDTO passwordOperationRequestDTO){
+        String response = authService.resetPassword(passwordOperationRequestDTO);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
+
 
 }

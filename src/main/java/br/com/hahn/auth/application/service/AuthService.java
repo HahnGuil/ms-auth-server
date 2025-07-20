@@ -40,6 +40,11 @@ public class AuthService {
 
     public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
         User user = convertToEntity(userRequestDTO);
+
+        if(userRepository.existsByEmail(user.getEmail())){
+            throw new UserAlreadyExistException("Email already registered. Please log in or recover your password.");
+        }
+
         saveUser(user);
         return new UserResponseDTO(user.getUsername(), user.getEmail());
     }
@@ -97,13 +102,8 @@ public class AuthService {
 
     public void updatePassword(PasswordOperationRequestDTO request) {
         User user = findByEmail(request.email());
-
-        if (validadeCredentials(request.oldPassword(), user.getPassword())) {
-            throw new InvalidCredentialsException("Password is ivalid");
-        }
-
-        user.setPassword(encodePassword(request.newPassword()));
-        saveUser(user);
+        validateOldPassword(request.oldPassword(), user.getPassword());
+        updateUserPassword(user, request.newPassword());
     }
 
     public String forgotPassword(PasswordOperationRequestDTO request) {
@@ -115,21 +115,43 @@ public class AuthService {
         return "Password reset code sent to your email.";
     }
 
-    public ResetPasswordResponseDTO resetPassword(PasswordOperationRequestDTO request) {
-        ResetPassword resetPassword = findResetPasswordByEmail(request.email());
-        validateRecoverCode(resetPassword, request.recoverCode());
-        resetPasswordRepository.deleteById(resetPassword.getId());
-        User user = findByEmail(resetPassword.getUserEmail());
-        return new ResetPasswordResponseDTO(tokenService.generateToken(user));
+    public ResetPasswordResponseDTO validateRecoverCode(PasswordOperationRequestDTO requestRecoverCode) {
+        ResetPassword resetPassword = findResetPasswordByEmail(requestRecoverCode.email());
+
+        validateRecoverCodeValues(resetPassword, requestRecoverCode);
+
+        return new ResetPasswordResponseDTO(tokenService.generateRecorverToken(resetPassword));
     }
 
-    private void validateRecoverCode(ResetPassword resetPassword, String recoverCode) {
-        if (!passwordEncoder.matches(recoverCode, resetPassword.getRecoverCode())) {
-            throw new InvalidCredentialsException("Invalid recover code.");
+    public String resetPassword(PasswordOperationRequestDTO passwordOperationRequestDTO) {
+        ResetPassword resetPassword = findResetPasswordByEmail(passwordOperationRequestDTO.email());
+        User user = findByEmail(resetPassword.getUserEmail());
+
+        updateUserPassword(user, passwordOperationRequestDTO.newPassword());
+
+        return "Password reset successfully";
+    }
+
+    private void validateOldPassword(String oldPassword, String currentPassword) {
+        if (!validadeCredentials(oldPassword, currentPassword)) {
+            throw new InvalidCredentialsException("Password is invalid");
         }
-        if (resetPassword.getExpirationDate().isBefore(LocalDateTime.now())) {
-            throw new InvalidOperationExecption("Recover code has expired.");
+    }
+
+    protected void updateUserPassword(User user, String newPassword) {
+        user.setPassword(encodePassword(newPassword));
+        userRepository.save(user);
+    }
+
+    private void validateRecoverCodeValues(ResetPassword resetPassword, PasswordOperationRequestDTO requestRecoverCode){
+        if(!passwordEncoder.matches(requestRecoverCode.recoverCode(), resetPassword.getRecoverCode())){
+            throw new InvalidRecorveCodeExcpetion("Invalid recovercode");
         }
+
+        if(resetPassword.getExpirationDate().isBefore(LocalDateTime.now())){
+            throw new InvalidRecorveCodeExcpetion("Invalid recovercode");
+        }
+
     }
 
     private void saveResetPassword(User user, String recoverCode) {
@@ -142,7 +164,7 @@ public class AuthService {
 
     private ResetPassword findResetPasswordByEmail(String email) {
         return resetPasswordRepository.findByUserEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid recover code for this email."));
+                .orElseThrow(() -> new InvalidEmailNotFoundException("Invalid recover code for this email."));
     }
 
     private void checkExistingResetToken(String email) {

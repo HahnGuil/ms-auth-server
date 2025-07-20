@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -20,6 +21,7 @@ public class ApplicationScheduler {
 
 
     @Scheduled(cron = "0 */5 * * * *")
+    @Transactional
     public void cleanExpiredResetRecoverCodes(){
         logger.info("Stargin routine to delete expired Recover Code");
         int deleteCount = resetPasswordRepository.deleteByExpirationDateBefore(LocalDateTime.now());

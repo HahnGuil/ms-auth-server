@@ -33,6 +33,7 @@ public class TokenService {
                     .withSubject(resetPassword.getUserEmail())
                     .withAudience("frindlyPaw")
                     .withClaim("scope", "recoverCode")
+                    .withClaim("validate", true)
                     .sign(algorithm);
         }catch (JWTCreationException e){
             throw new IllegalStateException("Error while creating RecoverToken", e);

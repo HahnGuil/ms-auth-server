@@ -54,4 +54,10 @@ public class GlobalControllerHandler {
                 .body(Map.of(ERROR_MESSAGE, ex.getMessage()));
     }
 
+    @ExceptionHandler(UserAlreadyExistException.class)
+    public ResponseEntity<Map<String, String>> handleUserExistException(UserAlreadyExistException ex){
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(ERROR_MESSAGE, ex.getMessage()));
+    }
+
 }
