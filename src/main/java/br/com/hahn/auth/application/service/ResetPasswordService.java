@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 public class ResetPasswordService {
@@ -24,23 +23,21 @@ public class ResetPasswordService {
         return resetPasswordRepository.findByUserEmail(email).orElseThrow(() -> new ResetPasswordNotFoundException("Not found reset password for this user"));
     }
 
-    public Optional<ResetPassword> checkRecoverCodeEmail(String email){
-        return Optional.ofNullable(resetPasswordRepository.findByUserEmail(email).orElseThrow(() -> new ResetPasswordNotFoundException("No password reset request found for this user")));
+    public boolean existsByUserEmail(String email){
+        return resetPasswordRepository.existsByUserEmail(email);
     }
 
-    public ResetPassword checkExistingResetToken(String email) {
-        ResetPassword resetPassword = resetPasswordRepository.findByUserEmail(email)
-                .orElseThrow(() -> new ResetPasswordNotFoundException("No password reset request found for this user"));
+    public void deleteResetExistingPassword(String email){
+        ResetPassword resetPassword = findByEmail(email);
+        deletebyId(resetPassword.getId());
+    }
 
-        if (resetPassword.getExpirationDate().isBefore(LocalDateTime.now())) {
-            return resetPassword;
-        } else {
-            throw new RecoveryCodeExpiradeException("Recovery code is expired");
+    public void validateTokenExpiration(String recoverToken){
+        ResetPassword resetPassword = findByEmail(recoverToken);
+
+        if(resetPassword.getExpirationDate().isBefore(LocalDateTime.now())){
+            throw new RecoveryCodeExpiradeException("Recover Token is expired");
         }
-    }
-
-    public void save(ResetPassword resetPassword){
-        resetPasswordRepository.save(resetPassword);
     }
 
     @Transactional
@@ -50,6 +47,10 @@ public class ResetPasswordService {
         resetPassword.setUserEmail(user.getEmail());
         resetPassword.setExpirationDate(LocalDateTime.now().plusMinutes(30));
         resetPasswordRepository.save(resetPassword);
+    }
+
+    private void deletebyId(Long id) {
+        resetPasswordRepository.deleteById(id);
     }
 
 

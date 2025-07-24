@@ -12,6 +12,8 @@ public interface ResetPasswordRepository extends JpaRepository<ResetPassword, Lo
 
     Optional<ResetPassword> findByUserEmail(String userEmail);
 
+    boolean existsByUserEmail(String email);
+
     int deleteByExpirationDateBefore(LocalDateTime dateTime);
 
 

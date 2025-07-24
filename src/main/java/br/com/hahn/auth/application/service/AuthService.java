@@ -102,7 +102,7 @@ public class AuthService {
     }
 
     public String forgotPassword(PasswordOperationRequestDTO request) {
-        resetPasswordService.checkExistingResetToken(request.email());
+        changeResetPassword(request.email());
         User user = userService.findByEmail(request.email());
         String recoverCode = generateRecoverCode();
         resetPasswordService.createResetPassword(user, encodePassword(recoverCode));
@@ -112,6 +112,7 @@ public class AuthService {
 
     public ResetPasswordResponseDTO validateRecoverCode(PasswordOperationRequestDTO requestRecoverCode) {
         ResetPassword resetPassword = resetPasswordService.findByEmail(requestRecoverCode.email());
+        resetPasswordService.validateTokenExpiration(requestRecoverCode.recoverCode());
         validateRecoverCodeValues(resetPassword, requestRecoverCode);
         return new ResetPasswordResponseDTO(tokenService.generateRecorverToken(resetPassword));
     }
@@ -166,6 +167,12 @@ public class AuthService {
 
     private String encodePassword(String password) {
         return passwordEncoder.encode(password);
+    }
+
+    private void changeResetPassword(String email){
+        if(resetPasswordService.existsByUserEmail(email)){
+            resetPasswordService.deleteResetExistingPassword(email);
+        }
     }
 
     private String generateTokenForUser(User user) {
