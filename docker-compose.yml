@@ -15,6 +15,18 @@ services:
     networks:
       - app-network
 
+  ms-auth-server:
+    build: .
+    container_name: ms-auth-server
+    ports:
+      - "2300:2300"
+    env_file:
+      - .env
+    networks:
+      - app-network
+    depends_on:
+      - postgres-auth
+
 volumes:
   postgres-data:
 

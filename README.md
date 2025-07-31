@@ -62,7 +62,7 @@ To enable login with Gmail using OAuth2, follow these steps:
       spring.security.oauth2.client.registration.google.client-id=${GOOGLE_CLIENT_ID}
       spring.security.oauth2.client.registration.google.client-secret=${GOOGLE_CLIENT_SECRET}
       ```
-   📁 File: [`src/main/resources/application.properties`](src/main/resources/application.properties)
+   📁 File: [`src/main/resources/application.properties`](src/main/resources/application-local.properties)
 
 ---
 

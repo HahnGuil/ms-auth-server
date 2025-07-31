@@ -56,7 +56,7 @@ public class AuthService {
             throw new InvalidCredentialsException("Direct login is not allowed for users created via OAuth.");
         }
 
-        if (validadeCredentials(bodyRequest.password(), user.getPassword())) {
+        if (!validadeCredentials(bodyRequest.password(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
@@ -79,8 +79,8 @@ public class AuthService {
     }
 
     public void existsUserByEmail(String email) {
-        if(userService.existsByEmail(email)) {
-            throw new EmailAlreadyExistException("A user already exists with this email. Please use another email or try to recover your password.");
+        if (userService.existsByEmail(email)) {
+            throw new UserAlreadyExistException("Email already registered. Please log in or recover your password.");
         }
     }
 
@@ -89,7 +89,7 @@ public class AuthService {
         User user;
         try {
             user = userService.findByEmail(email);
-        } catch (ResourceAlreadyExistException _) {
+        } catch (UserNotFoundException _) {
             user = createNewUserFromOAuth(oAuth2User);
         }
         return generateTokenForUser(user);
