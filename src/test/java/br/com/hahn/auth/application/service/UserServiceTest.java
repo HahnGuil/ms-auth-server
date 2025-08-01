@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -92,10 +93,11 @@ class UserServiceTest {
         String email = "test@example.com";
         UUID id = UUID.randomUUID();
         String newPassword = "newPassword";
+        LocalDateTime fixedDateTime = LocalDateTime.of(2025, 8, 1, 0, 6, 56, 283384000); // Data fixa
 
-        userService.updatePassword(email, id, newPassword);
+        userService.updatePassword(email, id, newPassword, fixedDateTime);
 
-        verify(userRepository, times(1)).updatePasswordByEmailAndId(newPassword, email, id);
+        verify(userRepository, times(1)).updatePasswordByEmailAndId(newPassword, email, id, fixedDateTime);
     }
 
     @Test

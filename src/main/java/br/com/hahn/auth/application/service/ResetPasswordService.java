@@ -40,6 +40,10 @@ public class ResetPasswordService {
         }
     }
 
+    public int deleteByExpirationDateBefore(LocalDateTime dataTime){
+        return resetPasswordRepository.deleteByExpirationDateBefore(dataTime);
+    }
+
     @Transactional
     public void createResetPassword(User user, String recoverCode){
         ResetPassword resetPassword = new ResetPassword();

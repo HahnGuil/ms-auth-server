@@ -8,6 +8,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -33,12 +35,41 @@ public class UserService {
 
         user.setUsername(userRequestDTO.userName());
         user.setPassword(encodePassword);
+        user.setPasswordCreateDate(LocalDateTime.now());
         user.setEmail(userRequestDTO.email());
         user.setFirstName(userRequestDTO.firstName());
         user.setLastName(userRequestDTO.lastName());
         user.setPictureUrl(userRequestDTO.pictureUrl());
+        user.setBlockUser(false);
 
         return user;
+    }
+
+    public List<User> getUsersWithPasswordExpiringInDays(int daysUntilBlock) {
+        LocalDateTime dateThreshold = LocalDateTime.now().minusDays(90L - daysUntilBlock);
+        return userRepository.findUsersWithPasswordOlderThan(dateThreshold);
+    }
+
+    public void findUserToBlock() {
+        LocalDateTime referenceData = LocalDateTime.now().minusDays(90);
+        blockUsers(userRepository.findUsersWithPasswordNewerThan(referenceData));
+    }
+
+    @Transactional
+    public void saveUser(User user){
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void updatePassword(String email, UUID id, String newPassword, LocalDateTime passwordCreateDate) {
+        userRepository.updatePasswordByEmailAndId(newPassword, email, id, passwordCreateDate);
+    }
+
+    private void blockUsers(List<User> usersToBlock) {
+        for (User user : usersToBlock) {
+            user.setBlockUser(true);
+            userRepository.save(user);
+        }
     }
 
     protected UserRequestDTO convertOAuthUserToRequestDTO(OAuth2User oAuth2User){
@@ -50,16 +81,6 @@ public class UserService {
                 oAuth2User.getAttribute("family_name"), // Last name
                 oAuth2User.getAttribute("picture") // Picture URL
         );
-    }
-
-    @Transactional
-    public void saveUser(User user){
-        userRepository.save(user);
-    }
-
-    @Transactional
-    public void updatePassword(String email, UUID id, String newPassword) {
-        userRepository.updatePasswordByEmailAndId(newPassword, email, id);
     }
 
 }

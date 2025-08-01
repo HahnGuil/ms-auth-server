@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Random;
-import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -52,11 +51,15 @@ public class AuthService {
     public LoginResponseDTO userLogin(LoginRequestDTO bodyRequest) {
         User user = userService.findByEmail(bodyRequest.email());
 
+        if(user.isBlockUser()){
+            throw new UserBlockException("This user has been blocked. Use the password reset link.");
+        }
+
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             throw new InvalidCredentialsException("Direct login is not allowed for users created via OAuth.");
         }
 
-        if (!validadeCredentials(bodyRequest.password(), user.getPassword())) {
+        if (validadeCredentials(bodyRequest.password(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
@@ -98,7 +101,7 @@ public class AuthService {
     public void updatePassword(PasswordOperationRequestDTO request) {
         User user = userService.findByEmail(request.email());
         validateOldPassword(request.oldPassword(), user.getPassword());
-        updateUserPassword(user.getEmail(), user.getUserId(), request.newPassword());
+        userService.updatePassword(user.getEmail(), user.getUserId(), passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
     }
 
     public String forgotPassword(PasswordOperationRequestDTO request) {
@@ -120,7 +123,7 @@ public class AuthService {
     public String resetPassword(PasswordOperationRequestDTO passwordOperationRequestDTO) {
         ResetPassword resetPassword = resetPasswordService.findByEmail(passwordOperationRequestDTO.email());
         User user = userService.findByEmail(resetPassword.getUserEmail());
-        updateUserPassword(user.getEmail(), user.getUserId(), passwordOperationRequestDTO.newPassword());
+        userService.updatePassword(user.getEmail(), user.getUserId(), passwordOperationRequestDTO.newPassword(), LocalDateTime.now());
         return "Password reset successfully";
     }
 
@@ -129,10 +132,6 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid password.");
         }
     }
-
-   private void updateUserPassword(String email, UUID id, String newPassword){
-        userService.updatePassword(email, id, newPassword);
-   }
 
     private void validateRecoverCodeValues(ResetPassword resetPassword, PasswordOperationRequestDTO requestRecoverCode){
         if(!passwordEncoder.matches(requestRecoverCode.recoverCode(), resetPassword.getRecoverCode())){
@@ -154,7 +153,7 @@ public class AuthService {
     }
 
     private boolean validadeCredentials(String loginPassword, String userPassword) {
-        return passwordEncoder.matches(loginPassword, userPassword);
+        return !passwordEncoder.matches(loginPassword, userPassword);
     }
 
     private void sendEmail(String email, String htmlBody) {

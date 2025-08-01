@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -26,6 +27,9 @@ public class User {
     @Column(name = "password")
     private String password;
 
+    @Column(name = "password_create_date")
+    private LocalDateTime passwordCreateDate;
+
     @Column(name = "User_email", nullable = false)
     private String email;
 
@@ -37,5 +41,8 @@ public class User {
 
     @Column(name = "picture_url")
     private String pictureUrl;
+
+    @Column(name = "user_bloc")
+    private boolean blockUser;
 
 }

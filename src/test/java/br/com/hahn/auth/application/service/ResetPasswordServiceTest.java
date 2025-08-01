@@ -56,6 +56,16 @@ class ResetPasswordServiceTest {
     }
 
     @Test
+    void testExistsByUserEmail() {
+        String email = "test@example.com";
+
+        when(resetPasswordRepository.existsByUserEmail(email)).thenReturn(true);
+
+        assertTrue(resetPasswordService.existsByUserEmail(email));
+        verify(resetPasswordRepository, times(1)).existsByUserEmail(email);
+    }
+
+    @Test
     void testValidateTokenExpiration_Expired() {
         String email = "test@example.com";
         ResetPassword resetPassword = new ResetPassword();
@@ -100,5 +110,10 @@ class ResetPasswordServiceTest {
 
         verify(resetPasswordRepository, times(1)).deleteById(resetPassword.getId());
     }
-}
 
+    @Test
+    void testDeleteByExpirationDateBefore() {
+        when(resetPasswordRepository.deleteByExpirationDateBefore(any(LocalDateTime.class))).thenReturn(5);
+        assertEquals(5, resetPasswordService.deleteByExpirationDateBefore(LocalDateTime.now()));
+    }
+}
