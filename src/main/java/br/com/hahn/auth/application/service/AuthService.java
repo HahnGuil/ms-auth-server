@@ -51,7 +51,7 @@ public class AuthService {
     public LoginResponseDTO userLogin(LoginRequestDTO bodyRequest) {
         User user = userService.findByEmail(bodyRequest.email());
 
-        if(user.isBlockUser()){
+        if(Boolean.TRUE.equals(user.getBlockUser())){
             throw new UserBlockException("This user has been blocked. Use the password reset link.");
         }
 

@@ -21,7 +21,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID userId;
 
-    @Column(name = "User_name", nullable = false)
+    @Column(name = "User_name")
     private String username;
 
     @Column(name = "password")
@@ -30,19 +30,19 @@ public class User {
     @Column(name = "password_create_date")
     private LocalDateTime passwordCreateDate;
 
-    @Column(name = "User_email", nullable = false)
+    @Column(name = "User_email")
     private String email;
 
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name")
     private String firstName;
 
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name")
     private String lastName;
 
     @Column(name = "picture_url")
     private String pictureUrl;
 
     @Column(name = "user_bloc")
-    private boolean blockUser;
+    private Boolean blockUser;
 
 }
