@@ -281,6 +281,10 @@
           },
           "pictureUrl" : {
             "type" : "string"
+          },
+          "application" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         },
         "required" : [ "email", "userName" ]

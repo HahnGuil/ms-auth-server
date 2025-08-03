@@ -2,6 +2,7 @@ package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.application.dto.request.UserRequestDTO;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
+import br.com.hahn.auth.domain.model.Application;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -41,6 +43,13 @@ public class UserService {
         user.setLastName(userRequestDTO.lastName());
         user.setPictureUrl(userRequestDTO.pictureUrl());
         user.setBlockUser(false);
+
+        if (userRequestDTO.application() != null) {
+            Application application = new Application();
+            application.setNameApplication(String.valueOf(userRequestDTO.application()));
+            user.setApplications(Set.of(application));
+        }
+
 
         return user;
     }
@@ -77,9 +86,10 @@ public class UserService {
                 oAuth2User.getAttribute("name"),
                 oAuth2User.getAttribute("email"),
                 "",
-                oAuth2User.getAttribute("given_name"), // First name
-                oAuth2User.getAttribute("family_name"), // Last name
-                oAuth2User.getAttribute("picture") // Picture URL
+                oAuth2User.getAttribute("given_name"),
+                oAuth2User.getAttribute("family_name"),
+                oAuth2User.getAttribute("picture"),
+                null
         );
     }
 

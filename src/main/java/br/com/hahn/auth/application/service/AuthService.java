@@ -178,7 +178,7 @@ public class AuthService {
         return tokenService.generateToken(user);
     }
 
-    private User createNewUserFromOAuth(OAuth2User oAuth2User) {
+    public User createNewUserFromOAuth(OAuth2User oAuth2User) {
         UserRequestDTO userRequestDTO = userService.convertOAuthUserToRequestDTO(oAuth2User);
         User newUser = userService.convertToEntity(userRequestDTO, encodePassword(""));
         userService.saveUser(newUser);

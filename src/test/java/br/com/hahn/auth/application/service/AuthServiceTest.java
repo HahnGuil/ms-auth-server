@@ -45,7 +45,7 @@ class AuthServiceTest {
 
     @Test
     void testCreateUser() {
-        UserRequestDTO userRequestDTO = new UserRequestDTO("testUser", "test@example.com", "password", "Test", "User", null);
+        UserRequestDTO userRequestDTO = new UserRequestDTO("testUser", "test@example.com", "password", "Test", "User", "", null);
 
         UserResponseDTO userResponseDTO = authService.createUser(userRequestDTO);
 

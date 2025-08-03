@@ -11,7 +11,8 @@ public record UserRequestDTO(
         String password,
         String firstName,
         String lastName,
-        String pictureUrl
+        String pictureUrl,
+        Long application
 ) {
 
 }

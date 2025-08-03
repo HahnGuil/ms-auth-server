@@ -78,15 +78,11 @@ public class SecurityConfig {
             if (userRequest instanceof OidcUserRequest oidcUserRequest) {
                 // Use OidcUserService for OIDC requests
                 OidcUserService oidcUserService = new OidcUserService();
-                OAuth2User oidcUser = oidcUserService.loadUser(oidcUserRequest);
-                authService.processOAuth2User(oidcUser); // Save the user in the database
-                return oidcUser;
+                return (OAuth2User) oidcUserService.loadUser(oidcUserRequest);
             } else {
                 // Handle generic OAuth2 requests
                 DefaultOAuth2UserService defaultOAuth2UserService = new DefaultOAuth2UserService();
-                OAuth2User oAuth2User = defaultOAuth2UserService.loadUser(userRequest);
-                authService.processOAuth2User(oAuth2User); // Save the user in the database
-                return oAuth2User;
+                return defaultOAuth2UserService.loadUser(userRequest);
             }
         };
     }

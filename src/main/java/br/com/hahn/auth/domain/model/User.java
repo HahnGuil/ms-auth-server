@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -44,5 +45,13 @@ public class User {
 
     @Column(name = "user_bloc")
     private Boolean blockUser;
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_application",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "application_id")
+    )
+    private Set<Application> applications;
 
 }
