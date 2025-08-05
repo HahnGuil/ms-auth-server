@@ -1,5 +1,7 @@
 package br.com.hahn.auth.infrastructure.security;
 
+import br.com.hahn.auth.domain.enums.ScopeToken;
+import br.com.hahn.auth.domain.model.Application;
 import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
 import com.auth0.jwt.JWT;
@@ -40,15 +42,16 @@ public class TokenService {
         }
     }
 
-    public String generateToken(User user) {
+    public String generateToken(User user, ScopeToken scopeToken) {
         try {
             Algorithm algorithm = createAlgorithm();
             return JWT.create()
                     .withIssuer(ISSUER)
                     .withSubject(user.getEmail())
-                    .withAudience("frindlyPaw")
                     .withClaim("user_id", user.getUserId() != null ? user.getUserId().toString() : null)
-                    .withClaim("scope", "login_token")
+                    .withClaim("scope", scopeToken.getValue())
+                    .withClaim("applications", user.getApplications().stream()
+                            .map(Application::getNameApplication).toList())
                     .withExpiresAt(LocalDateTime.now().plusMinutes(15).toInstant(ZONE_OFFSET))
                     .sign(algorithm);
         } catch (JWTCreationException e) {

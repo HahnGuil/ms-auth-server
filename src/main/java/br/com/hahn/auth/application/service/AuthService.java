@@ -5,6 +5,7 @@ import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
 import br.com.hahn.auth.application.dto.response.ResetPasswordResponseDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.application.execption.*;
+import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.infrastructure.security.TokenService;
@@ -63,7 +64,7 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
-        return new LoginResponseDTO(user.getEmail(), tokenService.generateToken(user), tokenService.generateRefreshToken(user));
+        return new LoginResponseDTO(user.getEmail(), tokenService.generateToken(user, ScopeToken.LOGIN_TOKEN), tokenService.generateRefreshToken(user));
     }
 
     public String generateRefreshToken(String email){
@@ -78,7 +79,7 @@ public class AuthService {
 
         }
         User user = userService.findByEmail(email);
-        return tokenService.generateToken(user);
+        return tokenService.generateToken(user, ScopeToken.REFRESH_TOKEN);
     }
 
     public void existsUserByEmail(String email) {
@@ -89,13 +90,9 @@ public class AuthService {
 
     public String processOAuth2User(OAuth2User oAuth2User) {
         String email = oAuth2User.getAttribute("email");
-        User user;
-        try {
-            user = userService.findByEmail(email);
-        } catch (UserNotFoundException _) {
-            user = createNewUserFromOAuth(oAuth2User);
-        }
-        return generateTokenForUser(user);
+        return userService.existsByEmail(email)
+                ? generateTokenForUser(userService.findByEmail(email), ScopeToken.LOGIN_TOKEN)
+                : generateTokenForUser(createNewUserFromOAuth(oAuth2User), ScopeToken.REGISTER_TOKEN);
     }
 
     public void updatePassword(PasswordOperationRequestDTO request) {
@@ -174,8 +171,8 @@ public class AuthService {
         }
     }
 
-    private String generateTokenForUser(User user) {
-        return tokenService.generateToken(user);
+    private String generateTokenForUser(User user, ScopeToken scopeToken) {
+        return tokenService.generateToken(user, scopeToken);
     }
 
     public User createNewUserFromOAuth(OAuth2User oAuth2User) {
