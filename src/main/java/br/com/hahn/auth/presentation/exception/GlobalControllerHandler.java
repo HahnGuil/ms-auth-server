@@ -31,6 +31,16 @@ public class GlobalControllerHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(ERROR_MESSAGE, ex.getMessage()));
     }
 
+    @ExceptionHandler(ApplicationNotFoundException.class)
+    public ResponseEntity<Map<String, String>>handleApplicationNotFoundExecption(ApplicationNotFoundException ex){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(ERROR_MESSAGE, ex.getMessage()));
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, String>>handleUserNotFoundExecption(UserNotFoundException ex){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(ERROR_MESSAGE, ex.getMessage()));
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleInvalidCredentialsException(InvalidCredentialsException ex){
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(ERROR_MESSAGE, ex.getMessage()));

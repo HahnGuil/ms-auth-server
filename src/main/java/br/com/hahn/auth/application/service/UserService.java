@@ -2,6 +2,7 @@ package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.application.dto.request.UserRequestDTO;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
+import br.com.hahn.auth.domain.enums.UserRole;
 import br.com.hahn.auth.domain.model.Application;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.UserRepository;
@@ -18,9 +19,11 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final ApplicationService applicationService;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, ApplicationService applicationService) {
         this.userRepository = userRepository;
+        this.applicationService = applicationService;
     }
 
     public boolean existsByEmail(String email){
@@ -43,14 +46,12 @@ public class UserService {
         user.setLastName(userRequestDTO.lastName());
         user.setPictureUrl(userRequestDTO.pictureUrl());
         user.setBlockUser(false);
+        user.setRole(UserRole.USER_NORMAL);
 
         if (userRequestDTO.application() != null) {
-            Application application = new Application();
-            application.setNameApplication(String.valueOf(userRequestDTO.application()));
+            Application application = applicationService.findById(userRequestDTO.application());
             user.setApplications(Set.of(application));
         }
-
-
         return user;
     }
 
@@ -79,6 +80,11 @@ public class UserService {
             user.setBlockUser(true);
             userRepository.save(user);
         }
+    }
+
+    public User findByIdWithApplications(String email) {
+        return userRepository.findByEmailWithApplications(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
     protected UserRequestDTO convertOAuthUserToRequestDTO(OAuth2User oAuth2User){

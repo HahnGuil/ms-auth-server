@@ -1,6 +1,7 @@
 package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.application.dto.request.*;
+import br.com.hahn.auth.application.dto.response.LoginLogResponseDTO;
 import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
 import br.com.hahn.auth.application.dto.response.ResetPasswordResponseDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
@@ -27,15 +28,17 @@ public class AuthService {
     private final EmailService emailService;
     private final UserService userService;
     private final ResetPasswordService resetPasswordService;
+    private final LoginLogService loginLogService;
 
 
-    public AuthService(PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, UserService userService, ResetPasswordService resetPasswordService) {
+    public AuthService(PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, UserService userService, ResetPasswordService resetPasswordService, LoginLogService loginLogService) {
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.userService = userService;
 
         this.resetPasswordService = resetPasswordService;
+        this.loginLogService = loginLogService;
     }
 
     public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
@@ -46,11 +49,12 @@ public class AuthService {
         }
 
         userService.saveUser(user);
-        return new UserResponseDTO(user.getUsername(), user.getEmail());
+
+        return new UserResponseDTO(user.getUsername(), user.getEmail(), tokenService.generateToken(user, loginLogService.saveLoginLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now())));
     }
 
     public LoginResponseDTO userLogin(LoginRequestDTO bodyRequest) {
-        User user = userService.findByEmail(bodyRequest.email());
+        User user = userService.findByIdWithApplications(bodyRequest.email());
 
         if(Boolean.TRUE.equals(user.getBlockUser())){
             throw new UserBlockException("This user has been blocked. Use the password reset link.");
@@ -64,22 +68,19 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
-        return new LoginResponseDTO(user.getEmail(), tokenService.generateToken(user, ScopeToken.LOGIN_TOKEN), tokenService.generateRefreshToken(user));
-    }
-
-    public String generateRefreshToken(String email){
-        User user = userService.findByEmail(email);
-        return tokenService.generateRefreshToken(user);
+        return new LoginResponseDTO(user.getEmail(),
+                tokenService.generateToken(user, loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now())),
+                tokenService.generateRefreshToken(user));
     }
 
     public String refreshAccessToken(String refreshToken) {
         String email = tokenService.validateRefreshToken(refreshToken);
         if (email == null) {
             throw new InvalidRefreshTokenException("Invalid refresh token");
-
         }
-        User user = userService.findByEmail(email);
-        return tokenService.generateToken(user, ScopeToken.REFRESH_TOKEN);
+        User user = userService.findByIdWithApplications(email);
+        LoginLogResponseDTO loginLogResponseDTO = loginLogService.saveLoginLog(user, ScopeToken.REFRESH_TOKEN, LocalDateTime.now());
+        return tokenService.generateToken(user, loginLogResponseDTO);
     }
 
     public void existsUserByEmail(String email) {
@@ -90,9 +91,14 @@ public class AuthService {
 
     public String processOAuth2User(OAuth2User oAuth2User) {
         String email = oAuth2User.getAttribute("email");
-        return userService.existsByEmail(email)
-                ? generateTokenForUser(userService.findByEmail(email), ScopeToken.LOGIN_TOKEN)
-                : generateTokenForUser(createNewUserFromOAuth(oAuth2User), ScopeToken.REGISTER_TOKEN);
+        User user;
+        if(userService.existsByEmail(email)){
+            user = userService.findByIdWithApplications(email);
+            return tokenService.generateToken(user, loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now()));
+        }
+
+        user = createNewUserFromOAuth(oAuth2User);
+        return tokenService.generateToken(user, loginLogService.saveLoginLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now()));
     }
 
     public void updatePassword(PasswordOperationRequestDTO request) {
@@ -122,6 +128,11 @@ public class AuthService {
         User user = userService.findByEmail(resetPassword.getUserEmail());
         userService.updatePassword(user.getEmail(), user.getUserId(), passwordOperationRequestDTO.newPassword(), LocalDateTime.now());
         return "Password reset successfully";
+    }
+
+    public String generateRefreshToken(String email){
+        User user = userService.findByIdWithApplications(email);
+        return tokenService.generateRefreshToken(user);
     }
 
     private void validateOldPassword(String oldPassword, String currentPassword) {
@@ -169,10 +180,6 @@ public class AuthService {
         if(resetPasswordService.existsByUserEmail(email)){
             resetPasswordService.deleteResetExistingPassword(email);
         }
-    }
-
-    private String generateTokenForUser(User user, ScopeToken scopeToken) {
-        return tokenService.generateToken(user, scopeToken);
     }
 
     public User createNewUserFromOAuth(OAuth2User oAuth2User) {

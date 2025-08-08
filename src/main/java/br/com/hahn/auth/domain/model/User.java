@@ -1,5 +1,6 @@
 package br.com.hahn.auth.domain.model;
 
+import br.com.hahn.auth.domain.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -45,6 +46,13 @@ public class User {
 
     @Column(name = "user_bloc")
     private Boolean blockUser;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_role")
+    private UserRole role;
+
+    @ManyToMany(mappedBy = "users")
+    private Set<LoginLog> loginLogs;
 
     @ManyToMany
     @JoinTable(

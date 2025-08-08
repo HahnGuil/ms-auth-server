@@ -31,4 +31,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT u FROM User u WHERE u.passwordCreateDate > :dateThreshold")
     List<User> findUsersWithPasswordNewerThan(@Param("dateThreshold") LocalDateTime dateThreshold);
 
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.applications WHERE u.email = :email")
+    Optional<User> findByEmailWithApplications(@Param("email") String email);
+
+
 }

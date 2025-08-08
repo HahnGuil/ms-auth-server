@@ -1,6 +1,6 @@
 package br.com.hahn.auth.infrastructure.security;
 
-import br.com.hahn.auth.domain.enums.ScopeToken;
+import br.com.hahn.auth.application.dto.response.LoginLogResponseDTO;
 import br.com.hahn.auth.domain.model.Application;
 import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
@@ -15,6 +15,8 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class TokenService {
@@ -42,16 +44,20 @@ public class TokenService {
         }
     }
 
-    public String generateToken(User user, ScopeToken scopeToken) {
+    public String generateToken(User user, LoginLogResponseDTO loginLogResponseDTO) {
         try {
             Algorithm algorithm = createAlgorithm();
             return JWT.create()
                     .withIssuer(ISSUER)
                     .withSubject(user.getEmail())
                     .withClaim("user_id", user.getUserId() != null ? user.getUserId().toString() : null)
-                    .withClaim("scope", scopeToken.getValue())
-                    .withClaim("applications", user.getApplications().stream()
-                            .map(Application::getNameApplication).toList())
+                    .withClaim("loginLog_id", loginLogResponseDTO.loginLogID().toString())
+                    .withClaim("loginLog_date_request", loginLogResponseDTO.dateLogin().toString())
+                    .withClaim("scope", loginLogResponseDTO.scopeToken().getValue())
+                    .withClaim("applications", Optional.ofNullable(user.getApplications())
+                            .orElse(Set.of()).stream()
+                            .map(Application::getNameApplication)
+                            .toList())
                     .withExpiresAt(LocalDateTime.now().plusMinutes(15).toInstant(ZONE_OFFSET))
                     .sign(algorithm);
         } catch (JWTCreationException e) {
