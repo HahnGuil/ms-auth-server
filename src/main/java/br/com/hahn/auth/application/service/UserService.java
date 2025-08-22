@@ -1,11 +1,13 @@
 package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.application.dto.request.UserRequestDTO;
+import br.com.hahn.auth.application.execption.DataBaseServerException;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
 import br.com.hahn.auth.domain.enums.UserRole;
 import br.com.hahn.auth.domain.model.Application;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.UserRepository;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +69,12 @@ public class UserService {
 
     @Transactional
     public void saveUser(User user){
-        userRepository.save(user);
+        try {
+            userRepository.save(user);
+        }catch (DataAccessException _){
+            throw new DataBaseServerException("Can't save user on database");
+        }
+
     }
 
     @Transactional

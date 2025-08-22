@@ -137,7 +137,7 @@ public class AuthService {
 
     private void validateOldPassword(String oldPassword, String currentPassword) {
         if (validadeCredentials(oldPassword, currentPassword)) {
-            throw new InvalidCredentialsException("Invalid password.");
+            throw new InvalidCredentialsException("Invalid credencials");
         }
     }
 

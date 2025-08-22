@@ -1,13 +1,21 @@
 {
   "openapi" : "3.1.0",
   "info" : {
-    "title" : "API documentation",
-    "description" : "Automatic documentation of application endpoints",
-    "version" : "1.0"
+    "title" : "ms-auth-service",
+    "description" : "Servidor de autenticação OAuth2 para aplicações Java Springboot",
+    "contact" : {
+      "name" : "Guilherme Hahn",
+      "url" : "https://github.com/HahnGuil",
+      "email" : "guilherme.f.h@hotmail.com"
+    },
+    "version" : "1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:8080",
-    "description" : "Generated server url"
+    "url" : "hostname:2310/auth-server",
+    "description" : "Desenvolvimento"
+  }, {
+    "url" : "hostname:2300/auth-server",
+    "description" : "Ambiente - Docker"
   } ],
   "paths" : {
     "/auth/change-password" : {
@@ -37,6 +45,53 @@
                 }
               }
             }
+          },
+          "204" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "Password successfully changed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "User not found"
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Invalid Password",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "Invalid credencials"
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -57,11 +112,49 @@
         },
         "responses" : {
           "200" : {
-            "description" : "OK",
+            "description" : "recoverToken",
             "content" : {
-              "*/*" : {
+              "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ResetPasswordResponseDTO"
+                  "properties" : {
+                    "message" : {
+                      "example" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "User not found"
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Recorve code Invalid",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "Invalid recovery code."
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
                 }
               }
             }
@@ -85,11 +178,32 @@
         },
         "responses" : {
           "200" : {
-            "description" : "OK",
+            "description" : "Reset password message",
             "content" : {
-              "*/*" : {
+              "application/json" : {
                 "schema" : {
-                  "type" : "string"
+                  "properties" : {
+                    "message" : {
+                      "example" : "Password reset successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "Not found reset password for this user"
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
                 }
               }
             }
@@ -124,6 +238,68 @@
                 }
               }
             }
+          },
+          "201" : {
+            "description" : "User successfully registered",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "user" : {
+                      "properties" : {
+                        "userId" : { },
+                        "userName" : {
+                          "example" : "userName"
+                        },
+                        "email" : {
+                          "example" : "userEmail@gmail.com"
+                        },
+                        "firstName" : { },
+                        "lastName" : { },
+                        "pictureUrl" : { }
+                      }
+                    },
+                    "message" : {
+                      "example" : "User successfully registered"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "User already registered",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "Email already registered. Please log in or recover your password."
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Database server exception",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "Can't save user on database"
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -149,6 +325,52 @@
               "*/*" : {
                 "schema" : {
                   "type" : "string"
+                }
+              }
+            }
+          },
+          "204" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "example" : "mXnfgwqwj_V6gBh-PLyUiCfU0eYqSZTO8xcWTgegDx3AHWb...",
+                  "properties" : {
+                    "refresnToken" : { }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Invalid Refresh Token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "Invalid refresh token"
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "User not found"
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
                 }
               }
             }
@@ -180,6 +402,37 @@
                 }
               }
             }
+          },
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "example" : "mXnfgwqwj_V6gBh-PLyUiCfU0eYqSZTO8xcWTgegDx3AHWbh...",
+                  "properties" : {
+                    "email" : { },
+                    "token" : { },
+                    "refreshToken" : { }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Invalid credentials",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "Invalid email or password."
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -200,11 +453,32 @@
         },
         "responses" : {
           "200" : {
-            "description" : "OK",
+            "description" : "Reset password message",
             "content" : {
-              "*/*" : {
+              "application/json" : {
                 "schema" : {
-                  "type" : "string"
+                  "properties" : {
+                    "message" : {
+                      "example" : "Password reset code sent to your email."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "User not found. Check email and password or register a new user."
+                    },
+                    "timestamp" : {
+                      "format" : "date-time"
+                    }
+                  }
                 }
               }
             }
@@ -238,79 +512,107 @@
     "schemas" : {
       "PasswordOperationRequestDTO" : {
         "type" : "object",
+        "description" : "DTO for password operations such as change or recovery.",
         "properties" : {
           "email" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's email address",
+            "example" : "user@example.com"
           },
           "oldPassword" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's current password",
+            "example" : "OldP@ssw0rd!"
           },
           "newPassword" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's new password",
+            "example" : "NewP@ssw0rd!"
           },
           "recoverCode" : {
-            "type" : "string"
-          }
-        }
-      },
-      "ResetPasswordResponseDTO" : {
-        "type" : "object",
-        "properties" : {
-          "recoverToken" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "Recovery code for password reset",
+            "example" : 123456
           }
         }
       },
       "UserRequestDTO" : {
         "type" : "object",
+        "description" : "DTO for user creation or update requests.",
         "properties" : {
           "userName" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's username",
+            "example" : "john_doe"
           },
           "email" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's email address",
+            "example" : "john.doe@example.com"
           },
           "password" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's password",
+            "example" : "P@ssw0rd!"
           },
           "firstName" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's first name",
+            "example" : "John"
           },
           "lastName" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's last name",
+            "example" : "Doe"
           },
           "pictureUrl" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "URL of the user's profile picture",
+            "example" : "https://example.com/images/john.jpg"
           },
           "application" : {
             "type" : "integer",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "ID of the application associated with the user",
+            "example" : 1001
           }
         },
         "required" : [ "email", "userName" ]
       },
       "LoginRequestDTO" : {
         "type" : "object",
+        "description" : "DTO for user login request containing email and password.",
         "properties" : {
           "email" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's email address",
+            "example" : "user@example.com"
           },
           "password" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's password",
+            "example" : "P@ssw0rd!"
           }
         }
       },
       "LoginResponseDTO" : {
         "type" : "object",
+        "description" : "DTO representing the response after a successful user login.",
         "properties" : {
           "email" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "User's email address",
+            "example" : "user@example.com"
           },
           "token" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "JWT access token for authentication",
+            "example" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
           },
           "refreshToken" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "JWT refresh token for renewing authentication",
+            "example" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
           }
         }
       }
