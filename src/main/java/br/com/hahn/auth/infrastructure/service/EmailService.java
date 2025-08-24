@@ -1,6 +1,8 @@
 package br.com.hahn.auth.infrastructure.service;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -10,6 +12,8 @@ import java.util.Map;
 
 @Service
 public class EmailService {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     private final WebClient webClient;
 
@@ -26,7 +30,8 @@ public class EmailService {
     @Value("${resend.sender}")
     private String sender;
 
-    public Mono<Void> enviarEmail(String to, String subject, String corpoHtml) {
+    public Mono<Void> sendEmail(String to, String subject, String corpoHtml) {
+        logger.info("EmailService: Send email.");
         return webClient.post()
                 .uri("/emails")
                 .header("Authorization", "Bearer " + apiKey)

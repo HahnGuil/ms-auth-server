@@ -32,14 +32,14 @@ public class ApplicationScheduler {
     @Scheduled(cron = "0 */5 * * * *")
     @Transactional
     public void cleanExpiredResetRecoverCodes(){
-        logger.info("Stargin routine to delete expired Recover Code");
+        logger.info("ApllicationScheduler: Stargin routine to delete expired Recover Code");
         int deleteCount = resetPasswordService.deleteByExpirationDateBefore(LocalDateTime.now());
         logger.info("Routine completed: Records deleted: {}", deleteCount);
     }
 
     @Scheduled(cron = "0 0 0 * * *")
     public void alerteExpiredUser() {
-        logger.info("Sending notification email to users with expiring passwords");
+        logger.info("ApplicationScheduler: Sending notification email to users with expiring passwords");
 
         int[] warningDays = {20, 15, 10, 5};
         for (int days : warningDays) {
@@ -47,7 +47,7 @@ public class ApplicationScheduler {
             usersToWarn.forEach(user -> {
                 String subject = "Your password will expire soon";
                 String body = String.format("Hello %s, your password will expire in %d days. Please update it.", user.getFirstName(), days);
-                emailService.enviarEmail(user.getEmail(), subject, body).subscribe(
+                emailService.sendEmail(user.getEmail(), subject, body).subscribe(
                         success -> logger.info("Email sent to {}", user.getEmail()),
                         error -> logger.error("Failed to send email to {}: {}", user.getEmail(), error.getMessage())
                 );
@@ -59,6 +59,7 @@ public class ApplicationScheduler {
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void blockUser(){
+        logger.info("ApplicationScheduler: Start block user rotine");
         userService.findUserToBlock();
     }
 }

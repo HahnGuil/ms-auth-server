@@ -7,6 +7,8 @@ import br.com.hahn.auth.domain.enums.UserRole;
 import br.com.hahn.auth.domain.model.Application;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import java.util.UUID;
 @Service
 public class UserService {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
     private final ApplicationService applicationService;
 
@@ -29,15 +33,18 @@ public class UserService {
     }
 
     public boolean existsByEmail(String email){
+        logger.info("UserService: Exist user by email");
         return userRepository.existsByEmail(email);
     }
 
     public User findByEmail(String email){
+        logger.info("UserService: Find user by email");
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found. Check email and password or register a new user."));
     }
 
     public User convertToEntity(UserRequestDTO userRequestDTO, String encodePassword){
+        logger.info("UserService: Convert to entity");
         User user = new User();
 
         user.setUsername(userRequestDTO.userName());
@@ -58,20 +65,24 @@ public class UserService {
     }
 
     public List<User> getUsersWithPasswordExpiringInDays(int daysUntilBlock) {
+        logger.info("UserService: get users with password expiring in days");
         LocalDateTime dateThreshold = LocalDateTime.now().minusDays(90L - daysUntilBlock);
         return userRepository.findUsersWithPasswordOlderThan(dateThreshold);
     }
 
     public void findUserToBlock() {
+        logger.info("UserService: Find users to block");
         LocalDateTime referenceData = LocalDateTime.now().minusDays(90);
         blockUsers(userRepository.findUsersWithPasswordNewerThan(referenceData));
     }
 
     @Transactional
     public void saveUser(User user){
+        logger.info("UserService: save user");
         try {
             userRepository.save(user);
         }catch (DataAccessException _){
+            logger.info("UserService: Can not save on data base. Throw exception");
             throw new DataBaseServerException("Can't save user on database");
         }
 
@@ -79,10 +90,12 @@ public class UserService {
 
     @Transactional
     public void updatePassword(String email, UUID id, String newPassword, LocalDateTime passwordCreateDate) {
+        logger.info("UserService: update user password");
         userRepository.updatePasswordByEmailAndId(newPassword, email, id, passwordCreateDate);
     }
 
     private void blockUsers(List<User> usersToBlock) {
+        logger.info("UserService: block users");
         for (User user : usersToBlock) {
             user.setBlockUser(true);
             userRepository.save(user);
@@ -90,11 +103,13 @@ public class UserService {
     }
 
     public User findByIdWithApplications(String email) {
+        logger.info("UserService: find by with application");
         return userRepository.findByEmailWithApplications(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
     protected UserRequestDTO convertOAuthUserToRequestDTO(OAuth2User oAuth2User){
+        logger.info("UserService: convert OAuth to DTO");
         return new UserRequestDTO(
                 oAuth2User.getAttribute("name"),
                 oAuth2User.getAttribute("email"),
