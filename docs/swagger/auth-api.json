@@ -34,25 +34,38 @@
         },
         "responses" : {
           "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "object",
-                  "additionalProperties" : {
-                    "type" : "object"
-                  }
-                }
-              }
-            }
-          },
-          "204" : {
             "content" : {
               "application/json" : {
                 "schema" : {
                   "properties" : {
                     "message" : {
                       "example" : "Password successfully changed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Authentication failed",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "BB"
+                    },
+                    "timestamp" : {
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "Invalid credentials" : {
+                    "description" : "Credentials invalid",
+                    "value" : {
+                      "message" : "Invalid email or password.",
+                      "timestamp" : "2024-01-15T10:30:00Z"
                     }
                   }
                 }
@@ -66,27 +79,19 @@
                 "schema" : {
                   "properties" : {
                     "message" : {
-                      "example" : "User not found"
+                      "example" : "CCC"
                     },
                     "timestamp" : {
-                      "format" : "date-time"
+                      "example" : "2024-01-15T10:30:00Z"
                     }
                   }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Invalid Password",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "properties" : {
-                    "message" : {
-                      "example" : "Invalid credencials"
-                    },
-                    "timestamp" : {
-                      "format" : "date-time"
+                },
+                "examples" : {
+                  "User not found" : {
+                    "description" : "User not found",
+                    "value" : {
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
                     }
                   }
                 }
@@ -112,13 +117,44 @@
         },
         "responses" : {
           "200" : {
-            "description" : "recoverToken",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "example" : "mXnfgwqwj_V6gBh-PLyUiCfU0eYqSZTO8xcWTgegDx3AHWb...",
+                  "properties" : {
+                    "refresnToken" : { }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Authentication failed",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "properties" : {
                     "message" : {
-                      "example" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      "example" : "BF"
+                    },
+                    "timestamp" : {
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "Invalid recover token" : {
+                    "description" : "Invalid recover token",
+                    "value" : {
+                      "message" : "Recover Token is expired",
+                      "timestamp" : "2024-01-15T10:30:50Z"
+                    }
+                  },
+                  "Invalid recover code" : {
+                    "description" : "Invalid recover code",
+                    "value" : {
+                      "message" : "Invalid recover code",
+                      "timestamp" : "2024-01-15T10:30:53Z"
                     }
                   }
                 }
@@ -132,27 +168,26 @@
                 "schema" : {
                   "properties" : {
                     "message" : {
-                      "example" : "User not found"
+                      "example" : "CCC"
                     },
                     "timestamp" : {
-                      "format" : "date-time"
+                      "example" : "2024-01-15T10:30:00Z"
                     }
                   }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Recorve code Invalid",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "properties" : {
-                    "message" : {
-                      "example" : "Invalid recovery code."
-                    },
-                    "timestamp" : {
-                      "format" : "date-time"
+                },
+                "examples" : {
+                  "User not found" : {
+                    "description" : "User not found",
+                    "value" : {
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
+                    }
+                  },
+                  "Reset password request not found" : {
+                    "description" : "Reset password not found",
+                    "value" : {
+                      "message" : "Not found reset password for this user",
+                      "timestamp" : "2024-02-15T10:30:32Z"
                     }
                   }
                 }
@@ -178,7 +213,6 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Reset password message",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -198,10 +232,26 @@
                 "schema" : {
                   "properties" : {
                     "message" : {
-                      "example" : "Not found reset password for this user"
+                      "example" : "CCC"
                     },
                     "timestamp" : {
-                      "format" : "date-time"
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "User not found" : {
+                    "description" : "User not found",
+                    "value" : {
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
+                    }
+                  },
+                  "Reset password not found" : {
+                    "description" : "Reset password not found",
+                    "value" : {
+                      "message" : "Not found reset password for this user",
+                      "timestamp" : "2024-02-15T10:30:32Z"
                     }
                   }
                 }
@@ -277,7 +327,16 @@
                       "example" : "Email already registered. Please log in or recover your password."
                     },
                     "timestamp" : {
-                      "format" : "date-time"
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "alreadyRegistered" : {
+                    "description" : "User already exist",
+                    "value" : {
+                      "message" : "Email already registered. Please log in or recover your password.",
+                      "timestamp" : "2024-01-15T10:37:00Z"
                     }
                   }
                 }
@@ -294,7 +353,16 @@
                       "example" : "Can't save user on database"
                     },
                     "timestamp" : {
-                      "format" : "date-time"
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "dbError" : {
+                    "description" : "Error saving user to database",
+                    "value" : {
+                      "message" : "Can't save user on database",
+                      "timestamp" : "2024-01-15T10:31:00Z"
                     }
                   }
                 }
@@ -342,16 +410,25 @@
             }
           },
           "401" : {
-            "description" : "Invalid Refresh Token",
+            "description" : "Authentication failed",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "properties" : {
                     "message" : {
-                      "example" : "Invalid refresh token"
+                      "example" : "BBBB"
                     },
                     "timestamp" : {
-                      "format" : "date-time"
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "Invalid refresh token" : {
+                    "description" : "Refresh token is invalid",
+                    "value" : {
+                      "message" : "Invalid refresh token",
+                      "timestamp" : "2024-01-15T10:30:00Z"
                     }
                   }
                 }
@@ -365,10 +442,19 @@
                 "schema" : {
                   "properties" : {
                     "message" : {
-                      "example" : "User not found"
+                      "example" : "AAA"
                     },
                     "timestamp" : {
-                      "format" : "date-time"
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "User not found" : {
+                    "description" : "User not found for application",
+                    "value" : {
+                      "message" : "User not found for this application",
+                      "timestamp" : "2024-01-15T10:30:02Z"
                     }
                   }
                 }
@@ -404,6 +490,7 @@
             }
           },
           "201" : {
+            "description" : "Login successful",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -418,16 +505,72 @@
             }
           },
           "401" : {
-            "description" : "Invalid credentials",
+            "description" : "Authentication failed",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "properties" : {
                     "message" : {
-                      "example" : "Invalid email or password."
+                      "example" : "Error message"
                     },
                     "timestamp" : {
-                      "format" : "date-time"
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "blocked" : {
+                    "description" : "User blocked, password reset required",
+                    "value" : {
+                      "message" : "This user has been blocked. Use the password reset link.",
+                      "timestamp" : "2024-01-15T10:40:00Z"
+                    }
+                  },
+                  "oauth" : {
+                    "description" : "Direct login for OAuth user is not allowed.",
+                    "value" : {
+                      "message" : "Direct login is not allowed for users created with OAuth.",
+                      "timestamp" : "2024-01-15T10:31:00Z"
+                    }
+                  },
+                  "invalidCredentials" : {
+                    "description" : "Credentials invalid",
+                    "value" : {
+                      "message" : "Invalid email or password.",
+                      "timestamp" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "CCC"
+                    },
+                    "timestamp" : {
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "User not Found" : {
+                    "description" : "User not found",
+                    "value" : {
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
+                    }
+                  },
+                  "User not Found for this application" : {
+                    "description" : "User not found",
+                    "value" : {
+                      "message" : "User not found for this application",
+                      "timestamp" : "2024-01-15T10:30:02Z"
                     }
                   }
                 }
@@ -453,13 +596,38 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Reset password message",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "properties" : {
                     "message" : {
-                      "example" : "Password reset code sent to your email."
+                      "example" : "Reset code send to email"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Authentication failed",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "properties" : {
+                    "message" : {
+                      "example" : "BB"
+                    },
+                    "timestamp" : {
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "Invalid Credentials" : {
+                    "description" : "Credentials invalid",
+                    "value" : {
+                      "message" : "Invalid email or password.",
+                      "timestamp" : "2024-01-15T10:30:00Z"
                     }
                   }
                 }
@@ -473,10 +641,19 @@
                 "schema" : {
                   "properties" : {
                     "message" : {
-                      "example" : "User not found. Check email and password or register a new user."
+                      "example" : "CCC"
                     },
                     "timestamp" : {
-                      "format" : "date-time"
+                      "example" : "2024-01-15T10:30:00Z"
+                    }
+                  }
+                },
+                "examples" : {
+                  "User not found" : {
+                    "description" : "User not found",
+                    "value" : {
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
                     }
                   }
                 }
