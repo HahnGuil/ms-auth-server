@@ -1,5 +1,6 @@
 package br.com.hahn.auth.domain.model;
 
+import br.com.hahn.auth.domain.enums.TypeUser;
 import br.com.hahn.auth.domain.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -46,6 +47,9 @@ public class User {
 
     @Column(name = "user_bloc")
     private Boolean blockUser;
+
+    @Column(name = "typeUser")
+    private TypeUser typeUser;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "user_role")

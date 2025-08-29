@@ -3,6 +3,7 @@ package br.com.hahn.auth.application.service;
 import br.com.hahn.auth.application.dto.request.UserRequestDTO;
 import br.com.hahn.auth.application.execption.DataBaseServerException;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
+import br.com.hahn.auth.domain.enums.TypeUser;
 import br.com.hahn.auth.domain.enums.UserRole;
 import br.com.hahn.auth.domain.model.Application;
 import br.com.hahn.auth.domain.model.User;
@@ -54,8 +55,7 @@ public class UserService {
         user.setFirstName(userRequestDTO.firstName());
         user.setLastName(userRequestDTO.lastName());
         user.setPictureUrl(userRequestDTO.pictureUrl());
-        user.setBlockUser(false);
-        user.setRole(UserRole.USER_NORMAL);
+        user.setRole(UserRole.valueOf(userRequestDTO.typeUser()));
 
         if (userRequestDTO.application() != null) {
             Application application = applicationService.findById(userRequestDTO.application());
@@ -105,7 +105,7 @@ public class UserService {
     public User findByIdWithApplications(String email) {
         logger.info("UserService: find by with application");
         return userRepository.findByEmailWithApplications(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found for this application"));
     }
 
     protected UserRequestDTO convertOAuthUserToRequestDTO(OAuth2User oAuth2User){
@@ -117,7 +117,8 @@ public class UserService {
                 oAuth2User.getAttribute("given_name"),
                 oAuth2User.getAttribute("family_name"),
                 oAuth2User.getAttribute("picture"),
-                null
+                null,
+                TypeUser.OAUTH_USER.toString()
         );
     }
 

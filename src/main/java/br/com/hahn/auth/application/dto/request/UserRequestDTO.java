@@ -26,7 +26,10 @@ public record UserRequestDTO(
         @Schema(description = "URL of the user's profile picture", example = "https://example.com/images/john.jpg")
         String pictureUrl,
 
-        @Schema(description = "ID of the application associated with the user", example = "1001")
-        Long application
+        @Schema(description = "ID of the application associated with the user", example = "1")
+        Long application,
+
+        @Schema(description = "Flag to signal when the user is Oauth", example = "true")
+        String typeUser
 ) {
 }
