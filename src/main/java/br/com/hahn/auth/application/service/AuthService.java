@@ -40,7 +40,6 @@ public class AuthService {
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.userService = userService;
-
         this.resetPasswordService = resetPasswordService;
         this.loginLogService = loginLogService;
     }
@@ -60,7 +59,7 @@ public class AuthService {
 
     public LoginResponseDTO userLogin(LoginRequestDTO bodyRequest) {
         logger.info("AuthService: Login user");
-        User user = userService.findByIdWithApplications(bodyRequest.email());
+        User user = userService.findByEmail(bodyRequest.email());
 
         if(Boolean.TRUE.equals(user.getBlockUser())){
             logger.info("AuthService: User blocl, throw exception");
@@ -77,6 +76,7 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
+
         logger.info("AuthService: Login success");
         return new LoginResponseDTO(user.getEmail(),
                 tokenService.generateToken(user, loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now())),
@@ -90,7 +90,7 @@ public class AuthService {
             logger.info("AuthService: email is null, throw exception");
             throw new InvalidRefreshTokenException("Invalid refresh token");
         }
-        User user = userService.findByIdWithApplications(email);
+        User user = userService.findByEmail(email);
         LoginLogResponseDTO loginLogResponseDTO = loginLogService.saveLoginLog(user, ScopeToken.REFRESH_TOKEN, LocalDateTime.now());
         logger.info("AuthService: return refresh access token");
         return tokenService.generateToken(user, loginLogResponseDTO);
@@ -155,7 +155,7 @@ public class AuthService {
 
     public String generateRefreshToken(String email){
         logger.info("AuthService: Generate Refresh token");
-        User user = userService.findByIdWithApplications(email);
+        User user = userService.findByEmail(email);
         return tokenService.generateRefreshToken(user);
     }
 
