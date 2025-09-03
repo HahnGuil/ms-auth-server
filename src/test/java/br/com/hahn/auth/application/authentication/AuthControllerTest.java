@@ -22,7 +22,7 @@ class AuthControllerTest {
 
     @Test
     void testRegister() {
-        UserRequestDTO userRequestDTO = new UserRequestDTO("testUser", "test@example.com", "password", "Test", "User", "", null);
+        UserRequestDTO userRequestDTO = new UserRequestDTO("testUser", "test@example.com", "password", "Test", "User", "", null, null);
         UserResponseDTO userResponseDTO = new UserResponseDTO("testUser", "test@example.com", "token");
 
         when(authService.createUser(userRequestDTO)).thenReturn(userResponseDTO);

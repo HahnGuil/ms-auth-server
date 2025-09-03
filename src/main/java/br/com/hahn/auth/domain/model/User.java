@@ -55,6 +55,7 @@ public class User {
     @Column(name = "user_role")
     private UserRole role;
 
+
     @ManyToMany(mappedBy = "users")
     private Set<LoginLog> loginLogs;
 

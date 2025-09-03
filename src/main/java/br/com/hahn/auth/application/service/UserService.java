@@ -55,7 +55,8 @@ public class UserService {
         user.setFirstName(userRequestDTO.firstName());
         user.setLastName(userRequestDTO.lastName());
         user.setPictureUrl(userRequestDTO.pictureUrl());
-        user.setRole(UserRole.valueOf(userRequestDTO.typeUser()));
+        user.setRole(UserRole.USER_NORMAL);
+        user.setTypeUser(TypeUser.valueOf(userRequestDTO.typeUser()));
 
         if (userRequestDTO.application() != null) {
             Application application = applicationService.findById(userRequestDTO.application());

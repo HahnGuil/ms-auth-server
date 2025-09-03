@@ -68,7 +68,7 @@ class UserServiceTest {
 
     @Test
     void testConvertToEntity() {
-        UserRequestDTO dto = new UserRequestDTO("testUser", "test@example.com", "password", "Test", "User", "url", null);
+        UserRequestDTO dto = new UserRequestDTO("testUser", "test@example.com", "password", "Test", "User", "url", null, null);
 
         User user = userService.convertToEntity(dto, "encodedPassword");
 

@@ -54,6 +54,7 @@ public class TokenService {
                     .withClaim("loginLog_id", loginLogResponseDTO.loginLogID().toString())
                     .withClaim("loginLog_date_request", loginLogResponseDTO.dateLogin().toString())
                     .withClaim("scope", loginLogResponseDTO.scopeToken().getValue())
+                    .withClaim("type_user", user.getTypeUser().toString())
                     .withClaim("applications", Optional.ofNullable(user.getApplications())
                             .orElse(Set.of()).stream()
                             .map(Application::getNameApplication)
