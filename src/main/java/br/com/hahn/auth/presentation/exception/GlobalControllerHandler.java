@@ -80,4 +80,10 @@ public class GlobalControllerHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
+    @ExceptionHandler(UserNotOAuthException.class)
+    public ResponseEntity<ErrorResponseDTO> handleUserNotOAuthException(UserNotOAuthException ex){
+        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(error);
+    }
+
 }
