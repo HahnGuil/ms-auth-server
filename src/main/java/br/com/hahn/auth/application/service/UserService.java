@@ -109,16 +109,6 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException("User not found for this application"));
     }
 
-    public User findById(UUID userId){
-        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("Not found user for this id"));
-    }
-
-    public void addApplicationToUser(String userId, Application application){
-        UUID user_id = UUID.fromString(userId);
-        User user = findById(user_id);
-        user.getApplications().add(application);
-        saveUser(user);
-    }
 
     protected UserRequestDTO convertOAuthUserToRequestDTO(OAuth2User oAuth2User){
         logger.info("UserService: convert OAuth to DTO");
