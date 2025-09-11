@@ -101,18 +101,6 @@
         }
       }
     },
-    "/application/{applicationId}/{userID}" : {
-      "put" : {
-        "tags" : [ "application-controller" ],
-        "operationId" : "bindApplicationToOAuthUser",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        }
-      }
-    },
     "/auth/validate-recoverToken" : {
       "post" : {
         "tags" : [ "auth-controller" ],
