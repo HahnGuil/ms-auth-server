@@ -105,8 +105,12 @@ public class UserService {
         log.info("UserService: Set Application to User");
         User user = findById(userId);
         Application application = applicationService.findById(applicationId);
-        user.getApplications().add(application);
-        userRepository.save(user);
+
+        if(isApplicationAlreadySetForUser(user, application)){
+            log.info("UserService: Application not yet registered to the user. Adding the application to the user {}", application);
+            user.getApplications().add(application);
+            userRepository.save(user);
+        }
     }
 
     protected UserRequestDTO convertOAuthUserToRequestDTO(OAuth2User oAuth2User){
@@ -121,6 +125,11 @@ public class UserService {
                 null,
                 TypeUser.OAUTH_USER.toString()
         );
+    }
+
+    private boolean isApplicationAlreadySetForUser(User user, Application application){
+        log.info("UserService: Validade if user aleady register for this application {}", application);
+        return !user.getApplications().contains(application);
     }
 
     private User findById(UUID userId){
