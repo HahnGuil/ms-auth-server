@@ -1,7 +1,5 @@
 # 🔐 Auth-server
 
-Bem-vindo ao **auth-server**!  
-Este projeto está em desenvolvimento 🏗️ — novas funcionalidades serão implementadas e aprimoradas com o tempo.
 
 O **auth-server** é um servidor de autenticação responsável pelo **registro** e **login** de usuários, projetado para ser consumido por outros serviços.  
 Esses serviços consumidores aplicarão uma camada adicional de autorização (por exemplo, controle de papéis), enquanto dependem deste servidor para validação das credenciais.
@@ -12,7 +10,17 @@ Centralizando a autenticação, os serviços não precisam lidar com geração d
 
 ## 🛠️ Tecnologias
 
-- **Back-end:** Java 24 ☕ + Spring Boot 3.5 🌱
+![Java](https://img.shields.io/badge/Java-ED8B00?style=flat&logo=java&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat&logo=spring-boot&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![Kafka](https://img.shields.io/badge/Kafka-231F20?style=flat&logo=apache-kafka&logoColor=white)
+![JUnit](https://img.shields.io/badge/JUnit-25A162?style=flat&logo=junit5&logoColor=white)
+
+- **Java + Spring Boot** — Backend principal, com suporte a agendamento de tarefas, controle de sessões e endpoints REST.
+- **Apache Kafka** — Mensageria para processamento assíncrono e desacoplamento das operações de voto.
+- **Docker/Docker Compose** — Orquestração dos ambientes de desenvolvimento e produção, facilitando a execução dos serviços.
+- **Postman** — Collections para teste dos endpoints e documentação do fluxo das APIs.
+- **JUnit** — Framework de testes unitários para Java, utilizado nos testes dos serviços.
 
 ---
 
