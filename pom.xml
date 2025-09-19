@@ -10,7 +10,7 @@
     </parent>
     <groupId>br.com.hahn</groupId>
     <artifactId>ms-auth-server</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.0</version>
     <name>ms-auth-server</name>
     <description>ms-auth-server</description>
     <properties>
