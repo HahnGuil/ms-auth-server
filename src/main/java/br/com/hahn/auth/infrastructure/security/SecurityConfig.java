@@ -1,5 +1,6 @@
 package br.com.hahn.auth.infrastructure.security;
 
+import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
 import br.com.hahn.auth.application.service.AuthService;
 import br.com.hahn.auth.infrastructure.exception.CustomAccessDeniedHandler;
 import br.com.hahn.auth.infrastructure.exception.CustomAuthenticationEntryPointHandler;
@@ -103,14 +104,10 @@ public class SecurityConfig {
             OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
             OAuth2User oAuth2User = token.getPrincipal();
 
-            String jwtToken = authService.processOAuth2User(oAuth2User);
+            LoginResponseDTO loginResponse = authService.processOAuth2User(oAuth2User);
 
-            String email = oAuth2User.getAttribute("email");
-            String refresnToken = authService.generateRefreshToken(email);
-
-            // Return the token in the response
             response.setContentType("application/json");
-            response.getWriter().write("{\"token\": \"" + jwtToken + "\", \"refreshToken\": \"" + refresnToken + "\"}");
+            response.getWriter().write("{\"token\": \"" + loginResponse.token() + "\", \"refreshToken\": \"" + loginResponse.refreshToken() + "\"}");
         };
     }
 }

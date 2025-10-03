@@ -39,7 +39,7 @@ public class UserService {
 
     public User findByEmail(String email){
         log.info("UserService: Find user by email");
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmailWithApplications(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found. Check email and password or register a new user."));
     }
 

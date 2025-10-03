@@ -1,7 +1,6 @@
 package br.com.hahn.auth.infrastructure.security;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
+import br.com.hahn.auth.application.execption.InvalidCredentialsException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,21 +29,18 @@ public class SecurityFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         var token = this.recoverToken(request);
-        if (token != null) {
-            DecodedJWT decodedJWT = JWT.decode(token);
-            String userId = decodedJWT.getClaim("user_id").asString();
-            String email = decodedJWT.getSubject();
-
-            String validatedEmail = tokenService.validateToken(token, userId, email);
-            if (validatedEmail != null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(validatedEmail);
-
+        try {
+            if (token != null) {
+                String email = tokenService.validateToken(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+            filterChain.doFilter(request, response);
+        } catch (InvalidCredentialsException e) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
         }
-        filterChain.doFilter(request, response);
     }
 
     private String recoverToken(HttpServletRequest request){
