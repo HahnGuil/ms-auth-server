@@ -15,6 +15,5 @@ public record LoginLogResponseDTO(
         ScopeToken scopeToken,
 
         @Schema(description = "Date and time of the login event", example = "2024-06-01T12:34:56")
-        LocalDateTime dateLogin
-) {
+        LocalDateTime dateLogin) {
 }

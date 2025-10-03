@@ -30,6 +30,9 @@ public class LoginLog {
     @Column(name = "date_login")
     private LocalDateTime dateLogin;
 
+    @Column(name = "active_token")
+    private boolean activeToken;
+
     @ManyToMany
     @JoinTable(
             name = "token_log_user",
