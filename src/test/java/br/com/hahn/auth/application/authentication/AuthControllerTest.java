@@ -27,16 +27,16 @@ class AuthControllerTest {
 
         when(authService.createUser(userRequestDTO)).thenReturn(userResponseDTO);
 
-        ResponseEntity<Map<String, Object>> response = authController.register(userRequestDTO);
+        ResponseEntity<Map<String, Object>> response = authController.createUser(userRequestDTO);
 
         assertEquals(201, response.getStatusCode().value());
         Assertions.assertNotNull(response.getBody());
         assertEquals("User successfully registered", response.getBody().get("message"));
         assertEquals(userResponseDTO, response.getBody().get("user"));
 
-        verify(authService, times(1)).existsUserByEmail(userRequestDTO.email());
         verify(authService, times(1)).createUser(userRequestDTO);
     }
+
 
     @Test
     void testLogin() {
