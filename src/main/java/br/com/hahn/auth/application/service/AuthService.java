@@ -13,6 +13,7 @@ import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.infrastructure.security.TokenService;
 import br.com.hahn.auth.infrastructure.service.EmailService;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -20,9 +21,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 @Slf4j
+@AllArgsConstructor
 public class AuthService {
 
     private final Random random = new Random();
@@ -34,15 +37,6 @@ public class AuthService {
     private final ResetPasswordService resetPasswordService;
     private final LoginLogService loginLogService;
 
-
-    public AuthService(PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, UserService userService, ResetPasswordService resetPasswordService, LoginLogService loginLogService) {
-        this.passwordEncoder = passwordEncoder;
-        this.tokenService = tokenService;
-        this.emailService = emailService;
-        this.userService = userService;
-        this.resetPasswordService = resetPasswordService;
-        this.loginLogService = loginLogService;
-    }
 
     public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
         log.info("AuthService: Create user");
@@ -88,7 +82,9 @@ public class AuthService {
         log.info("AuthService: Validate Refresh Token and get email from user");
         User user = userService.findByEmail(tokenService.validateToken(token));
 
-        // TODO - IMPLEMENTAR VALIDAÇÃO PARA NÃO RENOVAR QUANDO O TOKEN TEM O ACTIVE = FALSE
+        log.info("AuthService: Check if token already use");
+        this.checkTokenActive(tokenService.extracLoginLogId(token));
+
         loginLogService.invalidateToken(user.getUserId());
 
         log.info("AuthService: return renewed access token");
@@ -100,14 +96,6 @@ public class AuthService {
     }
 
 
-    // TODO - REMOVER VALIDAÇÃO DO EMAIL DAQUI E LEVAR PARA O REGISTER
-    public void existsUserByEmail(String email) {
-        log.info("AuthService: Call UserService to check if the exists user by the email");
-        if (userService.existsByEmail(email)) {
-            log.info("AuthService: email not exist, throw excpetion");
-            throw new UserAlreadyExistException("Email already registered. Please log in or recover your password.");
-        }
-    }
 
     public LoginResponseDTO processOAuth2User(OAuth2User oAuth2User) {
         log.info("AuthService: Process OAuth User");
@@ -133,18 +121,23 @@ public class AuthService {
     public void updatePassword(PasswordOperationRequestDTO request) {
         log.info("AuthService: Update password");
         User user = userService.findByEmail(request.email());
+
         validateOldPassword(request.oldPassword(), user.getPassword());
+
         userService.updatePassword(user.getEmail(), user.getUserId(), passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
     }
 
     public String forgotPassword(PasswordOperationRequestDTO request) {
         log.info("AuthService: Forgot password");
         changeResetPassword(request.email());
+
         User user = userService.findByEmail(request.email());
         String recoverCode = generateRecoverCode();
+
         resetPasswordService.createResetPassword(user, encodePassword(recoverCode));
         sendEmail(user.getEmail(), buildResetEmailBody(user.getUsername(), recoverCode));
         log.info("AuthService: send reset code to email");
+
         return "Password reset code sent to your email.";
     }
 
@@ -162,6 +155,13 @@ public class AuthService {
         User user = userService.findByEmail(resetPassword.getUserEmail());
         userService.updatePassword(user.getEmail(), user.getUserId(), passwordOperationRequestDTO.newPassword(), LocalDateTime.now());
         return "Password reset successfully";
+    }
+
+    public User createNewUserFromOAuth(OAuth2User oAuth2User) {
+        UserRequestDTO userRequestDTO = userService.convertOAuthUserToRequestDTO(oAuth2User);
+        User newUser = userService.convertToEntity(userRequestDTO, encodePassword(""));
+        userService.saveUser(newUser);
+        return newUser;
     }
 
     private void validateOldPassword(String oldPassword, String currentPassword) {
@@ -186,7 +186,7 @@ public class AuthService {
     }
 
     private String generateRecoverCode() {
-        int code = random.nextInt(900000) + 100000; // Gera um número entre 100000 e 999999
+        int code = random.nextInt(900000) + 100000;
         return String.valueOf(code);
     }
 
@@ -217,11 +217,9 @@ public class AuthService {
         }
     }
 
-    public User createNewUserFromOAuth(OAuth2User oAuth2User) {
-        UserRequestDTO userRequestDTO = userService.convertOAuthUserToRequestDTO(oAuth2User);
-        User newUser = userService.convertToEntity(userRequestDTO, encodePassword(""));
-        userService.saveUser(newUser);
-        return newUser;
+    private void checkTokenActive (UUID loginLogId){
+        if(!loginLogService.isTokenValid(loginLogId)){
+            throw new InvalidCredentialsException("Token expired, need to log in again");
+        }
     }
-
 }
