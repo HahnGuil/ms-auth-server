@@ -14,6 +14,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.RSAKeyProvider;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.security.interfaces.RSAPrivateKey;
@@ -26,6 +27,7 @@ import java.util.UUID;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class TokenService {
 
     private static final String ISSUER = "AuthenticationService";
@@ -86,7 +88,6 @@ public class TokenService {
         }
     }
 
-
     public String validateToken(String token) {
         try {
             DecodedJWT decodedJWT = decodeAndVerifyToken(token);
@@ -96,6 +97,15 @@ public class TokenService {
             throw new InvalidCredentialsException("Invalid Token, please login");
         }
     }
+
+    public UUID extracLoginLogId(String token){
+        DecodedJWT decodedJWT = decodeAndVerifyToken(token);
+        String loginLogId = decodedJWT.getClaim("loginLog_id").asString();
+
+        log.info("TokenServie: id do login extraido antes do retorno {}", loginLogId );
+        return UUID.fromString(loginLogId);
+    }
+
 
     private DecodedJWT decodeAndVerifyToken(String token) {
         Algorithm algorithm = createAlgorithm();

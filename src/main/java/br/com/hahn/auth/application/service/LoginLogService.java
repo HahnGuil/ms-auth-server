@@ -34,6 +34,10 @@ public class LoginLogService {
         return loginLogRepository.findById(loginLogId).orElseThrow(() -> new InvalidRefreshTokenException("Invalid login session"));
     }
 
+    public boolean isTokenValid (UUID loginLogId){
+        return loginLogRepository.findActiveTokenByLoginLogId(loginLogId);
+    }
+
     // TODO - Criar rotina de eventos para salvar tokens falses em outra tabela
     @Transactional
     public void invalidateToken(UUID userId){
@@ -45,7 +49,6 @@ public class LoginLogService {
         return loginLogRepository.existsById(loginLogId);
     }
 
-    // TODO - Validar porque não esta salvando os códigos certos na tabela para o Scope Token
     private LoginLog convertToEntity(User user, ScopeToken scopeToken, LocalDateTime dateLogin) {
         log.info("LoginLogService: Convert login log to entity");
         LoginLog loginLog = new LoginLog();
