@@ -41,10 +41,11 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<String> refreshToken(@RequestBody String refreshToken) {
+    public ResponseEntity<LoginResponseDTO> refreshToken(@RequestHeader("Authorization") String authorizationHeader) {
         logger.info("AuthController: Refresh Token Request");
-        String newAccessToken = authService.refreshAccessToken(refreshToken);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(newAccessToken);
+        String token = authorizationHeader.replace("Bearer ", "");
+        LoginResponseDTO renewedToken = authService.refreshAccessToken(token);
+        return ResponseEntity.status(HttpStatus.OK).body(renewedToken);
     }
 
     @PutMapping("/change-password")
