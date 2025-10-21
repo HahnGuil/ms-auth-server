@@ -8,6 +8,7 @@ import br.com.hahn.auth.application.dto.response.ResetPasswordResponseDTO;
 import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.application.execption.*;
 import br.com.hahn.auth.domain.enums.ScopeToken;
+import br.com.hahn.auth.domain.enums.TypeInvalidation;
 import br.com.hahn.auth.domain.model.LoginLog;
 import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
@@ -80,21 +81,20 @@ public class AuthService {
 
     public LoginResponseDTO refreshAccessToken(String token) {
         log.info("AuthService: Validate Refresh Token and get email from user");
-        User user = userService.findByEmail(tokenService.validateToken(token));
+        var user = userService.findByEmail(tokenService.validateToken(token));
 
         log.info("AuthService: Check if token already use");
         this.checkTokenActive(tokenService.extracLoginLogId(token));
 
-        loginLogService.invalidateToken(user.getUserId());
+        loginLogService.deactivateActiveToken(user.getUserId(), TypeInvalidation.USER_REFRESH);
 
         log.info("AuthService: return renewed access token");
-        LoginLog loginLog = loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
+        var loginLog = loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
 
         return new LoginResponseDTO(user.getEmail(),
                 tokenService.generateToken(user, loginLog),
                 tokenService.generateRefreshToken(user, loginLog));
     }
-
 
 
     public LoginResponseDTO processOAuth2User(OAuth2User oAuth2User) {

@@ -1,7 +1,5 @@
 package br.com.hahn.auth.domain.model;
 
-
-import br.com.hahn.auth.domain.enums.ScopeToken;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,31 +10,29 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "token_log")
+@Table(name = "logged_npw")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-public class LoginLog {
+@AllArgsConstructor
+public class LoggedNow {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID idLoginLog;
-
-    @Column(name = "scope_token")
-    private ScopeToken scopeToken;
-
-    @Column(name = "date_login")
-    private LocalDateTime dateLogin;
-
-    @Column(name = "active_token")
-    private boolean activeToken;
+    private UUID id;
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "login_log_id", nullable = false)
+    private UUID loginLogId;
 
+    @Column(name = "date_login")
+    private LocalDateTime dateLogin;
 
+    @Column(name = "is_use_refresh")
+    private boolean isUseRefresh;
 
-
+    @Column(name = "date_refresh")
+    private LocalDateTime dateRefresh;
 }
