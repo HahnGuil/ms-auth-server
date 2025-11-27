@@ -143,3 +143,19 @@ To enable Resend, follow these steps:
 - 📦 Email Service Layer: `src/main/java/.../service/EmailService.java`
 - ⚙️ Properties: `src/main/resources/application.properties`
 
+## Como executar com Docker
+
+1. Copie o arquivo `.env.example` para `.env`:
+   ```bash
+   cp .env.example .env
+
+2. Execute: 
+   ```bash 
+   docker-compose up --build
+
+**Pontos importantes:**
+- O `docker-compose.yml` já injeta as variáveis do `.env` no container via `env_file`
+- O profile `docker` usa `postgres-auth:5432` e `kafka:9092` (nomes dos serviços)
+- Qualquer pessoa que clonar o repo só precisa copiar `.env.example` para `.env` e configurar
+
+

@@ -55,9 +55,9 @@ public class User {
     @Column(name = "user_role")
     private UserRole role;
 
-
-    @ManyToMany(mappedBy = "users")
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private Set<LoginLog> loginLogs;
+
 
     @ManyToMany
     @JoinTable(
