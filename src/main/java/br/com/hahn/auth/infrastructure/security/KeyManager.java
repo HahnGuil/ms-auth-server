@@ -1,5 +1,6 @@
 package br.com.hahn.auth.infrastructure.security;
 
+import br.com.hahn.auth.application.dto.JwkKey;
 import br.com.hahn.auth.application.execption.KeyRotationException;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -8,9 +9,8 @@ import org.springframework.stereotype.Service;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
-import java.util.Base64;
-import java.util.Map;
-import java.util.UUID;
+import java.security.interfaces.RSAPublicKey;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,5 +47,29 @@ public class KeyManager {
         PublicKey publicKey = publicKeys.get(keyId);
         if (publicKey == null) return null;
         return Base64.getEncoder().encodeToString(publicKey.getEncoded());
+    }
+
+    public List<JwkKey> getJwkKeys() {
+        List<JwkKey> jwkKeys = new ArrayList<>();
+
+        publicKeys.forEach((keyId, publicKey) -> {
+            if (publicKey instanceof RSAPublicKey rsaPublicKey) {
+                String modulus = Base64.getUrlEncoder().withoutPadding()
+                        .encodeToString(rsaPublicKey.getModulus().toByteArray());
+                String exponent = Base64.getUrlEncoder().withoutPadding()
+                        .encodeToString(rsaPublicKey.getPublicExponent().toByteArray());
+
+                jwkKeys.add(JwkKey.builder()
+                        .keyType("RSA")
+                        .keyId(keyId)
+                        .use("sig")
+                        .algorithm("RS256")
+                        .modulus(modulus)
+                        .exponent(exponent)
+                        .build());
+            }
+        });
+
+        return jwkKeys;
     }
 }

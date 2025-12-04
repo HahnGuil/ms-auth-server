@@ -70,7 +70,7 @@ public class LoginLogService {
     }
 
     private LoginLog findLoginLogByUserId(UUID userId){
-        return loginLogRepository.findLoginLogByUserId(userId);
+        return loginLogRepository.findTopByUserIdOrderByDateLoginDesc(userId);
     }
 
     private LoginLog convertToEntity(User user, ScopeToken scopeToken, LocalDateTime dateLogin) {

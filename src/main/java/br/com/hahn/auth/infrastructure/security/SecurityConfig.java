@@ -107,7 +107,8 @@ public class SecurityConfig {
             LoginResponseDTO loginResponse = authService.processOAuth2User(oAuth2User);
 
             response.setContentType("application/json");
-            response.getWriter().write("{\"token\": \"" + loginResponse.token() + "\", \"refreshToken\": \"" + loginResponse.refreshToken() + "\"}");
+            response.getWriter().write("{\"name\": \"" + loginResponse.name() + "\", \"email\": \"" + loginResponse.email() + "\", \"token\": \"" + loginResponse.token() + "\", \"refreshToken\": \"" + loginResponse.refreshToken() + "\"}");
+
         };
     }
 }

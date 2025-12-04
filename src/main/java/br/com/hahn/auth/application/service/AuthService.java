@@ -74,7 +74,7 @@ public class AuthService {
         LoginLog loginLog = loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
 
         log.info("AuthService: Login success");
-        return new LoginResponseDTO(user.getEmail(),
+        return new LoginResponseDTO(user.getFirstName(), user.getEmail(),
                 tokenService.generateToken(user, loginLog),
                 tokenService.generateRefreshToken(user, loginLog));
     }
@@ -91,7 +91,8 @@ public class AuthService {
         log.info("AuthService: return renewed access token");
         var loginLog = loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
 
-        return new LoginResponseDTO(user.getEmail(),
+        return new LoginResponseDTO(user.getFirstName(),
+                user.getEmail(),
                 tokenService.generateToken(user, loginLog),
                 tokenService.generateRefreshToken(user, loginLog));
     }
@@ -113,7 +114,8 @@ public class AuthService {
             loginLog = loginLogService.saveLoginLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now());
         }
 
-        return new LoginResponseDTO(user.getEmail(),
+        return new LoginResponseDTO(user.getFirstName() + " " + user.getLastName(),
+                user.getEmail(),
                 tokenService.generateToken(user, loginLog),
                 tokenService.generateRefreshToken(user, loginLog));
     }

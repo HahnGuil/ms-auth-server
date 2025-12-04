@@ -574,7 +574,7 @@
         }
       }
     },
-    "/public-key/jwks" : {
+    "/public-key/legacy" : {
       "get" : {
         "tags" : [ "public-key-controller" ],
         "operationId" : "getPublicKeys",
@@ -588,6 +588,24 @@
                   "additionalProperties" : {
                     "type" : "string"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public-key/jwks" : {
+      "get" : {
+        "tags" : [ "public-key-controller" ],
+        "operationId" : "getJwks",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JwksResponse"
                 }
               }
             }
@@ -676,6 +694,11 @@
         "type" : "object",
         "description" : "DTO representing the response after a successful user login.",
         "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "User name",
+            "example" : "JohnCoffee"
+          },
           "email" : {
             "type" : "string",
             "description" : "User's email address",
@@ -706,6 +729,40 @@
             "type" : "string",
             "description" : "User's password",
             "example" : "P@ssw0rd!"
+          }
+        }
+      },
+      "JwkKey" : {
+        "type" : "object",
+        "properties" : {
+          "kty" : {
+            "type" : "string"
+          },
+          "kid" : {
+            "type" : "string"
+          },
+          "use" : {
+            "type" : "string"
+          },
+          "alg" : {
+            "type" : "string"
+          },
+          "n" : {
+            "type" : "string"
+          },
+          "e" : {
+            "type" : "string"
+          }
+        }
+      },
+      "JwksResponse" : {
+        "type" : "object",
+        "properties" : {
+          "keys" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JwkKey"
+            }
           }
         }
       }

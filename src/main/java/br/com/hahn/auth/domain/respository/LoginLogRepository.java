@@ -23,7 +23,6 @@ public interface LoginLogRepository extends JpaRepository<LoginLog, UUID> {
     @Query("SELECT ll FROM LoginLog ll WHERE ll.activeToken = true AND ll.dateLogin < :expirationTime")
     List<LoginLog> findExpiredActiveTokens(LocalDateTime expirationTime);
 
-    @Query("SELECT ll FROM LoginLog ll WHERE ll.userId = :userId ORDER BY ll.dateLogin DESC")
-    LoginLog findLoginLogByUserId(UUID userId);
+    LoginLog findTopByUserIdOrderByDateLoginDesc(UUID userId);
 
 }

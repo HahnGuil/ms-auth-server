@@ -4,6 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "DTO representing the response after a successful user login.")
 public record LoginResponseDTO(
+        @Schema(description = "User name", example = "JohnCoffee")
+        String name,
+
         @Schema(description = "User's email address", example = "user@example.com")
         String email,
 
