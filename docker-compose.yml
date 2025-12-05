@@ -13,6 +13,20 @@ services:
     networks:
       - app-network
 
+  postgres-auth-local:
+    image: postgres:16
+    container_name: postgres-auth-local
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: authdb
+    ports:
+      - "5050:5432"
+    volumes:
+      - postgres-data-local:/var/lib/postgresql/data
+    networks:
+      - app-network
+
   ms-auth-server:
     build: .
     container_name: ms-auth-server
@@ -60,6 +74,7 @@ services:
 
 volumes:
   postgres-data:
+  postgres-data-local:
 
 networks:
   app-network:
