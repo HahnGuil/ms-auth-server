@@ -1,20 +1,20 @@
-CREATE TABLE IF NOT EXISTS "Users" (
-                                       user_id UUID PRIMARY KEY,
-                                       "User_name" VARCHAR(150) NOT NULL,
+CREATE TABLE IF NOT EXISTS users (
+                                     user_id UUID PRIMARY KEY,
+                                     user_name VARCHAR(150) NOT NULL,
     password VARCHAR(255) NOT NULL,
     password_create_date TIMESTAMP,
-    "User_email" VARCHAR(255) NOT NULL,
+    user_email VARCHAR(255) NOT NULL,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     picture_url TEXT,
-    user_bloc BOOLEAN,
-    typeUser VARCHAR(50),
+    block_user BOOLEAN,
+    type_user VARCHAR(50),
     user_role VARCHAR(50)
     );
 
-CREATE UNIQUE INDEX IF NOT EXISTS ux_users_username ON "Users"("User_name");
-CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email ON "Users"("User_email");
-CREATE INDEX IF NOT EXISTS ix_users_role ON "Users"(user_role);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_users_username ON users(user_name);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email ON users(user_email);
+CREATE INDEX IF NOT EXISTS ix_users_role ON users(user_role);
 
 -- Tabela application
 CREATE TABLE IF NOT EXISTS application (
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS token_log (
     date_login TIMESTAMP,
     active_token BOOLEAN,
     user_id UUID NOT NULL,
-    CONSTRAINT fk_token_log_user FOREIGN KEY (user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE
+    CONSTRAINT fk_token_log_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
     );
 
 CREATE INDEX IF NOT EXISTS ix_token_log_user_id ON token_log(user_id);
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS invalidated_token (
                                                  login_log_id UUID NOT NULL,
                                                  date_invalidate TIMESTAMP,
                                                  type_invalidation VARCHAR(50),
-    CONSTRAINT fk_invalidated_token_user FOREIGN KEY (user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_invalidated_token_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_invalidated_token_login_log FOREIGN KEY (login_log_id) REFERENCES token_log(id_login_log) ON DELETE CASCADE
     );
 
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS logged_npw (
                                           date_login TIMESTAMP,
                                           is_use_refresh BOOLEAN,
                                           date_refresh TIMESTAMP,
-                                          CONSTRAINT fk_logged_npw_user FOREIGN KEY (user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE,
+                                          CONSTRAINT fk_logged_npw_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_logged_npw_login_log FOREIGN KEY (login_log_id) REFERENCES token_log(id_login_log) ON DELETE CASCADE
     );
 
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS user_application (
                                                 user_id UUID NOT NULL,
                                                 application_id BIGINT NOT NULL,
                                                 PRIMARY KEY (user_id, application_id),
-    CONSTRAINT fk_user_application_user FOREIGN KEY (user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_application_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_user_application_application FOREIGN KEY (application_id) REFERENCES application(id) ON DELETE CASCADE
     );
 

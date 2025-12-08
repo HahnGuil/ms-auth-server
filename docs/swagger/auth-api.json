@@ -64,8 +64,8 @@
                   "Invalid credentials" : {
                     "description" : "Credentials invalid",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:00Z",
-                      "message" : "Invalid email or password."
+                      "message" : "Invalid email or password.",
+                      "timestamp" : "2024-01-15T10:30:00Z"
                     }
                   }
                 }
@@ -90,8 +90,8 @@
                   "User not found" : {
                     "description" : "User not found",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:32Z",
-                      "message" : "User not found. Check email and password or register a new user."
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
                     }
                   }
                 }
@@ -101,7 +101,7 @@
         }
       }
     },
-    "/auth/validate-recoverToken" : {
+    "/auth/validate-code" : {
       "post" : {
         "tags" : [ "auth-controller" ],
         "operationId" : "validateToken",
@@ -146,15 +146,15 @@
                   "Invalid recover token" : {
                     "description" : "Invalid recover token",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:50Z",
-                      "message" : "Recover Token is expired"
+                      "message" : "Recover Token is expired",
+                      "timestamp" : "2024-01-15T10:30:50Z"
                     }
                   },
                   "Invalid recover code" : {
                     "description" : "Invalid recover code",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:53Z",
-                      "message" : "Invalid recover code"
+                      "message" : "Invalid recover code",
+                      "timestamp" : "2024-01-15T10:30:53Z"
                     }
                   }
                 }
@@ -179,15 +179,15 @@
                   "User not found" : {
                     "description" : "User not found",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:32Z",
-                      "message" : "User not found. Check email and password or register a new user."
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
                     }
                   },
                   "Reset password request not found" : {
                     "description" : "Reset password not found",
                     "value" : {
-                      "timestamp" : "2024-02-15T10:30:32Z",
-                      "message" : "Not found reset password for this user"
+                      "message" : "Not found reset password for this user",
+                      "timestamp" : "2024-02-15T10:30:32Z"
                     }
                   }
                 }
@@ -243,15 +243,15 @@
                   "User not found" : {
                     "description" : "User not found",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:32Z",
-                      "message" : "User not found. Check email and password or register a new user."
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
                     }
                   },
                   "Reset password not found" : {
                     "description" : "Reset password not found",
                     "value" : {
-                      "timestamp" : "2024-02-15T10:30:32Z",
-                      "message" : "Not found reset password for this user"
+                      "message" : "Not found reset password for this user",
+                      "timestamp" : "2024-02-15T10:30:32Z"
                     }
                   }
                 }
@@ -338,8 +338,8 @@
                   "Invalid refresh token" : {
                     "description" : "Refresh token is invalid",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:00Z",
-                      "message" : "Invalid refresh token"
+                      "message" : "Invalid refresh token",
+                      "timestamp" : "2024-01-15T10:30:00Z"
                     }
                   }
                 }
@@ -364,8 +364,8 @@
                   "User not found" : {
                     "description" : "User not found for application",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:02Z",
-                      "message" : "User not found for this application"
+                      "message" : "User not found for this application",
+                      "timestamp" : "2024-01-15T10:30:02Z"
                     }
                   }
                 }
@@ -433,22 +433,22 @@
                   "blocked" : {
                     "description" : "User blocked, password reset required",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:40:00Z",
-                      "message" : "This user has been blocked. Use the password reset link."
+                      "message" : "This user has been blocked. Use the password reset link.",
+                      "timestamp" : "2024-01-15T10:40:00Z"
                     }
                   },
                   "oauth" : {
                     "description" : "Direct login for OAuth user is not allowed.",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:31:00Z",
-                      "message" : "Direct login is not allowed for users created with OAuth."
+                      "message" : "Direct login is not allowed for users created with OAuth.",
+                      "timestamp" : "2024-01-15T10:31:00Z"
                     }
                   },
                   "invalidCredentials" : {
                     "description" : "Credentials invalid",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:00Z",
-                      "message" : "Invalid email or password."
+                      "message" : "Invalid email or password.",
+                      "timestamp" : "2024-01-15T10:30:00Z"
                     }
                   }
                 }
@@ -473,15 +473,15 @@
                   "User not Found" : {
                     "description" : "User not found",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:32Z",
-                      "message" : "User not found. Check email and password or register a new user."
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
                     }
                   },
                   "User not Found for this application" : {
                     "description" : "User not found",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:02Z",
-                      "message" : "User not found for this application"
+                      "message" : "User not found for this application",
+                      "timestamp" : "2024-01-15T10:30:02Z"
                     }
                   }
                 }
@@ -537,8 +537,8 @@
                   "Invalid Credentials" : {
                     "description" : "Credentials invalid",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:00Z",
-                      "message" : "Invalid email or password."
+                      "message" : "Invalid email or password.",
+                      "timestamp" : "2024-01-15T10:30:00Z"
                     }
                   }
                 }
@@ -563,8 +563,8 @@
                   "User not found" : {
                     "description" : "User not found",
                     "value" : {
-                      "timestamp" : "2024-01-15T10:30:32Z",
-                      "message" : "User not found. Check email and password or register a new user."
+                      "message" : "User not found. Check email and password or register a new user.",
+                      "timestamp" : "2024-01-15T10:30:32Z"
                     }
                   }
                 }

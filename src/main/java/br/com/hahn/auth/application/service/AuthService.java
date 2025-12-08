@@ -44,6 +44,7 @@ public class AuthService {
         User user = userService.convertToEntity(userRequestDTO,encodePassword(userRequestDTO.password()));
 
         if(userService.existsByEmail(user.getEmail())){
+            log.error("AuthService: Email already registered, thorw Exception");
             throw new UserAlreadyExistException("Email already registered. Please log in or recover your password.");
         }
 
@@ -57,17 +58,17 @@ public class AuthService {
         User user = userService.findByEmail(bodyRequest.email());
 
         if(Boolean.TRUE.equals(user.getBlockUser())){
-            log.info("AuthService: User blocl, throw exception");
+            log.error("AuthService: User blocl, throw exception");
             throw new UserBlockException("This user has been blocked. Use the password reset link.");
         }
 
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            log.info("AuthService: User try login with OAuth, throw exception");
+            log.error("AuthService: User try login with OAuth, throw exception");
             throw new InvalidCredentialsException("Direct login is not allowed for users created via OAuth.");
         }
 
         if (validadeCredentials(bodyRequest.password(), user.getPassword())) {
-            log.info("AuthService: invalid credencials, throw exception");
+            log.error("AuthService: invalid credencials, throw exception");
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
@@ -169,7 +170,7 @@ public class AuthService {
     private void validateOldPassword(String oldPassword, String currentPassword) {
         log.info("AuthService: validate old password");
         if (validadeCredentials(oldPassword, currentPassword)) {
-            log.info("AuthService: Invalid credentials, throw exception");
+            log.error("AuthService: Invalid credentials, throw exception");
             throw new InvalidCredentialsException("Invalid credencials");
         }
     }
@@ -177,12 +178,12 @@ public class AuthService {
     private void validateRecoverCodeValues(ResetPassword resetPassword, PasswordOperationRequestDTO requestRecoverCode){
         log.info("AuthService: Validate values of recover code");
         if(!passwordEncoder.matches(requestRecoverCode.recoverCode(), resetPassword.getRecoverCode())){
-            log.info("AuthService: recover code not match, throw exception");
+            log.error("AuthService: recover code not match, throw exception");
             throw new InvalidRecorveCodeExcpetion("Invalid recovery code.");
         }
 
         if(resetPassword.getExpirationDate().isBefore(LocalDateTime.now())){
-            log.info("AuthService: Recover code has expired, throw exception");
+            log.error("AuthService: Recover code has expired, throw exception");
             throw new InvalidRecorveCodeExcpetion("Recovery code has expired.");
         }
     }
@@ -205,6 +206,7 @@ public class AuthService {
         try {
             emailService.sendEmail(email, "Password Reset Request", htmlBody).block();
         } catch (Exception _) {
+            log.error("AuthService: Failed to send email");
             throw new InvalidOperationExecption("Failed to send email. Please try again later.");
         }
     }

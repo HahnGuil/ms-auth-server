@@ -8,6 +8,7 @@ import br.com.hahn.auth.domain.enums.UserRole;
 import br.com.hahn.auth.domain.model.Application;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.UserRepository;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -21,16 +22,12 @@ import java.util.UUID;
 
 @Service
 @Slf4j
+@AllArgsConstructor
 public class UserService {
 
 
     private final UserRepository userRepository;
     private final ApplicationService applicationService;
-
-    public UserService(UserRepository userRepository, ApplicationService applicationService) {
-        this.userRepository = userRepository;
-        this.applicationService = applicationService;
-    }
 
     public boolean existsByEmail(String email){
         log.info("UserService: Exist user by email");
@@ -82,7 +79,7 @@ public class UserService {
         try {
             userRepository.save(user);
         }catch (DataAccessException _){
-            log.info("UserService: Can not save on data base. Throw exception");
+            log.error("UserService: Can not save on data base. Throw exception");
             throw new DataBaseServerException("Can't save user on database");
         }
 
@@ -139,8 +136,11 @@ public class UserService {
     private void blockUsers(List<User> usersToBlock) {
         log.info("UserService: block users");
         for (User user : usersToBlock) {
-            user.setBlockUser(true);
-            userRepository.save(user);
+            if(user.getRole() == UserRole.USER_NORMAL){
+                user.setBlockUser(true);
+                userRepository.save(user);
+            }
         }
+        log.info("UserService: finish block users");
     }
 }

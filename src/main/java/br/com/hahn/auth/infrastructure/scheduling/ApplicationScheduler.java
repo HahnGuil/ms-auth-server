@@ -4,6 +4,7 @@ import br.com.hahn.auth.application.service.LoginLogService;
 import br.com.hahn.auth.application.service.ResetPasswordService;
 import br.com.hahn.auth.application.service.UserService;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
+import br.com.hahn.auth.domain.enums.UserRole;
 import br.com.hahn.auth.domain.model.LoginLog;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.infrastructure.service.EmailService;
@@ -32,7 +33,7 @@ public class ApplicationScheduler {
     public void cleanExpiredResetRecoverCodes(){
         log.info("ApllicationScheduler: Stargin routine to delete expired Recover Code");
         int deleteCount = resetPasswordService.deleteByExpirationDateBefore(LocalDateTime.now());
-        log.info("Routine completed: Records deleted: {}", deleteCount);
+        log.info("ApllicationScheduler: Routine completed: Records deleted: {}", deleteCount);
     }
 
     @Scheduled(cron = "0 0 0 * * *")
@@ -43,15 +44,17 @@ public class ApplicationScheduler {
         for (int days : warningDays) {
             List<User> usersToWarn = userService.getUsersWithPasswordExpiringInDays(days);
             usersToWarn.forEach(user -> {
-                String subject = "Your password will expire soon";
-                String body = String.format("Hello %s, your password will expire in %d days. Please update it.", user.getFirstName(), days);
-                emailService.sendEmail(user.getEmail(), subject, body).subscribe(
-                        success -> log.info("Email sent to {}", user.getEmail()),
-                        error -> log.error("Failed to send email to {}: {}", user.getEmail(), error.getMessage())
-                );
+                if(user.getRole() == UserRole.USER_NORMAL){
+                    String subject = "Your password will expire soon";
+                    String body = String.format("Hello %s, your password will expire in %d days. Please update it.", user.getFirstName(), days);
+                    emailService.sendEmail(user.getEmail(), subject, body).subscribe(
+                            success -> log.info("ApllicationScheduler: Email sent to {}", user.getEmail()),
+                            error -> log.error("ApllicationScheduler: Failed to send email to {}: {}", user.getEmail(), error.getMessage())
+                    );
+                }
             });
         }
-        log.info("Notification routine completed");
+        log.info("ApllicationScheduler: Notification routine completed");
     }
 
     @Scheduled(cron = "0 0 0 * * *")
@@ -64,15 +67,15 @@ public class ApplicationScheduler {
     @Scheduled(cron = "0 */1 * * * *")
     @Transactional
     public void invalidTokenSchaduler() {
-        log.info("ApplicationScheduler: Iniciando rotina para invalidar tokens expirados");
+        log.info("ApplicationScheduler: Starting routine to invalidate expired tokens.");
         LocalDateTime expirationTime = LocalDateTime.now().minusMinutes(15);
         List<LoginLog> expiredTokens = loginLogService.findExpiredActiveTokens(expirationTime);
 
         for (LoginLog loginLog : expiredTokens) {
             loginLogService.deactivateActiveToken(loginLog.getUserId(), TypeInvalidation.EXPIRATION_TIME);
-            log.info("Token expirado invalidado para usuário: {}", loginLog.getUserId());
+            log.info("ApplicationScheduler: Expired token invalidated for user.: {}", loginLog.getUserId());
         }
-        log.info("Rotina de invalidação de tokens expirados concluída");
+        log.info("ApplicationScheduler: Routine for invalidating expired tokens completed.");
     }
 
 }

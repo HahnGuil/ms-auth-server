@@ -86,4 +86,10 @@ public class GlobalControllerHandler {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(error);
     }
 
+    @ExceptionHandler(ResetPasswordNotFoundException.class)
+    public ResponseEntity<ErrorResponseDTO> handleResetPasswordNotFoundException(ResetPasswordNotFoundException ex){
+        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
 }

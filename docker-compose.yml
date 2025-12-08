@@ -3,8 +3,8 @@ services:
     image: postgres:16
     container_name: postgres-auth
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       POSTGRES_DB: authdb
     ports:
       - "5432:5432"
@@ -12,33 +12,47 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_USERNAME} -d authdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres-auth-local:
     image: postgres:16
     container_name: postgres-auth-local
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: authdb
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      POSTGRES_DB: authdb-local
     ports:
       - "5050:5432"
     volumes:
       - postgres-data-local:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_USERNAME} -d authdb-local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ms-auth-server:
     build: .
     container_name: ms-auth-server
     ports:
       - "2300:2300"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
     env_file:
       - .env
     networks:
       - app-network
     depends_on:
-      - postgres-auth
-      - kafka
+      postgres-auth:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.2
@@ -74,7 +88,10 @@ services:
 
 volumes:
   postgres-data:
+    driver: local
   postgres-data-local:
+    driver: local
 
 networks:
   app-network:
+    driver: bridge

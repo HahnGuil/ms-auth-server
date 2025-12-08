@@ -23,6 +23,7 @@ public class LoginLog {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID idLoginLog;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "scope_token")
     private ScopeToken scopeToken;
 

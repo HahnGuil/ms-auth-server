@@ -19,7 +19,13 @@ public class ResetPassword {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "recover_code")
     private String recoverCode;
+
+    @Column(name = "user_email")
     private String userEmail;
+
+    @Column(name = "expiration_date")
     private LocalDateTime expirationDate;
 }

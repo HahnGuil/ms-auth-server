@@ -5,26 +5,22 @@ import br.com.hahn.auth.application.execption.ResetPasswordNotFoundException;
 import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.ResetPasswordRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 @Service
+@Slf4j
+@AllArgsConstructor
 public class ResetPasswordService {
-
-    private static final Logger logger = LoggerFactory.getLogger(ResetPasswordService.class);
 
     private final ResetPasswordRepository resetPasswordRepository;
 
-    public ResetPasswordService(ResetPasswordRepository resetPasswordRepository) {
-        this.resetPasswordRepository = resetPasswordRepository;
-    }
-
     public ResetPassword findByEmail(String email){
-        logger.info("ResetPasswordService: Find by email");
+        log.info("ResetPasswordService: Find by email");
         return resetPasswordRepository.findByUserEmail(email).orElseThrow(() -> new ResetPasswordNotFoundException("Not found reset password for this user"));
     }
 
@@ -33,13 +29,13 @@ public class ResetPasswordService {
     }
 
     public void deleteResetExistingPassword(String email){
-        logger.info("ResetPasswordService: delete reset existing password");
+        log.info("ResetPasswordService: delete reset existing password");
         ResetPassword resetPassword = findByEmail(email);
         deletebyId(resetPassword.getId());
     }
 
     public void validateTokenExpiration(String recoverToken){
-        logger.info("ResetPasswordService: validate token expiration");
+        log.info("ResetPasswordService: validate token expiration");
         ResetPassword resetPassword = findByEmail(recoverToken);
 
         if(resetPassword.getExpirationDate().isBefore(LocalDateTime.now())){
@@ -48,13 +44,13 @@ public class ResetPasswordService {
     }
 
     public int deleteByExpirationDateBefore(LocalDateTime dataTime){
-        logger.info("ResetPasswordService: Delete reset password by expiration date");
+        log.info("ResetPasswordService: Delete reset password by expiration date");
         return resetPasswordRepository.deleteByExpirationDateBefore(dataTime);
     }
 
     @Transactional
     public void createResetPassword(User user, String recoverCode){
-        logger.info("ResetPasswordService: create reset password");
+        log.info("ResetPasswordService: create reset password");
         ResetPassword resetPassword = new ResetPassword();
         resetPassword.setRecoverCode(recoverCode);
         resetPassword.setUserEmail(user.getEmail());
@@ -63,7 +59,7 @@ public class ResetPasswordService {
     }
 
     private void deletebyId(Long id) {
-        logger.info("ResetPasswordService: delete resete password by id");
+        log.info("ResetPasswordService: delete resete password by id");
         resetPasswordRepository.deleteById(id);
     }
 

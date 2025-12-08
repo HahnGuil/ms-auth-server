@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "USERS")
+@Table(name = "users")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -24,7 +24,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID userId;
 
-    @Column(name = "User_name")
+    @Column(name = "user_name")
     private String username;
 
     @Column(name = "password")
@@ -33,7 +33,7 @@ public class User {
     @Column(name = "password_create_date")
     private LocalDateTime passwordCreateDate;
 
-    @Column(name = "User_email")
+    @Column(name = "user_email")
     private String email;
 
     @Column(name = "first_name")
@@ -45,10 +45,10 @@ public class User {
     @Column(name = "picture_url")
     private String pictureUrl;
 
-    @Column(name = "user_bloc")
+    @Column(name = "block_user")
     private Boolean blockUser;
 
-    @Column(name = "typeUser")
+    @Column(name = "type_user")
     private TypeUser typeUser;
 
     @Enumerated(EnumType.STRING)
