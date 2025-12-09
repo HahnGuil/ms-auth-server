@@ -1,12 +1,12 @@
 package br.com.hahn.auth.infrastructure.security;
 
-import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
-import br.com.hahn.auth.application.service.AuthService;
+import br.com.hahn.auth.application.service.LoginService;
+import br.com.hahn.auth.domain.model.LoginResponse;
 import br.com.hahn.auth.infrastructure.exception.CustomAccessDeniedHandler;
 import br.com.hahn.auth.infrastructure.exception.CustomAuthenticationEntryPointHandler;
+import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -29,19 +29,13 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 @Configuration
 @EnableWebSecurity
+@AllArgsConstructor
 public class SecurityConfig {
 
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomAuthenticationEntryPointHandler customAuthenticationEntryPointHandler;
     private final SecurityFilter securityFilter;
-    private final AuthService authService;
-
-    public SecurityConfig(CustomAccessDeniedHandler customAccessDeniedHandler, CustomAuthenticationEntryPointHandler customAuthenticationEntryPointHandler, SecurityFilter securityFilter, @Lazy AuthService authService) {
-        this.customAccessDeniedHandler = customAccessDeniedHandler;
-        this.customAuthenticationEntryPointHandler = customAuthenticationEntryPointHandler;
-        this.securityFilter = securityFilter;
-        this.authService = authService;
-    }
+    private final LoginService loginService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -104,10 +98,13 @@ public class SecurityConfig {
             OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
             OAuth2User oAuth2User = token.getPrincipal();
 
-            LoginResponseDTO loginResponse = authService.processOAuth2User(oAuth2User);
+            LoginResponse loginResponse = loginService.processOAuthUser(oAuth2User);
 
             response.setContentType("application/json");
-            response.getWriter().write("{\"name\": \"" + loginResponse.name() + "\", \"email\": \"" + loginResponse.email() + "\", \"token\": \"" + loginResponse.token() + "\", \"refreshToken\": \"" + loginResponse.refreshToken() + "\"}");
+            response.getWriter().write("{\"name\": \"" + loginResponse.getUserName() +
+                    "\", \"email\": \"" + loginResponse.getEmail() +
+                    "\", \"token\": \"" + loginResponse.getToken() +
+                    "\", \"refreshToken\": \"" + loginResponse.getRefreshToken() + "\"}");
 
         };
     }

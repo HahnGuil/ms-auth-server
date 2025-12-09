@@ -161,6 +161,154 @@ paths:
       responses:
         '204':
           description: User successfully logged out
+  /password/change-password:
+    patch:
+      tags:
+        - password
+      summary: Operation for a logged-in user to change the application password.
+      description: When logged in, the user will change their password, entering both the old and new passwords.
+      operationId: patchChangePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password Changed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: When the old password provided by the user does not match the password saved in the database.
+                  value:
+                    message: "Invalid credencials"
+                    timestamp: "2024-12-08T19:30:00Z"
+                userNotLoggedIn:
+                  summary: The user can only change their password through this method, when logged into the application.
+                  value:
+                    message: "User not authenticated. Please log to continue"
+                    timestamp: "2024-12-08T19:30:00Z"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailNotFound:
+                  summary: There is no registered user for this email address.
+                  value:
+                    message: "There is no registered user for this email address. Check email and password or register a new user."
+                    timestamp: "2024-12-08T19:30:00Z"
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                changePasswordNotAllowed:
+                  summary: Users with OAuth privileges cannot change their access password.
+                  value:
+                    message: "Password changes are not allowed for users registered via Gmail."
+                    timestamp: "2024-12-08T19:30:00Z"
+  /password/reset-request:
+    post:
+      tags:
+        - password
+      summary: Request a password reset code
+      description: Sends a password reset code to the user's email address.
+      operationId: postPasswordResetRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '201':
+          description: A validation code has been sent to the email address you provided. Please also check your spam folder. Expect an email from noreply@toxicbet.com.br.
+        '400':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailNotSend:
+                  summary: There was an error sending the recovery code to the user's email.
+                  value:
+                    message: "Failed to send email. Please try again later."
+                    timestamp: "2024-12-08T19:30:00Z"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailNotFound:
+                  summary: There is no registered user for this email address.
+                  value:
+                    message: "There is no registered user for this email address. Check email and password or register a new user."
+                    timestamp: "2024-12-08T19:30:00Z"
+  /password/validate-code:
+    post:
+      tags:
+        - password
+      summary: Validate recovery code
+      description: Receive the recovery code and the user's email for validation.
+      operationId: postValidateCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateCodeRequest'
+      responses:
+        '200':
+          description: A validation code has been sent to the email address you provided. Please also check your spam folder. Expect an email from noreply@toxicbet.com.br.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateCodeResponse'
+        '401':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                recoveryCodeExpired:
+                  summary: The validation code has expired.
+                  value:
+                    message: "Recovery code expired, please submit a new request."
+                    timestamp: "2024-12-08T19:30:00Z"
+                recoveryCodeInvalid:
+                  summary: The validation code has invalid.
+                  value:
+                    message: "The validation code provided is not valid."
+                    timestamp: "2024-12-08T19:30:00Z"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailNotFound:
+                  summary: There is no registered user for this email address.
+                  value:
+                    message: "There is no registered user for this email address. Check email and password or register a new user."
+                    timestamp: "2024-12-08T19:30:00Z"
 components:
   securitySchemes:
     bearerAuth:
@@ -282,6 +430,8 @@ components:
           description: Refreh JWT Token for a new Token Request
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     LogOfRequest:
+      required:
+        - email
       type: object
       properties:
         email:
@@ -298,3 +448,59 @@ components:
         timestamp:
           type: string
           format: date-time
+    ChangePasswordRequest:
+      required:
+        - email
+        - oldPassword
+        - newPassword
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: user email
+          example: john.doe@example.com
+        oldPassword:
+          type: string
+          format: password
+          description: User Password
+          minLength: 8
+          example: SecurePass123!
+        newPassword:
+          type: string
+          format: password
+          description: User Password
+          minLength: 8
+          example: SecurePass123!
+    PasswordResetRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email
+          example: john.doe@example.com
+    ValidateCodeRequest:
+      type: object
+      required:
+        - email
+        - recoveryCode
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email
+          example: john.doe@example.com
+        recoveryCode:
+          type: integer
+          description: A six-digit code sent to the user's email for validation.
+          example: 123698
+    ValidateCodeResponse:
+      type: object
+      properties:
+        recoverToken:
+          type: string
+          description: Recovery token generated for the user to create a new password.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
