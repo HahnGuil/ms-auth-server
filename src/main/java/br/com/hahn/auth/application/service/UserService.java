@@ -113,18 +113,6 @@ public class UserService {
     }
 
     @Transactional
-    public void saveUser(User user){
-        log.info("UserService: save user");
-        try {
-            userRepository.save(user);
-        }catch (DataAccessException _){
-            log.error("UserService: Can not save on data base. Throw exception");
-            throw new DataBaseServerException("Can't save user on database");
-        }
-
-    }
-
-    @Transactional
     public void updatePassword(String email, UUID id, String newPassword, LocalDateTime passwordCreateDate) {
         log.info("UserService: update user password");
         userRepository.updatePasswordByEmailAndId(newPassword, email, id, passwordCreateDate);

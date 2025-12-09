@@ -28,7 +28,6 @@ public class LoginService {
     private final LoginLogService loginLogService;
     private final TokenService tokenService;
     private final LoggedNowService loggedNowService;
-    private final InvalidatedTokenService invalidatedTokenService;
 
 
     public LoginResponse userLogin(LoginRequest loginRequest){

@@ -134,6 +134,7 @@ public class AuthService {
         return "Password reset successfully";
     }
 
+    // TODO - REFATORAR
     private void validateOldPassword(String oldPassword, String currentPassword) {
         log.info("AuthService: validate old password");
         if (validadeCredentials(oldPassword, currentPassword)) {
