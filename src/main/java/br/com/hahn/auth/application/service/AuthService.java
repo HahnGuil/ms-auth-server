@@ -47,12 +47,9 @@ public class AuthService {
     public void validatingYourUserIsOauth(User user){
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             log.error("AuthService: User: {} try login with OAuth, throw exception at {}", user.getUserId(), Instant.now());
-            throw new InvalidCredentialsException("OAuth users cannot log in directly.");
+            throw new DirectLoginNotAllowedException("OAuth users cannot log in directly.");
         }
     }
-
-
-
 
 //    ---------------------------
 // Código Antigo
