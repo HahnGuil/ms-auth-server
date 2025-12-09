@@ -7,6 +7,7 @@ import br.com.hahn.auth.application.execption.*;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
 import br.com.hahn.auth.domain.model.LoginLog;
+import br.com.hahn.auth.domain.model.LoginResponse;
 import br.com.hahn.auth.domain.model.ResetPassword;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.infrastructure.security.TokenService;
@@ -38,12 +39,31 @@ public class AuthService {
 
 //    --------- Refatoração
 
+    /**
+     * Validates the user's credentials.
+     * This method compares the provided login password with the user's stored password.
+     * If the passwords do not match, an InvalidCredentialsException is thrown.
+     *
+     * @author HahnGuil
+     * @param loginPassword the password provided during login
+     * @param userPassword the user's stored password
+     * @throws InvalidCredentialsException if the passwords do not match
+     */
     public void validadeCredentials(String loginPassword, String userPassword) {
         if(!passwordEncoder.matches(loginPassword, userPassword)){
             throw new InvalidCredentialsException("Invalid email or password.");
         }
     }
 
+    /**
+     * Validates if the user is an OAuth user.
+     * This method checks if the user's password is null or empty, indicating that the user
+     * is attempting to log in using OAuth. If so, a DirectLoginNotAllowedException is thrown.
+     *
+     * @author HahnGuil
+     * @param user the User object to be validated
+     * @throws DirectLoginNotAllowedException if the user is an OAuth user attempting direct login
+     */
     public void validatingYourUserIsOauth(User user){
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             log.error("AuthService: User: {} try login with OAuth, throw exception at {}", user.getUserId(), Instant.now());
@@ -73,28 +93,6 @@ public class AuthService {
     }
 
 
-    public LoginResponseDTO processOAuth2User(OAuth2User oAuth2User) {
-        log.info("AuthService: Process OAuth User");
-        String email = oAuth2User.getAttribute("email");
-        User user;
-        LoginLog loginLog;
-
-        if(userService.existsByEmail(email)){
-            log.info("AuthService: User exist, login with OAuth");
-            user = userService.findByIdWithApplications(email);
-            loginLog = loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
-        } else {
-            log.info("AuthService: User not exist, create user of OAuth");
-            user = userService.createNewUserFromOAuth(oAuth2User);
-            loginLog = loginLogService.saveLoginLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now());
-        }
-
-        return new LoginResponseDTO(user.getFirstName() + " " + user.getLastName(),
-                user.getEmail(),
-                tokenService.generateToken(user, loginLog),
-                tokenService.generateRefreshToken(user, loginLog));
-    }
-
     public void updatePassword(PasswordOperationRequestDTO request) {
         log.info("AuthService: Update password");
         User user = userService.findByEmail(request.email());
@@ -115,7 +113,7 @@ public class AuthService {
         sendEmail(user.getEmail(), buildResetEmailBody(user.getUsername(), recoverCode));
         log.info("AuthService: send reset code to email");
 
-        return "Password reset code sent to your email.";
+        return "A validation code has been sent to the email address you provided. Please also check your spam folder. Expect an email from noreply@toxicbet.com.br.";
     }
 
     public ResetPasswordResponseDTO validateRecoverCode(PasswordOperationRequestDTO requestRecoverCode) {
@@ -126,6 +124,7 @@ public class AuthService {
         return new ResetPasswordResponseDTO(tokenService.generateRecorverToken(resetPassword));
     }
 
+    // TODO - APAGAR
     public String resetPassword(PasswordOperationRequestDTO passwordOperationRequestDTO) {
         log.info("AuthService: Reset password");
         ResetPassword resetPassword = resetPasswordService.findByEmail(passwordOperationRequestDTO.email());
@@ -151,7 +150,7 @@ public class AuthService {
         log.info("AuthService: Validate values of recover code");
         if(!passwordEncoder.matches(requestRecoverCode.recoverCode(), resetPassword.getRecoverCode())){
             log.error("AuthService: recover code not match, throw exception");
-            throw new InvalidRecorveCodeExcpetion("Invalid recovery code.");
+            throw new InvalidRecorveCodeExcpetion("The validation code provided is not valid.");
         }
 
         if(resetPassword.getExpirationDate().isBefore(LocalDateTime.now())){
