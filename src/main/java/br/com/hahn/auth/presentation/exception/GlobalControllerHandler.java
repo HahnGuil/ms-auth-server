@@ -92,4 +92,10 @@ public class GlobalControllerHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    @ExceptionHandler(UserEmailAlreadyExistException.class)
+    public ResponseEntity<ErrorResponseDTO> handlerUserEmailAlreadyExistException(UserEmailAlreadyExistException ex){
+        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
 }

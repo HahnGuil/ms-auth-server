@@ -2,7 +2,6 @@ package br.com.hahn.auth.infrastructure.security;
 
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

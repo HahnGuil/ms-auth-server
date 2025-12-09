@@ -1,11 +1,8 @@
 package br.com.hahn.auth.application.service;
 
-import br.com.hahn.auth.application.dto.request.LoginRequestDTO;
 import br.com.hahn.auth.application.dto.request.PasswordOperationRequestDTO;
-import br.com.hahn.auth.application.dto.request.UserRequestDTO;
 import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
 import br.com.hahn.auth.application.dto.response.ResetPasswordResponseDTO;
-import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.application.execption.*;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
@@ -20,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.UUID;
@@ -38,47 +36,26 @@ public class AuthService {
     private final ResetPasswordService resetPasswordService;
     private final LoginLogService loginLogService;
 
+//    --------- Refatoração
 
-    public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
-        log.info("AuthService: Create user");
-        User user = userService.convertToEntity(userRequestDTO,encodePassword(userRequestDTO.password()));
-
-        if(userService.existsByEmail(user.getEmail())){
-            log.error("AuthService: Email already registered, thorw Exception");
-            throw new UserAlreadyExistException("Email already registered. Please log in or recover your password.");
-        }
-
-        userService.saveUser(user);
-
-        return new UserResponseDTO(user.getUsername(), user.getEmail(), tokenService.generateToken(user, loginLogService.saveLoginLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now())));
-    }
-
-    public LoginResponseDTO userLogin(LoginRequestDTO bodyRequest) {
-        log.info("AuthService: Login user");
-        User user = userService.findByEmail(bodyRequest.email());
-
-        if(Boolean.TRUE.equals(user.getBlockUser())){
-            log.error("AuthService: User blocl, throw exception");
-            throw new UserBlockException("This user has been blocked. Use the password reset link.");
-        }
-
-        if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            log.error("AuthService: User try login with OAuth, throw exception");
-            throw new InvalidCredentialsException("Direct login is not allowed for users created via OAuth.");
-        }
-
-        if (validadeCredentials(bodyRequest.password(), user.getPassword())) {
-            log.error("AuthService: invalid credencials, throw exception");
+    public void validadeCredentials(String loginPassword, String userPassword) {
+        if(!passwordEncoder.matches(loginPassword, userPassword)){
             throw new InvalidCredentialsException("Invalid email or password.");
         }
-
-        LoginLog loginLog = loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
-
-        log.info("AuthService: Login success");
-        return new LoginResponseDTO(user.getFirstName(), user.getEmail(),
-                tokenService.generateToken(user, loginLog),
-                tokenService.generateRefreshToken(user, loginLog));
     }
+
+    public void validatingYourUserIsOauth(User user){
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            log.error("AuthService: User: {} try login with OAuth, throw exception at {}", user.getUserId(), Instant.now());
+            throw new InvalidCredentialsException("OAuth users cannot log in directly.");
+        }
+    }
+
+
+
+
+//    ---------------------------
+// Código Antigo
 
     public LoginResponseDTO refreshAccessToken(String token) {
         log.info("AuthService: Validate Refresh Token and get email from user");
@@ -111,7 +88,7 @@ public class AuthService {
             loginLog = loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
         } else {
             log.info("AuthService: User not exist, create user of OAuth");
-            user = createNewUserFromOAuth(oAuth2User);
+            user = userService.createNewUserFromOAuth(oAuth2User);
             loginLog = loginLogService.saveLoginLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now());
         }
 
@@ -160,19 +137,16 @@ public class AuthService {
         return "Password reset successfully";
     }
 
-    public User createNewUserFromOAuth(OAuth2User oAuth2User) {
-        UserRequestDTO userRequestDTO = userService.convertOAuthUserToRequestDTO(oAuth2User);
-        User newUser = userService.convertToEntity(userRequestDTO, encodePassword(""));
-        userService.saveUser(newUser);
-        return newUser;
-    }
-
     private void validateOldPassword(String oldPassword, String currentPassword) {
         log.info("AuthService: validate old password");
         if (validadeCredentials(oldPassword, currentPassword)) {
             log.error("AuthService: Invalid credentials, throw exception");
             throw new InvalidCredentialsException("Invalid credencials");
         }
+    }
+
+    public String encodePassword(String password) {
+        return passwordEncoder.encode(password);
     }
 
     private void validateRecoverCodeValues(ResetPassword resetPassword, PasswordOperationRequestDTO requestRecoverCode){
@@ -197,9 +171,7 @@ public class AuthService {
         return String.format("<p>Hello %s,</p><p>Your password reset code is: <strong>%s</strong></p><p>This code will expire in 30 minutes.</p>", username, recoverCode);
     }
 
-    private boolean validadeCredentials(String loginPassword, String userPassword) {
-        return !passwordEncoder.matches(loginPassword, userPassword);
-    }
+
 
     private void sendEmail(String email, String htmlBody) {
         log.info("AuthService: Send email to recorver code");
@@ -211,9 +183,7 @@ public class AuthService {
         }
     }
 
-    private String encodePassword(String password) {
-        return passwordEncoder.encode(password);
-    }
+
 
     private void changeResetPassword(String email){
         if(resetPasswordService.existsByUserEmail(email)){

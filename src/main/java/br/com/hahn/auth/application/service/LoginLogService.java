@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,29 @@ public class LoginLogService {
     private final LoggedNowService loggedNowService;
     private final InvalidatedTokenService invalidatedTokenService;
 
+//    Refatoração -----------------
+
+    @Transactional
+    public void deactivateActiveToken(UUID userId, TypeInvalidation typeInvalidation){
+        log.info("LoginLogService: Desactive token for user: {} at {}", userId, Instant.now());
+        loginLogRepository.deactivateActiveTokenByUserId(userId);
+
+        var loginLog = this.findLoginLogByUserId(userId);
+
+        log.info("LoginLogServe: Call Invalidate old token method for {}", loginLog.getIdLoginLog());
+        invalidateToken(loginLog, typeInvalidation);
+    }
+
+    private void invalidateToken(LoginLog loginLog, TypeInvalidation typeInvalidation){
+        log.info("LoginLogService: invalidate token for User {}, with LoginLog: {}, at {}", loginLog.getUserId(), loginLog.getIdLoginLog(), Instant.now());
+        var invalidateToken = convertToInvalidatedTokenEntity(loginLog.getUserId(), loginLog.getIdLoginLog(), typeInvalidation);
+        invalidatedTokenService.save(invalidateToken);
+    }
+
+
+
+
+//    Código antigo -------------
     @Transactional
     public LoginLog saveLoginLog(User user, ScopeToken scopeToken, LocalDateTime dateLogin) {
         log.info("LoginLogService: Sava login log on database");
@@ -42,16 +66,7 @@ public class LoginLogService {
         return loginLogRepository.findActiveTokenByLoginLogId(loginLogId);
     }
 
-    @Transactional
-    public void deactivateActiveToken(UUID userId, TypeInvalidation typeInvalidation){
-        log.info("LoginLogService: desactivate old token");
-        loginLogRepository.deactivateActiveTokenByUserId(userId);
 
-        var loginLog = this.findLoginLogByUserId(userId);
-
-        log.info("LoginLogServe: Call Invalidate old token method for {}", loginLog.getIdLoginLog());
-        invalidateToken(loginLog, typeInvalidation);
-    }
 
     public boolean existsById(UUID loginLogId) {
         return loginLogRepository.existsById(loginLogId);
@@ -62,11 +77,7 @@ public class LoginLogService {
         return loginLogRepository.findExpiredActiveTokens(expirationTime);
     }
 
-    private void invalidateToken(LoginLog loginLog, TypeInvalidation typeInvalidation){
-        log.info("LoginLogService: invalidate old token for LoginLog {}", loginLog.getIdLoginLog());
-        var invalidateToken = convertToInvalidatedTokenEntity(loginLog.getUserId(), loginLog.getIdLoginLog(), typeInvalidation);
-        invalidatedTokenService.save(invalidateToken);
-    }
+
 
     private LoginLog findLoginLogByUserId(UUID userId){
         return loginLogRepository.findTopByUserIdOrderByDateLoginDesc(userId);

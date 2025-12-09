@@ -15,10 +15,19 @@ public class LoggedNowService {
 
     private LoggedNowRepository loggedNowRepository;
 
+    public boolean existsByUserId(UUID userId){
+        return loggedNowRepository.existsByUserId(userId);
+    }
+
     @Transactional
     public void save(UUID userId, UUID loginLogId, LocalDateTime dateLogin){
         var loggedNow = convertToEntity(userId, loginLogId, dateLogin);
         loggedNowRepository.save(loggedNow);
+    }
+
+    @Transactional
+    public void deleteByUserId(UUID userId){
+        loggedNowRepository.deleteByUserId(userId);
     }
 
     private LoggedNow convertToEntity(UUID userId, UUID loginLogId, LocalDateTime dateLogin){

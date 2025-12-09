@@ -1,0 +1,300 @@
+openapi: 3.0.3
+info:
+  title: auth-server
+  description: <h3>Documentation for auth-server API endpoints <h3>
+  contact:
+    name: Guilherme Hahn
+    email: guilherme.f.h@hotmail.com
+  version: latest
+tags:
+  - name: users
+    description: Operation for create a new user
+  - name: login
+    description: Operation for user login
+  - name: password
+    description: Operations involving password changes, recovery, updates, and also password recovery code validation.
+
+paths:
+  /auth:
+    post:
+      tags:
+        - users
+      summary: Operation for register a new directly user
+      description: This operation is used to register a new user directly; in this case, it is not an OAuth user via Gmail.
+      operationId: postRegisterUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '201':
+          description: User successfully registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                applicationNotFound:
+                  summary: There is no registered application for the provided code.
+                  value:
+                    message: "Application not found"
+                    timestamp: "2024-12-08T19:30:00Z"
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailExists:
+                  summary: Email already registered
+                  value:
+                    message: "Email already registered. Please log in or recover your password."
+                    timestamp: "2024-12-08T19:30:00Z"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                canNotSave:
+                  summary: When there is a problem that prevents data from being saved to the database.
+                  value:
+                    message: "Can't save user on database"
+                    timestamp: "2024-12-08T19:30:00Z"
+  /login:
+    post:
+      tags:
+        - login
+      summary: Operation for user login
+      description: This operation allows registered users to log in directly, without using OAuth.
+      operationId: postLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userBlock:
+                  summary: Users who have been inactive for more than 90 days are blocked and need to use the password reset process to be unblocked.
+                  value:
+                    message: "This user has been blocked. Use the password reset link."
+                    timestamp: "2024-12-08T19:30:00Z"
+                invalidCredentials:
+                  summary: When an invalid email or password is reported
+                  value:
+                    message: "OAuth users cannot log in directly."
+                    timestamp: "2024-12-08T19:30:00Z"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailNotFound:
+                  summary: There is no registered user for this email address.
+                  value:
+                    message: "There is no registered user for this email address. Check email and password or register a new user."
+                    timestamp: "2024-12-08T19:30:00Z"
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userAlreadyLoggedIn:
+                  summary: When the user is already logged in and tries to log in again.
+                  value:
+                    message: "The user is already logged in at this time."
+                    timestamp: "2024-12-08T19:30:00Z"
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                directLoginNotAllowed:
+                  summary: When an OAuth user attempts to log in directly
+                  value:
+                    message: "Direct login is not allowed for users created via OAuth."
+                    timestamp: "2024-12-08T19:30:00Z"
+    delete:
+      tags:
+        - login
+      summary: Operation to allow the user to log off the application.
+      description: With this option, the user could log out of the application quickly, without waiting for the tokens to be invalidated.
+      operationId: deleteLoggedUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogOfRequest'
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '204':
+          description: User successfully logged out
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login
+  schemas:
+    UserRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - firstName
+        - lastName
+        - typeUser
+        - applicationCode
+      properties:
+        username:
+          type: string
+          description: User Name
+          example: John Doe
+        email:
+          type: string
+          format: email
+          description: User email
+          example: john.doe@example.com
+        password:
+          type: string
+          format: password
+          description: User Password
+          minLength: 8
+          example: SecurePass123!
+        firstName:
+          type: string
+          description: First Name
+          example: John
+        lastName:
+          type: string
+          description: Last Name
+          example: Doe
+        pictureUrl:
+          type: string
+          description: URL for user picture
+          example: https://example.com/images/john.jpg
+        typeUser:
+          type: string
+          enum:
+            - OAUTH_USER
+            - DIRECT_USER
+          description: Type of user registration
+          example: DIRECT_USER
+        applicationCode:
+          type: integer
+          format: int64
+          description: The application code that the user is registering for. It is passed through the front-end and is not entered by the user.
+          example: 1
+    UserResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: User ID
+          example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        userName:
+          type: string
+          description: Username, First name + last name
+          example: john_doe
+        email:
+          type: string
+          format: email
+          description: user email
+          example: john.doe@example.com
+        token:
+          type: string
+          description: JWT for Authentication
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: Refreh JWT Token for a new Token Request
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email
+          example: john.doe@example.com
+        password:
+          type: string
+          format: password
+          description: User Password
+          minLength: 8
+          example: SecurePass123!
+    LoginResponse:
+      type: object
+      properties:
+        userName:
+          type: string
+          description: Username, First name + last name
+          example: john_doe
+        email:
+          type: string
+          format: email
+          description: user email
+          example: john.doe@example.com
+        token:
+          type: string
+          description: JWT for Authentication
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: Refreh JWT Token for a new Token Request
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    LogOfRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: user email
+          example: john.doe@example.com
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Description containing the reason for the error, which may be authentication, resource not found, negotiation, or conflict.
+        timestamp:
+          type: string
+          format: date-time

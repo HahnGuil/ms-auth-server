@@ -3,12 +3,9 @@ package br.com.hahn.auth.application.authentication;
 import br.com.hahn.auth.application.dto.request.*;
 import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
 import br.com.hahn.auth.application.dto.response.ResetPasswordResponseDTO;
-import br.com.hahn.auth.application.dto.response.UserResponseDTO;
 import br.com.hahn.auth.application.service.AuthService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,20 +19,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-
-    @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> createUser(@RequestBody UserRequestDTO body) {
-        log.info("AuthController: Register user");
-        UserResponseDTO userResponseDTO = authService.createUser(body);
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "User successfully registered", "user", userResponseDTO));
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO body) {
-        log.info("AuthController: Login user");
-        LoginResponseDTO loginResponseDTO = authService.userLogin(body);
-        return ResponseEntity.status(HttpStatus.OK).body(loginResponseDTO);
-    }
 
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDTO> refreshToken(@RequestHeader("Authorization") String authorizationHeader) {

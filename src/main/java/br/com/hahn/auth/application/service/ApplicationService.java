@@ -16,7 +16,6 @@ public class ApplicationService {
         this.applicationRepository = applicationRepository;
     }
 
-
     public Application findById(Long id){
         log.info("ApplicationService: Find application by ID");
         return applicationRepository.findById(id).orElseThrow(()
