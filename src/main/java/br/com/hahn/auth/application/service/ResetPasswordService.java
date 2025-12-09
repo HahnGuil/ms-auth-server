@@ -39,7 +39,7 @@ public class ResetPasswordService {
         ResetPassword resetPassword = findByEmail(recoverToken);
 
         if(resetPassword.getExpirationDate().isBefore(LocalDateTime.now())){
-            throw new RecoveryCodeExpiradeException("Recover Token is expired");
+            throw new RecoveryCodeExpiradeException("Recovery code expired, please submit a new request.");
         }
     }
 

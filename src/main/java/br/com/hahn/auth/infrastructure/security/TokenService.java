@@ -36,6 +36,7 @@ public class TokenService {
     private final LoginLogService loginLogService;
     private static final long TOKEN_EXPIRATION_TIME_MINUTES = 15;
 
+    // TODO - REFAZER A CRIAÇÃO DO RECOVER TOKEN
     public String generateRecorverToken(ResetPassword resetPassword){
         try {
             Algorithm algorithm = createAlgorithm();

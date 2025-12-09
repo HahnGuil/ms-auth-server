@@ -20,6 +20,7 @@ public class AuthController {
 
     private final AuthService authService;
 
+    // TOKEN CONTROLLER
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDTO> refreshToken(@RequestHeader("Authorization") String authorizationHeader) {
         log.info("AuthController: Refresh Token Request");
@@ -49,6 +50,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(resetPasswordResponseDTO);
     }
 
+    // TODO - APAGAR
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetePassword(@RequestBody PasswordOperationRequestDTO passwordOperationRequestDTO){
         log.info("AuthController: Resete password Request");
