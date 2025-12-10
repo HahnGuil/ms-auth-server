@@ -10,7 +10,7 @@ import lombok.ToString;
 public enum ErrorsResponses {
 
     EMAIL_ALREADY_REGISTER_ERROR("Email already registered. Please log in or recover your password."),
-    USER_NOT_FOUD_EMAIL("User not found. Check email and password or register a new user."),
+    USER_NOT_FOUD("User not found. Check email and password or register a new user."),
     USER_ALREADY_LOGGED("The user is already logged in at this time."),
     USER_BLOCK("This user has been blocked. Use the password reset link."),
     INVALID_RECOVERY_CODE("The validation code provided is not valid."),
