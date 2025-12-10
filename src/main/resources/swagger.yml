@@ -13,6 +13,8 @@ tags:
     description: Operation for user login
   - name: password
     description: Operations involving password changes, recovery, updates, and also password recovery code validation.
+  - name: token
+    description: Operations for token refresh and validation.
 
 paths:
   /auth:
@@ -85,7 +87,7 @@ paths:
             schema:
               $ref: '#/components/schemas/LoginRequest'
       responses:
-        '200':
+        '201':
           description: Login successful.
           content:
             application/json:
@@ -343,6 +345,35 @@ paths:
                   value:
                     message: "The token passed in the request is not valid for this type of operation or is not inform."
                     timestamp: "2024-12-08T19:30:00Z"
+  /token:
+    post:
+      tags:
+        - token
+      summary: Operations for token refresh and validation.
+      description: Allows the front-end to use this to generate a new token from the refresh token sent.
+      operationId: postRefreshToken
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: New token successfully generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: When the Scope Token of the token is different from the Recovery Token
+                  value:
+                    message: "The token passed in the request is not valid for this type of operation or is not inform."
+                    timestamp: "2024-12-08T19:30:00Z"
+
 components:
   securitySchemes:
     bearerAuth:

@@ -1,11 +1,10 @@
 package br.com.hahn.auth.infrastructure.scheduling;
 
-import br.com.hahn.auth.application.service.LoginLogService;
-import br.com.hahn.auth.application.service.ResetPasswordService;
+import br.com.hahn.auth.application.service.TokenLogService;
 import br.com.hahn.auth.application.service.UserService;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
 import br.com.hahn.auth.domain.enums.UserRole;
-import br.com.hahn.auth.domain.model.LoginLog;
+import br.com.hahn.auth.domain.model.TokenLog;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.infrastructure.service.EmailService;
 import lombok.AllArgsConstructor;
@@ -25,7 +24,7 @@ public class ApplicationScheduler {
     private final ResetPasswordService resetPasswordService;
     private final EmailService emailService;
     private final UserService userService;
-    private final LoginLogService loginLogService;
+    private final TokenLogService tokenLogService;
 
 
     @Scheduled(cron = "0 */5 * * * *")
@@ -69,11 +68,11 @@ public class ApplicationScheduler {
     public void invalidTokenSchaduler() {
         log.info("ApplicationScheduler: Starting routine to invalidate expired tokens.");
         LocalDateTime expirationTime = LocalDateTime.now().minusMinutes(15);
-        List<LoginLog> expiredTokens = loginLogService.findExpiredActiveTokens(expirationTime);
+        List<TokenLog> expiredTokens = tokenLogService.findExpiredActiveTokens(expirationTime);
 
-        for (LoginLog loginLog : expiredTokens) {
-            loginLogService.deactivateActiveToken(loginLog.getUserId(), TypeInvalidation.EXPIRATION_TIME);
-            log.info("ApplicationScheduler: Expired token invalidated for user.: {}", loginLog.getUserId());
+        for (TokenLog tokenLog : expiredTokens) {
+            tokenLogService.deactivateActiveToken(tokenLog.getUserId(), TypeInvalidation.EXPIRATION_TIME);
+            log.info("ApplicationScheduler: Expired token invalidated for user.: {}", tokenLog.getUserId());
         }
         log.info("ApplicationScheduler: Routine for invalidating expired tokens completed.");
     }

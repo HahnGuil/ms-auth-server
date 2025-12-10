@@ -17,7 +17,8 @@ public enum ErrorsResponses {
     EXPIRED_RECOVERY_CODE("The validation code provided is expired"),
     CHANGE_PASSWORD_NOT_ALLOWED_FOR_OAUTH_USER("Password changes are not allowed for users registered via Gmail."),
     FAIL_TO_SEND_EMAIL("Failed to send email. Please try again later."),
-    NOT_VALID_SCOPE_TOKEN("The token passed in the request is not valid for this type of operation or is not inform.");
+    NOT_VALID_SCOPE_TOKEN("The token passed in the request is not valid for this type of operation or is not inform."),
+    EXPIRED_REFRESH_TOKEN("Refresh Token expired, please log in again.");
 
     private final String message;
 

@@ -1,6 +1,6 @@
 package br.com.hahn.auth.infrastructure.security;
 
-import br.com.hahn.auth.application.service.LoginService;
+import br.com.hahn.auth.application.service.AuthService;
 import br.com.hahn.auth.domain.model.LoginResponse;
 import br.com.hahn.auth.infrastructure.exception.CustomAccessDeniedHandler;
 import br.com.hahn.auth.infrastructure.exception.CustomAuthenticationEntryPointHandler;
@@ -35,7 +35,7 @@ public class SecurityConfig {
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomAuthenticationEntryPointHandler customAuthenticationEntryPointHandler;
     private final SecurityFilter securityFilter;
-    private final LoginService loginService;
+    private final AuthService authService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -98,7 +98,7 @@ public class SecurityConfig {
             OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
             OAuth2User oAuth2User = token.getPrincipal();
 
-            LoginResponse loginResponse = loginService.processOAuthUser(oAuth2User);
+            LoginResponse loginResponse = authService.processOAuthUser(oAuth2User);
 
             response.setContentType("application/json");
             response.getWriter().write("{\"name\": \"" + loginResponse.getUserName() +

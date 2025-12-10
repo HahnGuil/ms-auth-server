@@ -21,7 +21,7 @@ public class TokenLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID idLoginLog;
+    private UUID idTokenLog;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "scope_token")

@@ -110,6 +110,7 @@ public class PasswordService {
         }
     }
 
+    // TODO -- VERIFICAR ROTINA DE APAGAR REQUEST DE RESET DE SENHA
     public int deleteByExpirationDateBefore(LocalDateTime dataTime){
         log.info("ResetPasswordService: Delete reset password by expiration date");
         return resetPasswordRepository.deleteByExpirationDateBefore(dataTime);

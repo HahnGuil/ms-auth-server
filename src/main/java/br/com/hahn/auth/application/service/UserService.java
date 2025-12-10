@@ -39,6 +39,8 @@ public class UserService {
 
 
 //    REFATORAÇÃO
+
+
     public UserResponse createUser(UserRequest userRequest){
         log.info("UserService: Starting user creation for user email: {} at: {}", userRequest.getEmail(), Instant.now());
 
@@ -48,7 +50,7 @@ public class UserService {
         }
 
         log.info("UserService: Starting convert user with email: {} to entity at: {}", userRequest.getEmail(), Instant.now());
-        var user = this.convertToEntity(userRequest, passwordEncoder.encode(userRequest.getPassword()));
+        var user = convertToEntity(userRequest, passwordEncoder.encode(userRequest.getPassword()));
         userRepository.save(user);
         return convertToUserResponse(user);
 
@@ -105,6 +107,32 @@ public class UserService {
         userRepository.updatePasswordByEmailAndId(newPassword, email, id, passwordCreateDate);
     }
 
+    public User createNewUserFromOAuth (OAuth2User oAuth2User){
+        log.info("UserService: Creating a new user: {}, from OAuth, at: {}", oAuth2User.getAttribute("email"), Instant.now());
+        var userRequest = convertToUserRequest(oAuth2User);
+        var newUserFromOAuth = convertToEntity(userRequest, "");
+        userRepository.save(newUserFromOAuth);
+        return newUserFromOAuth;
+    }
+
+    private UserRequest convertToUserRequest(OAuth2User oAuth2User){
+        UserRequest userRequest = new UserRequest();
+        userRequest.setUsername(oAuth2User.getAttribute("name"));
+        userRequest.setEmail(oAuth2User.getAttribute("email"));
+        userRequest.setFirstName(oAuth2User.getAttribute("given_name"));
+        userRequest.setLastName(oAuth2User.getAttribute("family_name"));
+        userRequest.pictureUrl(oAuth2User.getAttribute("picture"));
+        userRequest.setApplicationCode(null);
+        userRequest.setTypeUser(UserRequest.TypeUserEnum.OAUTH_USER);
+
+        return userRequest;
+    }
+
+
+
+
+
+
     // CÓDIGO ANTIGO -------------------
 
     public List<User> getUsersWithPasswordExpiringInDays(int daysUntilBlock) {
@@ -132,24 +160,7 @@ public class UserService {
         }
     }
 
-    public User createNewUserFromOAuth (OAuth2User oAuth2User){
-        log.info("UserService: Creating a new user from an OAuth user");
-        var userRequest = convertToUserRequest(oAuth2User);
-        return convertToEntity(userRequest, "");
-    }
 
-    private UserRequest convertToUserRequest(OAuth2User oAuth2User){
-        UserRequest userRequest = new UserRequest();
-        userRequest.setUsername(oAuth2User.getAttribute("name"));
-        userRequest.setEmail(oAuth2User.getAttribute("email"));
-        userRequest.setFirstName(oAuth2User.getAttribute("given_name"));
-        userRequest.setLastName(oAuth2User.getAttribute("family_name"));
-        userRequest.pictureUrl(oAuth2User.getAttribute("picture"));
-        userRequest.setApplicationCode(null);
-        userRequest.setTypeUser(UserRequest.TypeUserEnum.OAUTH_USER);
-
-        return userRequest;
-    }
 
     private boolean isApplicationAlreadySetForUser(User user, Application application){
         log.info("UserService: Validade if user aleady register for this application {}", application);

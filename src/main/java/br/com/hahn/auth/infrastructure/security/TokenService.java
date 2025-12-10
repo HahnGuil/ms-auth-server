@@ -44,6 +44,8 @@ public class TokenService {
                     .withSubject(resetPassword.getUserEmail())
                     .withClaim("scope", tokenLog.getScopeToken().getValue())
                     .withClaim("user_id", tokenLog.getUserId().toString())
+                    .withClaim("token_log_id", tokenLog.getIdTokenLog().toString())
+                    .withClaim("token_log_date_request", tokenLog.getCreateDate().toString())
                     .withExpiresAt(tokenLog.getCreateDate().plusMinutes(TOKEN_EXPIRATION_TIME_MINUTES).toInstant(ZONE_OFFSET))
                     .sign(algorithm);
         }catch (JWTCreationException e){
@@ -57,9 +59,9 @@ public class TokenService {
             return JWT.create()
                     .withIssuer(ISSUER)
                     .withSubject(user.getEmail())
-                    .withClaim("user_id", user.getUserId() != null ? user.getUserId().toString() : null)
-                    .withClaim("loginLog_id", tokenLog.getIdLoginLog().toString())
-                    .withClaim("loginLog_date_request", tokenLog.getCreateDate().toString())
+                    .withClaim("user_id", user.getUserId().toString())
+                    .withClaim("token_log_id", tokenLog.getIdTokenLog().toString())
+                    .withClaim("token_log_date_request", tokenLog.getCreateDate().toString())
                     .withClaim("scope", tokenLog.getScopeToken().getValue())
                     .withClaim("type_user", user.getTypeUser().toString())
                     .withClaim("applications", Optional.ofNullable(user.getApplications())
@@ -80,9 +82,9 @@ public class TokenService {
             return JWT.create()
                     .withIssuer(ISSUER)
                     .withSubject(user.getEmail())
-                    .withClaim("type", "refresh")
+                    .withClaim("user_id", user.getUserId().toString())
                     .withClaim("scope", ScopeToken.REFRESH_TOKEN.getValue())
-                    .withClaim("loginLog_id", tokenLog.getIdLoginLog().toString())
+                    .withClaim("token_log_id", tokenLog.getIdTokenLog().toString())
                     .sign(algorithm);
         } catch (JWTCreationException e) {
             throw new IllegalStateException("Error while creating refresh token", e);
@@ -101,7 +103,7 @@ public class TokenService {
 
     public UUID extracLoginLogId(String token){
         DecodedJWT decodedJWT = decodeAndVerifyToken(token);
-        String loginLogId = decodedJWT.getClaim("loginLog_id").asString();
+        String loginLogId = decodedJWT.getClaim("token_log_id").asString();
 
         log.info("TokenServie: id do login extraido antes do retorno {}", loginLogId );
         return UUID.fromString(loginLogId);
@@ -118,7 +120,7 @@ public class TokenService {
 
 
     private void validateTokenExistence(DecodedJWT decodeToken){
-        String loginLogId = decodeToken.getClaim("loginLog_id").asString();
+        String loginLogId = decodeToken.getClaim("token_log_id").asString();
 
         if (loginLogId == null || !existsLoginLogFromToken(loginLogId)) {
             throw new InvalidCredentialsException("Invalid token, please log in to continue.");
