@@ -1,6 +1,5 @@
 package br.com.hahn.auth.application.service;
 
-import br.com.hahn.auth.application.dto.response.LoginResponseDTO;
 import br.com.hahn.auth.application.execption.DirectLoginNotAllowedException;
 import br.com.hahn.auth.application.execption.InvalidCredentialsException;
 import br.com.hahn.auth.application.execption.UserAlreadyLoggedInException;
@@ -20,7 +19,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
-import javax.print.DocFlavor;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -51,7 +49,7 @@ public class AuthService {
      * @return LoginResponse containing user data and tokens
      */
     public LoginResponse userLogin(LoginRequest loginRequest){
-        log.info("AuthService: Starting loing on Login Service for user: {}, at: {}", loginRequest.getEmail(), Instant.now());
+        log.info("AuthService: Starting login on Login Service for user: {}, at: {}", loginRequest.getEmail(), Instant.now());
 
         log.info("AuthService: Validating the existence of the email: {}", loginRequest.getEmail());
         var user = userService.findByEmail(loginRequest.getEmail());
@@ -66,7 +64,7 @@ public class AuthService {
         validateBlockUser(user);
 
         log.info("Login Service: Validating credentials of the user: {} at: {}", user.getUserId(), Instant.now());
-        validadeCredentials(loginRequest.getPassword(), user.getPassword());
+        validateCredentials(loginRequest.getPassword(), user.getPassword());
 
         var loginLog = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
 
@@ -95,7 +93,7 @@ public class AuthService {
             user = userService.findByEmail(email);
             tokenLog = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
         }else {
-            log.info("AuthService: OAuth user not exist. Stargin create user for OAuthRequest with email: {}, at: {}", email, Instant.now());
+            log.info("AuthService: OAuth user not exist. Starting create user for OAuthRequest with email: {}, at: {}", email, Instant.now());
             user = userService.createNewUserFromOAuth(oAuth2User);
             tokenLog = tokenLogService.saveTokenLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now());
         }
@@ -120,12 +118,33 @@ public class AuthService {
         tokenLogService.deactivateActiveToken(userId, TypeInvalidation.LOG_OFF);
     }
 
+    /**
+     * Validates the user's current (old) password.
+     * Compares the provided oldPassword with the stored password of the given user.
+     * If the passwords do not match, an InvalidCredentialsException is thrown.
+     *
+     * @author HahnGuil
+     * @param user the User whose password will be validated
+     * @param oldPassword the plain-text old password provided for validation
+     * @throws InvalidCredentialsException if the provided oldPassword does not match the user's stored password
+     */
     public void validateOldPassword(User user, String oldPassword){
         log.info("AuthService: Staring validating for oldPassword for user: {} at: {}", user.getUserId(), Instant.now());
-        validadeCredentials(oldPassword, user.getPassword());
+        validateCredentials(oldPassword, user.getPassword());
     }
-    
-    
+
+    /**
+     * Generates a new token for the user based on the provided JWT.
+     * This method performs the following steps:
+     * - Extracts the token log ID from the JWT and validates if the refresh token has already been used.
+     * - Extracts the user ID from the JWT and deactivates the current token.
+     * - Generates a new access token and refresh token for the user.
+     * - Saves the new token log and returns the LoginResponse.
+     *
+     * @author HahnGuil
+     * @param jwt the JWT token containing user information and claims
+     * @return LoginResponse containing the user's data and new tokens
+     */
     public LoginResponse generateNewTokenForUser(Jwt jwt){
         log.info("AuthService: Starting generate new token for user email: {}, at: {}", jwt.getSubject(), Instant.now());
 
@@ -144,6 +163,14 @@ public class AuthService {
         return convertToLoginResponse(user, tokenLog);
     }
 
+    /**
+     * Checks if the token associated with the given loginLogId is still valid.
+     * If the token is invalid, logs an error message and throws an InvalidCredentialsException.
+     *
+     * @author HahnGuil
+     * @param loginLogId the UUID of the token log to be validated
+     * @throws InvalidCredentialsException if the token is no longer valid
+     */
     private void checkTokenActive (UUID loginLogId) {
         if (!tokenLogService.isTokenValid(loginLogId)) {
             log.error("AuthService: Refresh token expired. Throw InvalidCredentialsException at: {}", Instant.now());
@@ -174,13 +201,13 @@ public class AuthService {
      * @return LoginResponse containing the user's name, email, token, and refresh token
      */
     private LoginResponse convertToLoginResponse(User user, TokenLog tokenLog){
-        log.info("AuthService: Gerenate token for user: {}, using token service at: {}", user.getUserId(), Instant.now());
+        log.info("AuthService: Generate token for user: {}, using token service at: {}", user.getUserId(), Instant.now());
         var token = tokenService.generateToken(user, tokenLog);
 
         log.info("AuthService: Generate refreshToken for user: {}, using token service at: {}", user.getUserId(), Instant.now());
         var refreshToken = tokenService.generateRefreshToken(user, tokenLog);
 
-        log.info("AuthService: Setting loginResponse atributes for user: {}, at: {}", user.getUserId(), Instant.now());
+        log.info("AuthService: Setting loginResponse attributes for user: {}, at: {}", user.getUserId(), Instant.now());
         LoginResponse loginResponse = new LoginResponse();
         loginResponse.setUserName(user.getFirstName() + user.getLastName());
         loginResponse.setEmail(user.getEmail());
@@ -215,7 +242,7 @@ public class AuthService {
      */
     private void validateBlockUser(User user){
         if(Boolean.TRUE.equals(user.getBlockUser())){
-            log.error("AuthService: User blocl, throw exception");
+            log.error("AuthService: User block, throw exception");
             throw new UserBlockException(ErrorsResponses.USER_BLOCK.getMessage());
         }
     }
@@ -231,7 +258,7 @@ public class AuthService {
      * @param userPassword the user's stored password
      * @throws InvalidCredentialsException if the passwords do not match
      */
-    private void validadeCredentials(String loginPassword, String userPassword) {
+    private void validateCredentials(String loginPassword, String userPassword) {
         if(!passwordEncoder.matches(loginPassword, userPassword)){
             throw new InvalidCredentialsException("Invalid email or password.");
         }
