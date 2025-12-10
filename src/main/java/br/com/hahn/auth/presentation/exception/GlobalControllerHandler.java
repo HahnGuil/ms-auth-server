@@ -1,7 +1,7 @@
 package br.com.hahn.auth.presentation.exception;
 
-import br.com.hahn.auth.application.dto.response.ErrorResponseDTO;
 import br.com.hahn.auth.application.execption.*;
+import br.com.hahn.auth.domain.model.ErrorResponse;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,110 +9,130 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @ControllerAdvice
 public class GlobalControllerHandler {
 
 
     @ExceptionHandler(ResourceAlreadyExistException.class)
-    public ResponseEntity<ErrorResponseDTO> handlerUserAlreadyExistForApplicationException(ResourceAlreadyExistException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handlerUserAlreadyExistForApplicationException(ResourceAlreadyExistException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(DataAccessException.class)
-    public ResponseEntity<ErrorResponseDTO> handleDataAccessException(DataAccessException ex) {
-        ErrorResponseDTO error = new ErrorResponseDTO("Error to process the request, try again" + ex, Instant.now());
+    public ResponseEntity<ErrorResponse> handleDataAccessException(DataAccessException ex) {
+        var error = generateErrorResponse("Error to process the request, try again" + ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleResourceNotFoundException(ResourceNotFoundException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(ApplicationNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleApplicationNotFoundException(ApplicationNotFoundException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleApplicationNotFoundException(ApplicationNotFoundException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleUserNotFoundException(UserNotFoundException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ErrorResponseDTO> handleInvalidCredentialsException(InvalidCredentialsException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(InvalidCredentialsException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
     @ExceptionHandler(InvalidFormatException.class)
-    public ResponseEntity<ErrorResponseDTO> handleInvalidFormatException(InvalidFormatException ex) {
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleInvalidFormatException(InvalidFormatException ex) {
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(KeyRotationException.class)
-    public ResponseEntity<ErrorResponseDTO> handleKeyRotationException(KeyRotationException ex) {
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleKeyRotationException(KeyRotationException ex) {
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(InvalidOperationExecption.class)
-    public ResponseEntity<ErrorResponseDTO> handleOperationException(InvalidOperationExecption ex) {
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleOperationException(InvalidOperationExecption ex) {
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(UserAlreadyExistException.class)
-    public ResponseEntity<ErrorResponseDTO> handleUserExistException(UserAlreadyExistException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleUserExistException(UserAlreadyExistException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(DataBaseServerException.class)
-    public ResponseEntity<ErrorResponseDTO> handleDataBaseServerException(DataBaseServerException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleDataBaseServerException(DataBaseServerException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
     @ExceptionHandler(UserNotOAuthException.class)
-    public ResponseEntity<ErrorResponseDTO> handleUserNotOAuthException(UserNotOAuthException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleUserNotOAuthException(UserNotOAuthException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(error);
     }
 
     @ExceptionHandler(ResetPasswordNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleResetPasswordNotFoundException(ResetPasswordNotFoundException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handleResetPasswordNotFoundException(ResetPasswordNotFoundException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(UserEmailAlreadyExistException.class)
-    public ResponseEntity<ErrorResponseDTO> handlerUserEmailAlreadyExistException(UserEmailAlreadyExistException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handlerUserEmailAlreadyExistException(UserEmailAlreadyExistException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(UserCanNotChangePasswordException.class)
-    public ResponseEntity<ErrorResponseDTO> handlerUserCanNotChangePasswordException(UserCanNotChangePasswordException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handlerUserCanNotChangePasswordException(UserCanNotChangePasswordException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     @ExceptionHandler(NotFoundResetPasswordRequestForUser.class)
-    public ResponseEntity<ErrorResponseDTO> handlerNotFoundResetPasswordRequestForUser(NotFoundResetPasswordRequestForUser ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handlerNotFoundResetPasswordRequestForUser(NotFoundResetPasswordRequestForUser ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     @ExceptionHandler(InvalidRecoverTokenException.class)
-    public ResponseEntity<ErrorResponseDTO> handlerInvalidRecoverTokenException(InvalidRecoverTokenException ex){
-        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+    public ResponseEntity<ErrorResponse> handlerInvalidRecoverTokenException(InvalidRecoverTokenException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> handlerInvalidRefreshTokenException(InvalidRefreshTokenException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handlerInvalidTokenException(InvalidTokenException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    private ErrorResponse generateErrorResponse(String message, Instant timeStamp){
+        var errorResponse = new ErrorResponse();
+        errorResponse.setMessage(message);
+        errorResponse.setTimestamp(OffsetDateTime.from(timeStamp));
+        return errorResponse;
     }
 }

@@ -5,6 +5,7 @@ import br.com.hahn.auth.domain.model.LoginResponse;
 import br.com.hahn.auth.infrastructure.exception.CustomAccessDeniedHandler;
 import br.com.hahn.auth.infrastructure.exception.CustomAuthenticationEntryPointHandler;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -27,9 +28,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import java.time.Instant;
+
 @Configuration
 @EnableWebSecurity
 @AllArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
@@ -95,6 +99,7 @@ public class SecurityConfig {
     @Bean
     public AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler() {
         return (request, response, authentication) -> {
+            log.info("SecurityConfig: Receiving oAuth2Auth in request: {} at: {}", request, Instant.now());
             OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
             OAuth2User oAuth2User = token.getPrincipal();
 

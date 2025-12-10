@@ -26,7 +26,17 @@ public class KafkaConfig {
     private String autoOffsetReset;
 
 
-
+    /**
+     * Creates a Kafka ConsumerFactory bean for deserializing messages with String keys
+     * and UserSyncEvent values.
+     * <p>
+     * This method configures the necessary properties for the Kafka consumer, such as
+     * bootstrap servers, group ID, deserializers, and trusted packages for JSON deserialization.
+     * It returns a DefaultKafkaConsumerFactory instance configured with these properties.
+     *
+     * @author HahnGuil
+     * @return ConsumerFactory<String, UserSyncEvent> the configured Kafka ConsumerFactory
+     */
     @Bean
     public ConsumerFactory<String, UserSyncEvent> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
@@ -46,6 +56,18 @@ public class KafkaConfig {
         );
     }
 
+    /**
+     * Creates a Kafka Listener Container Factory bean for processing messages with String keys
+     * and UserSyncEvent values.
+     * <p>
+     * This method configures a ConcurrentKafkaListenerContainerFactory using the provided
+     * ConsumerFactory. The factory is used to create Kafka listener containers that handle
+     * message consumption.
+     *
+     * @author HahnGuil
+     * @param consumerFactory the ConsumerFactory used to configure the listener container factory
+     * @return ConcurrentKafkaListenerContainerFactory<String, UserSyncEvent> the configured Kafka Listener Container Factory
+     */
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, UserSyncEvent> kafkaListenerContainerFactory(
             ConsumerFactory<String, UserSyncEvent> consumerFactory) {

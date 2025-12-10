@@ -1,11 +1,13 @@
 package br.com.hahn.auth.application.service;
 
+import br.com.hahn.auth.application.execption.InvalidTokenException;
+import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
 import br.com.hahn.auth.domain.model.InvalidatedToken;
 import br.com.hahn.auth.domain.model.TokenLog;
 import br.com.hahn.auth.domain.model.User;
-import br.com.hahn.auth.domain.respository.LoginLogRepository;
+import br.com.hahn.auth.domain.respository.TokenLogRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +23,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TokenLogService {
 
-    private final LoginLogRepository loginLogRepository;
+    private final TokenLogRepository loginLogRepository;
     private final LoggedNowService loggedNowService;
     private final InvalidatedTokenService invalidatedTokenService;
 
@@ -104,6 +106,37 @@ public class TokenLogService {
     }
 
     /**
+     * Retrieves a TokenLog entity by its ID.
+     * <p>
+     * This method attempts to find a TokenLog in the database using the provided token log ID.
+     * If the TokenLog is not found, it logs an error message and throws an InvalidTokenException.
+     *
+     * @author HahnGuil
+     * @param tokenLogId The UUID of the token log to be retrieved.
+     * @return The TokenLog entity if found.
+     * @throws InvalidTokenException if no TokenLog is found for the given ID.
+     */
+    public TokenLog findById(UUID tokenLogId){
+        return loginLogRepository.findById(tokenLogId).orElseThrow(() -> {
+            log.error("TokenLogService: Not foud Token for user: {}. Throw InvalidTokenException at: {}", tokenLogId, Instant.now());
+            return new InvalidTokenException(ErrorsResponses.INVALID_TOKEN.getMessage());
+        });
+    }
+
+    /**
+     * Checks if a TokenLog entity exists based on its ID.
+     * <p>
+     * This method queries the database to determine if a TokenLog with the given ID exists.
+     *
+     * @author HahnGuil
+     * @param tokenLogId The UUID of the token log to check for existence.
+     * @return true if the TokenLog exists, false otherwise.
+     */
+    public boolean existsById(UUID tokenLogId){
+        return loginLogRepository.existsById(tokenLogId);
+    }
+
+    /**
      * Invalidates a token for a user based on the provided token log and invalidation type.
      * <p>
      * This method performs the following steps:
@@ -132,7 +165,7 @@ public class TokenLogService {
      * @return The most recent TokenLog entity for the user.
      */
     private TokenLog findLoginLogByUserId(UUID userId){
-        return loginLogRepository.findTopByUserIdOrderByDateLoginDesc(userId);
+        return loginLogRepository.findTopByUserIdOrderByCreateDateDesc(userId);
     }
 
     /**

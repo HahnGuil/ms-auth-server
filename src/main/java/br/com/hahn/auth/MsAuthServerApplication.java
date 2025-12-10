@@ -46,7 +46,5 @@ public class MsAuthServerApplication {
         log.info("Health {}", healthUrl);
         log.info("Swagger {}", swaggerUrl);
         log.info(LINE_DIVISOR);
-
     }
-
 }

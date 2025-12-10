@@ -130,7 +130,7 @@ public class PasswordService {
         var tokenLog = tokenLogService.saveTokenLog(userService.findByEmail(resetPassword.getUserEmail()), ScopeToken.RECOVER_CODE, LocalDateTime.now());
 
         log.info("PasswordService: Generate Recover token for user: {}, at: {}", resetPassword.getUserEmail(), Instant.now());
-        return generateRecoveryToken(tokenService.generateRecorverToken(resetPassword, tokenLog));
+        return generateRecoveryToken(tokenService.generateRecoverToken(resetPassword, tokenLog));
     }
 
     /**

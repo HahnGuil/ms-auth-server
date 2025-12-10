@@ -18,7 +18,14 @@ public enum ErrorsResponses {
     CHANGE_PASSWORD_NOT_ALLOWED_FOR_OAUTH_USER("Password changes are not allowed for users registered via Gmail."),
     FAIL_TO_SEND_EMAIL("Failed to send email. Please try again later."),
     NOT_VALID_SCOPE_TOKEN("The token passed in the request is not valid for this type of operation or is not inform."),
-    EXPIRED_REFRESH_TOKEN("Refresh Token expired, please log in again.");
+    EXPIRED_REFRESH_TOKEN("Refresh Token expired, please log in again."),
+    KEY_ROTATION_ERROR("Failed to rotate keys"),
+    GENERATE_RECOVER_TOKEN_ERROR("Error while creating RecoverToken"),
+    GENERATE_TOKEN_ERROR("Error while creating Token"),
+    GENERATE_REFRESH_TOKEN_ERROR("Error while creating Refresh"),
+    PRIVATE_KEY_NOT_AVAILABLE("Private key not available"),
+    ID_PRIVATE_KEY_NOT_AVAILABLE("Private key ID not available"),
+    INVALID_TOKEN("Invalid token, please log in to continue.");
 
     private final String message;
 

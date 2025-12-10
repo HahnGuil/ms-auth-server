@@ -11,18 +11,18 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface LoginLogRepository extends JpaRepository<TokenLog, UUID> {
+public interface TokenLogRepository extends JpaRepository<TokenLog, UUID> {
 
     @Modifying
     @Query("UPDATE TokenLog ll SET ll.activeToken = false WHERE ll.userId = :userId")
     void deactivateActiveTokenByUserId(UUID userId);
 
-    @Query("SELECT ll.activeToken FROM TokenLog ll WHERE ll.idLoginLog = :loginLogId")
+    @Query("SELECT ll.activeToken FROM TokenLog ll WHERE ll.createDate = :loginLogId")
     boolean findActiveTokenByLoginLogId(UUID loginLogId);
 
-    @Query("SELECT ll FROM TokenLog ll WHERE ll.activeToken = true AND ll.dateLogin < :expirationTime")
+    @Query("SELECT ll FROM TokenLog ll WHERE ll.activeToken = true AND ll.createDate < :expirationTime")
     List<TokenLog> findExpiredActiveTokens(LocalDateTime expirationTime);
 
-    TokenLog findTopByUserIdOrderByDateLoginDesc(UUID userId);
+    TokenLog findTopByUserIdOrderByCreateDateDesc(UUID userId);
 
 }
