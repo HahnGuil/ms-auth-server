@@ -3,10 +3,8 @@ package br.com.hahn.auth.application.controller;
 import br.com.hahn.auth.application.execption.InvalidRecoverTokenException;
 import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
