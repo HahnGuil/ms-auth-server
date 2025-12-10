@@ -19,8 +19,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
-    Optional<User> findById(UUID id);
-
     @Modifying
     @Query("UPDATE User u SET u.password = :password, u.passwordCreateDate = :passwordCreateDate, u.blockUser = false WHERE u.email = :email AND u.userId = :id")
     void updatePasswordByEmailAndId(@Param("password") String password, @Param("email") String email, @Param("id") UUID id, @Param("passwordCreateDate") LocalDateTime passwordCreateDate);
