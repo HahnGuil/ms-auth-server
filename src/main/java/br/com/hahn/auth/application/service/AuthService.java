@@ -12,8 +12,8 @@ import br.com.hahn.auth.domain.model.LoginResponse;
 import br.com.hahn.auth.domain.model.TokenLog;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.infrastructure.security.TokenService;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor
 @Slf4j
 public class AuthService {
 
@@ -33,6 +32,14 @@ public class AuthService {
     private final TokenService tokenService;
     private final LoggedNowService loggedNowService;
     private final PasswordEncoder passwordEncoder;
+
+    public AuthService(@Lazy UserService userService, TokenLogService tokenLogService, TokenService tokenService, LoggedNowService loggedNowService, PasswordEncoder passwordEncoder) {
+        this.userService = userService;
+        this.tokenLogService = tokenLogService;
+        this.tokenService = tokenService;
+        this.loggedNowService = loggedNowService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
 
     /**

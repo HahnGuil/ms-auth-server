@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 
 @RestController
-@RequestMapping("/token")
 @Slf4j
 @RequiredArgsConstructor
 public class AuthController extends AbstractController implements TokenApi {

@@ -152,6 +152,7 @@
                                 <skipDefaultInterface>true</skipDefaultInterface>
                                 <useTags>true</useTags>
                                 <dateLibrary>java8</dateLibrary>
+                                <openApiNullable>false</openApiNullable>
                             </configOptions>
                         </configuration>
                     </execution>

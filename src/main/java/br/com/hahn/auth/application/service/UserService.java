@@ -12,8 +12,8 @@ import br.com.hahn.auth.domain.model.UserRequest;
 import br.com.hahn.auth.domain.model.UserResponse;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,6 @@ import java.util.UUID;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class UserService {
 
 
@@ -36,6 +35,14 @@ public class UserService {
     private final TokenLogService tokenLogService;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository, ApplicationService applicationService, @Lazy TokenLogService tokenLogService, TokenService tokenService, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.applicationService = applicationService;
+        this.tokenLogService = tokenLogService;
+        this.tokenService = tokenService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
 
     /**
