@@ -24,8 +24,8 @@ public class LoggedNow {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(name = "login_log_id", nullable = false)
-    private UUID loginLogId;
+    @Column(name = "token_log_id", nullable = false)
+    private UUID tokenLogId;
 
     @Column(name = "date_login")
     private LocalDateTime dateLogin;
