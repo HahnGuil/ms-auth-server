@@ -14,6 +14,6 @@ public interface LoggedNowRepository extends JpaRepository<LoggedNow, UUID> {
     boolean existsByUserId(UUID userId);
 
     @Modifying
-    @Query("DELETE FROM LoginLog ll WHERE ll.userId = :userId")
+    @Query("DELETE FROM TokenLog ll WHERE ll.userId = :userId")
     void deleteByUserId(UUID userId);
 }

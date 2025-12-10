@@ -2,11 +2,12 @@ package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.application.execption.UserAlreadyLoggedInException;
 import br.com.hahn.auth.application.execption.UserBlockException;
+import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
-import br.com.hahn.auth.domain.model.LoginLog;
 import br.com.hahn.auth.domain.model.LoginRequest;
 import br.com.hahn.auth.domain.model.LoginResponse;
+import br.com.hahn.auth.domain.model.TokenLog;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.infrastructure.security.TokenService;
 import lombok.AllArgsConstructor;
@@ -26,7 +27,7 @@ public class LoginService {
 
     private final UserService userService;
     private final AuthService authService;
-    private final LoginLogService loginLogService;
+    private final TokenLogService tokenLogService;
     private final TokenService tokenService;
     private final LoggedNowService loggedNowService;
 
@@ -62,7 +63,7 @@ public class LoginService {
         log.info("Login Service: Validating credentials of the user: {} at: {}", user.getUserId(), Instant.now());
         authService.validadeCredentials(loginRequest.getPassword(), user.getPassword());
 
-        var loginLog = loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
+        var loginLog = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
 
         return convertToLoginResponse(user, loginLog);
     }
@@ -82,19 +83,19 @@ public class LoginService {
 
         String email = oAuth2User.getAttribute("email");
         User user;
-        LoginLog loginLog;
+        TokenLog tokenLog;
 
         if(userService.existsByEmail(email)){
             log.info("LoginService: OAuth User exist. Starting login for OAuthUser with email: {} at {}: ", email, Instant.now());
-            user = userService.findByIdWithApplications(email);
-            loginLog = loginLogService.saveLoginLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
+            user = userService.findByEmail(email);
+            tokenLog = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
         }else {
             log.info("LoginService: OAuth user not exist. Stargin create user for OAuthRequest with email: {}, at: {}", email, Instant.now());
             user = userService.createNewUserFromOAuth(oAuth2User);
-            loginLog = loginLogService.saveLoginLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now());
+            tokenLog = tokenLogService.saveTokenLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now());
         }
 
-        return convertToLoginResponse(user, loginLog);
+        return convertToLoginResponse(user, tokenLog);
     }
 
     /**
@@ -111,7 +112,7 @@ public class LoginService {
         log.info("LoginService: Starting log off for user with email: {}, at: {}", jwt.getSubject(), Instant.now());
         var userId = getUserIdFromToken(jwt);
         loggedNowService.deleteByUserId(userId);
-        loginLogService.deactivateActiveToken(userId, TypeInvalidation.LOG_OFF);
+        tokenLogService.deactivateActiveToken(userId, TypeInvalidation.LOG_OFF);
     }
 
     /**
@@ -133,15 +134,15 @@ public class LoginService {
      *
      * @author HahnGuil
      * @param user the User object containing user details
-     * @param loginLog the LoginLog object containing login details
+     * @param tokenLog the LoginLog object containing login details
      * @return LoginResponse containing the user's name, email, token, and refresh token
      */
-    private LoginResponse convertToLoginResponse(User user, LoginLog loginLog){
+    private LoginResponse convertToLoginResponse(User user, TokenLog tokenLog){
         log.info("LoginService: Gerenate token for user: {}, using token service at: {}", user.getUserId(), Instant.now());
-        var token = tokenService.generateToken(user, loginLog);
+        var token = tokenService.generateToken(user, tokenLog);
 
         log.info("LoginService: Generate refreshToken for user: {}, using token service at: {}", user.getUserId(), Instant.now());
-        var refreshToken = tokenService.generateRefreshToken(user, loginLog);
+        var refreshToken = tokenService.generateRefreshToken(user, tokenLog);
 
         log.info("LoginService: Setting loginResponse atributes for user: {}, at: {}", user.getUserId(), Instant.now());
         LoginResponse loginResponse = new LoginResponse();
@@ -163,7 +164,7 @@ public class LoginService {
      */
     private void validateIfUserIsAlreadyLoggedIn(User user){
         if(loggedNowService.existsByUserId(user.getUserId())){
-            throw new UserAlreadyLoggedInException("The user is already logged in at this time.");
+            throw new UserAlreadyLoggedInException(ErrorsResponses.USER_ALREADY_LOGGED.getMessage());
         }
     }
 
@@ -179,7 +180,7 @@ public class LoginService {
     private void validateBlockUser(User user){
         if(Boolean.TRUE.equals(user.getBlockUser())){
             log.error("AuthService: User blocl, throw exception");
-            throw new UserBlockException("This user has been blocked. Use the password reset link.");
+            throw new UserBlockException(ErrorsResponses.USER_BLOCK.getMessage());
         }
     }
 }

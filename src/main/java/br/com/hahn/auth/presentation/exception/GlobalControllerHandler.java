@@ -98,4 +98,21 @@ public class GlobalControllerHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    @ExceptionHandler(UserCanNotChangePasswordException.class)
+    public ResponseEntity<ErrorResponseDTO> handlerUserCanNotChangePasswordException(UserCanNotChangePasswordException ex){
+        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(NotFoundResetPasswordRequestForUser.class)
+    public ResponseEntity<ErrorResponseDTO> handlerNotFoundResetPasswordRequestForUser(NotFoundResetPasswordRequestForUser ex){
+        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(InvalidRecoverTokenException.class)
+    public ResponseEntity<ErrorResponseDTO> handlerInvalidRecoverTokenException(InvalidRecoverTokenException ex){
+        ErrorResponseDTO error = new ErrorResponseDTO(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
 }

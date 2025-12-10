@@ -1,4 +1,4 @@
-package br.com.hahn.auth.application.authentication;
+package br.com.hahn.auth.application.controller;
 
 import br.com.hahn.auth.LoginApi;
 import br.com.hahn.auth.application.service.LoginService;
@@ -20,7 +20,7 @@ import java.time.Instant;
 @RequestMapping("/login")
 @Slf4j
 @AllArgsConstructor
-public class LoginController implements LoginApi {
+public class LoginController extends AbstractController implements LoginApi {
 
     private final LoginService loginService;
 
@@ -34,7 +34,7 @@ public class LoginController implements LoginApi {
     @Override
     public ResponseEntity<Void> deleteLoggedUser(LogOfRequest logOfRequest) {
         log.info("LoginController: Starting logoff for user with email: {}, at {}", logOfRequest.getEmail(), Instant.now());
-        loginService.logOffUser((Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        loginService.logOffUser(extractJwtFromContext());
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

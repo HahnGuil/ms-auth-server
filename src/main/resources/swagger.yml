@@ -236,6 +236,10 @@ paths:
       responses:
         '201':
           description: A validation code has been sent to the email address you provided. Please also check your spam folder. Expect an email from noreply@toxicbet.com.br.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         '400':
           description: Not Found
           content:
@@ -266,7 +270,7 @@ paths:
         - password
       summary: Validate recovery code
       description: Receive the recovery code and the user's email for validation.
-      operationId: postValidateCode
+      operationId: postRequestValidateCode
       requestBody:
         required: true
         content:
@@ -274,8 +278,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ValidateCodeRequest'
       responses:
-        '200':
-          description: A validation code has been sent to the email address you provided. Please also check your spam folder. Expect an email from noreply@toxicbet.com.br.
+        '201':
+          description: Message confirming the successful operation.
           content:
             application/json:
               schema:
@@ -308,6 +312,36 @@ paths:
                   summary: There is no registered user for this email address.
                   value:
                     message: "There is no registered user for this email address. Check email and password or register a new user."
+                    timestamp: "2024-12-08T19:30:00Z"
+  /password/reset-password:
+    patch:
+      tags:
+        - password
+      summary: Operation to reset the user's password.
+      description: After the user validates the recovery code, the front-end will use this endpoint to register a new password for the user.
+      operationId: patchResetPassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPasswordRequest'
+      responses:
+        '204':
+          description: Password Changed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: When the Scope Token of the token is different from the Recovery Token
+                  value:
+                    message: "The token passed in the request is not valid for this type of operation or is not inform."
                     timestamp: "2024-12-08T19:30:00Z"
 components:
   securitySchemes:
@@ -439,6 +473,12 @@ components:
           format: email
           description: user email
           example: john.doe@example.com
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Message informing of the successful operation.
     ErrorResponse:
       type: object
       properties:
@@ -482,6 +522,17 @@ components:
           format: email
           description: User email
           example: john.doe@example.com
+    NewPasswordRequest:
+      type: object
+      required:
+        - newPassword
+      properties:
+        newPassword:
+          type: string
+          format: password
+          description: User Password
+          minLength: 8
+          example: SecurePass123!
     ValidateCodeRequest:
       type: object
       required:
@@ -494,7 +545,7 @@ components:
           description: User email
           example: john.doe@example.com
         recoveryCode:
-          type: integer
+          type: string
           description: A six-digit code sent to the user's email for validation.
           example: 123698
     ValidateCodeResponse:

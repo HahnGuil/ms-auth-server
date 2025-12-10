@@ -1,8 +1,8 @@
 package br.com.hahn.auth.application.service;
 
-import br.com.hahn.auth.application.execption.DataBaseServerException;
 import br.com.hahn.auth.application.execption.UserEmailAlreadyExistException;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
+import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeUser;
 import br.com.hahn.auth.domain.enums.UserRole;
@@ -12,9 +12,9 @@ import br.com.hahn.auth.domain.model.UserRequest;
 import br.com.hahn.auth.domain.model.UserResponse;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,27 +27,28 @@ import java.util.UUID;
 
 @Service
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class UserService {
 
 
     private final UserRepository userRepository;
     private final ApplicationService applicationService;
-    private final AuthService authService;
-    private final LoginLogService loginLogService;
+    private final TokenLogService tokenLogService;
     private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
+
 
 //    REFATORAÇÃO
     public UserResponse createUser(UserRequest userRequest){
         log.info("UserService: Starting user creation for user email: {} at: {}", userRequest.getEmail(), Instant.now());
 
         if(this.existsByEmail(userRequest.getEmail())){
-            log.error("UserService: Email already registered for this user with email: {}, throw exception {}", userRequest.getEmail(), Instant.now());
-            throw new UserEmailAlreadyExistException("Email already registered. Please log in or recover your password.");
+            log.error("UserService: Email already registered for this user with email: {}. throw UserEmailAlreadyExistsException at: {}", userRequest.getEmail(), Instant.now());
+            throw new UserEmailAlreadyExistException(ErrorsResponses.EMAIL_ALREADY_REGISTER_ERROR.getMessage());
         }
 
         log.info("UserService: Starting convert user with email: {} to entity at: {}", userRequest.getEmail(), Instant.now());
-        var user = this.convertToEntity(userRequest, authService.encodePassword(userRequest.getPassword()));
+        var user = this.convertToEntity(userRequest, passwordEncoder.encode(userRequest.getPassword()));
         userRepository.save(user);
         return convertToUserResponse(user);
 
@@ -58,7 +59,7 @@ public class UserService {
         userResponse.setUserId(user.getUserId());
         userResponse.setUserName(user.getFirstName() + " " + user.getLastName());
         userResponse.setEmail(user.getEmail());
-        var token = tokenService.generateToken(user, loginLogService.saveLoginLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now()));
+        var token = tokenService.generateToken(user, tokenLogService.saveTokenLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now()));
         userResponse.setToken(token);
         return userResponse;
     }
@@ -72,8 +73,8 @@ public class UserService {
         log.info("UserService: Searching for user for email: {} at: {}", email, Instant.now());
         return userRepository.findByEmailWithApplications(email)
                 .orElseThrow(() -> {
-                    log.error("UserService: User not found for email: {} at {}", email, Instant.now());
-                    return new UserNotFoundException("User not found. Check email and password or register a new user.");
+                    log.error("UserService: User not found for email: {}. Throw the UserNotFoundException at: {}", email, Instant.now());
+                    return new UserNotFoundException(ErrorsResponses.USER_NOT_FOUD_EMAIL.getMessage());
                 });
     }
 
@@ -98,6 +99,12 @@ public class UserService {
         return user;
     }
 
+    @Transactional
+    public void updatePassword(String email, UUID id, String newPassword, LocalDateTime passwordCreateDate) {
+        log.info("UserService: update password for the user: {} at: {}", id, Instant.now());
+        userRepository.updatePasswordByEmailAndId(newPassword, email, id, passwordCreateDate);
+    }
+
     // CÓDIGO ANTIGO -------------------
 
     public List<User> getUsersWithPasswordExpiringInDays(int daysUntilBlock) {
@@ -110,18 +117,6 @@ public class UserService {
         log.info("UserService: Find users to block");
         LocalDateTime referenceData = LocalDateTime.now().minusDays(90);
         blockUsers(userRepository.findUsersWithPasswordNewerThan(referenceData));
-    }
-
-    @Transactional
-    public void updatePassword(String email, UUID id, String newPassword, LocalDateTime passwordCreateDate) {
-        log.info("UserService: update user password");
-        userRepository.updatePasswordByEmailAndId(newPassword, email, id, passwordCreateDate);
-    }
-
-    public User findByIdWithApplications(String email) {
-        log.info("UserService: find by with application");
-        return userRepository.findByEmailWithApplications(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found for this application"));
     }
 
     @Transactional

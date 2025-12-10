@@ -48,6 +48,7 @@ public class User {
     @Column(name = "block_user")
     private Boolean blockUser;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "type_user")
     private TypeUser typeUser;
 
@@ -56,7 +57,7 @@ public class User {
     private UserRole role;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<LoginLog> loginLogs;
+    private Set<TokenLog> tokenLogs;
 
 
     @ManyToMany

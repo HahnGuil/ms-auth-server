@@ -1,6 +1,6 @@
 package br.com.hahn.auth.domain.respository;
 
-import br.com.hahn.auth.domain.model.LoginLog;
+import br.com.hahn.auth.domain.model.TokenLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,18 +11,18 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface LoginLogRepository extends JpaRepository<LoginLog, UUID> {
+public interface LoginLogRepository extends JpaRepository<TokenLog, UUID> {
 
     @Modifying
-    @Query("UPDATE LoginLog ll SET ll.activeToken = false WHERE ll.userId = :userId")
+    @Query("UPDATE TokenLog ll SET ll.activeToken = false WHERE ll.userId = :userId")
     void deactivateActiveTokenByUserId(UUID userId);
 
-    @Query("SELECT ll.activeToken FROM LoginLog ll WHERE ll.idLoginLog = :loginLogId")
+    @Query("SELECT ll.activeToken FROM TokenLog ll WHERE ll.idLoginLog = :loginLogId")
     boolean findActiveTokenByLoginLogId(UUID loginLogId);
 
-    @Query("SELECT ll FROM LoginLog ll WHERE ll.activeToken = true AND ll.dateLogin < :expirationTime")
-    List<LoginLog> findExpiredActiveTokens(LocalDateTime expirationTime);
+    @Query("SELECT ll FROM TokenLog ll WHERE ll.activeToken = true AND ll.dateLogin < :expirationTime")
+    List<TokenLog> findExpiredActiveTokens(LocalDateTime expirationTime);
 
-    LoginLog findTopByUserIdOrderByDateLoginDesc(UUID userId);
+    TokenLog findTopByUserIdOrderByDateLoginDesc(UUID userId);
 
 }

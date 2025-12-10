@@ -17,7 +17,7 @@ import java.util.UUID;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginLog {
+public class TokenLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -27,8 +27,8 @@ public class LoginLog {
     @Column(name = "scope_token")
     private ScopeToken scopeToken;
 
-    @Column(name = "date_login")
-    private LocalDateTime dateLogin;
+    @Column(name = "create_date")
+    private LocalDateTime createDate;
 
     @Column(name = "active_token")
     private boolean activeToken;

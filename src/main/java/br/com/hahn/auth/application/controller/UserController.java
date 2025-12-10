@@ -1,4 +1,4 @@
-package br.com.hahn.auth.application.authentication;
+package br.com.hahn.auth.application.controller;
 
 import br.com.hahn.auth.UsersApi;
 import br.com.hahn.auth.application.service.UserService;
