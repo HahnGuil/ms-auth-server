@@ -73,9 +73,9 @@ public class AuthService {
         log.info("Login Service: Validating credentials of the user: {} at: {}", user.getUserId(), Instant.now());
         validateCredentials(loginRequest.getPassword(), user.getPassword());
 
-        var loginLog = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
+        var tokenLog = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
 
-        return convertToLoginResponse(user, loginLog);
+        return convertToLoginResponse(user, tokenLog);
     }
 
     /**
@@ -254,7 +254,6 @@ public class AuthService {
         }
     }
 
-
     /**
      * Validates the user's credentials.
      * This method compares the provided login password with the user's stored password.
@@ -267,7 +266,7 @@ public class AuthService {
      */
     private void validateCredentials(String loginPassword, String userPassword) {
         if(!passwordEncoder.matches(loginPassword, userPassword)){
-            throw new InvalidCredentialsException("Invalid email or password.");
+            throw new InvalidCredentialsException(ErrorsResponses.INVALID_CREDENTIALS.getMessage());
         }
     }
 
@@ -283,7 +282,7 @@ public class AuthService {
     private void validatingYourUserIsOauth(User user){
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             log.error("AuthService: User: {} try login with OAuth, throw exception at {}", user.getUserId(), Instant.now());
-            throw new DirectLoginNotAllowedException("OAuth users cannot log in directly.");
+            throw new DirectLoginNotAllowedException(ErrorsResponses.USER_OAUTH_CAN_NOT_LOGIN_DIRECT.getMessage());
         }
     }
 }

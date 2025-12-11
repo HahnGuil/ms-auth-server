@@ -1,15 +1,18 @@
 package br.com.hahn.auth.presentation.exception;
 
 import br.com.hahn.auth.application.execption.*;
+import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.model.ErrorResponse;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @ControllerAdvice
 public class GlobalControllerHandler {
@@ -129,10 +132,25 @@ public class GlobalControllerHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
+    @ExceptionHandler(InvalidFormatTypeException.class)
+    public ResponseEntity<ErrorResponse> handlerInvalidFormatTypeException(InvalidFormatTypeException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        var message = ErrorsResponses.INVALID_FORMAT_ON_REQUEST.getMessage();
+        var error = generateErrorResponse(message, Instant.now());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
     private ErrorResponse generateErrorResponse(String message, Instant timeStamp){
         var errorResponse = new ErrorResponse();
         errorResponse.setMessage(message);
-        errorResponse.setTimestamp(OffsetDateTime.from(timeStamp));
+        errorResponse.setTimestamp(
+                OffsetDateTime.ofInstant(timeStamp, ZoneOffset.UTC)
+        );
         return errorResponse;
     }
 }

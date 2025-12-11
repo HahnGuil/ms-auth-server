@@ -22,6 +22,16 @@ public class PasswordController extends AbstractController implements PasswordAp
     @Override
     public ResponseEntity<Void> patchChangePassword(ChangePasswordRequest changePasswordRequest) {
         log.info("PasswordController: Starting changePassword for user with email: {}, at: {}", changePasswordRequest.getEmail(), Instant.now());
+
+        log.info("PasswordController: Validate email format at: {}", Instant.now());
+        validateEmailFormat(changePasswordRequest.getEmail());
+
+        log.info("PasswordController: Validate new password format at: {}", Instant.now());
+        validatePasswordFormat(changePasswordRequest.getNewPassword());
+
+        log.info("PasswordController: Validate old password format at: {}", Instant.now());
+        validatePasswordFormat(changePasswordRequest.getOldPassword());
+
         passwordService.changePassword(changePasswordRequest);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
@@ -29,6 +39,10 @@ public class PasswordController extends AbstractController implements PasswordAp
     @Override
     public ResponseEntity<SuccessResponse> postPasswordResetRequest(PasswordResetRequest passwordResetRequest) {
         log.info("PasswordController: Starting generate validate code flow for user email: {}, at: {}", passwordResetRequest.getEmail(), Instant.now());
+
+        log.info("PasswordController: Validate format email of reset request at: {}", Instant.now());
+        validateEmailFormat(passwordResetRequest.getEmail());
+
         var response = passwordService.requestValidateCode(passwordResetRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }

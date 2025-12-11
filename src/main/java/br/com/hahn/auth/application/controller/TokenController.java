@@ -14,7 +14,7 @@ import java.time.Instant;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
-public class AuthController extends AbstractController implements TokenApi {
+public class TokenController extends AbstractController implements TokenApi {
 
     private final AuthService authService;
 

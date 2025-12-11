@@ -6,10 +6,7 @@ import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeUser;
 import br.com.hahn.auth.domain.enums.UserRole;
-import br.com.hahn.auth.domain.model.Application;
-import br.com.hahn.auth.domain.model.User;
-import br.com.hahn.auth.domain.model.UserRequest;
-import br.com.hahn.auth.domain.model.UserResponse;
+import br.com.hahn.auth.domain.model.*;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
 import lombok.extern.slf4j.Slf4j;
@@ -285,8 +282,10 @@ public class UserService {
         userResponse.setUserId(user.getUserId());
         userResponse.setUserName(user.getFirstName() + " " + user.getLastName());
         userResponse.setEmail(user.getEmail());
-        var token = tokenService.generateToken(user, tokenLogService.saveTokenLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now()));
+        var token = tokenService.generateToken(user, generateTokenLog(user, ScopeToken.REGISTER_TOKEN));
         userResponse.setToken(token);
+        var refreshToken = tokenService.generateRefreshToken(user, generateTokenLog(user, ScopeToken.REFRESH_TOKEN));
+        userResponse.setRefreshToken(refreshToken);
         log.info("UserService: User: {}, converted to userResponse id: {}, at: {}", user.getUserId(), userResponse.getUserId(), Instant.now());
         return userResponse;
     }
@@ -325,7 +324,6 @@ public class UserService {
         });
     }
 
-
     /**
      * Blocks a list of users by setting their block status to true.
      * This method performs the following steps:
@@ -349,6 +347,21 @@ public class UserService {
                     userRepository.save(u);
                 });
         log.info("UserService: Finish block user from list at: {}", Instant.now());
+    }
+
+    /**
+     * Generates a TokenLog for a given user and scope token.
+     * This method performs the following steps:
+     * - Calls the TokenLogService to save a new token log entry.
+     * - Uses the current date and time as the timestamp for the token log.
+     *
+     * @author HahnGuil
+     * @param user the User entity for whom the token log is being generated
+     * @param scopeToken the ScopeToken enum representing the scope of the token
+     * @return the generated TokenLog entity
+     */
+    private TokenLog generateTokenLog(User user, ScopeToken scopeToken){
+        return tokenLogService.saveTokenLog(user, scopeToken, LocalDateTime.now());
     }
 
 }

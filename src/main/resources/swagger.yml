@@ -38,7 +38,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserResponse'
         '404':
-          description: Not Found
+          description: The application specified in the request was not found.
           content:
             application/json:
               schema:
@@ -50,7 +50,7 @@ paths:
                     message: "Application not found"
                     timestamp: "2024-12-08T19:30:00Z"
         '409':
-          description: Conflict
+          description: A user with the email address specified in the request already exists.
           content:
             application/json:
               schema:
@@ -60,6 +60,23 @@ paths:
                   summary: Email already registered
                   value:
                     message: "Email already registered. Please log in or recover your password."
+                    timestamp: "2024-12-08T19:30:00Z"
+        '422':
+          description: Invalid formats in the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailFormatInvalid:
+                  summary: Format email not valid
+                  value:
+                    message: "This email is in an unauthorized format."
+                    timestamp: "2024-12-08T19:30:00Z"
+                passwordFormatInvalid:
+                  summary: Format password not valid
+                  value:
+                    message: "Invalid password. The password must contain 8 to 12 characters, including numbers, special characters, and uppercase letters."
                     timestamp: "2024-12-08T19:30:00Z"
         '500':
           description: Internal server error.
@@ -94,7 +111,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
         '401':
-          description: Unauthorized
+          description: The user is blocked.
           content:
             application/json:
               schema:
@@ -103,15 +120,10 @@ paths:
                 userBlock:
                   summary: Users who have been inactive for more than 90 days are blocked and need to use the password reset process to be unblocked.
                   value:
-                    message: "This user has been blocked. Use the password reset link."
-                    timestamp: "2024-12-08T19:30:00Z"
-                invalidCredentials:
-                  summary: When an invalid email or password is reported
-                  value:
-                    message: "OAuth users cannot log in directly."
+                    message: "The user is locked out. Use the link to reset your password to log in again."
                     timestamp: "2024-12-08T19:30:00Z"
         '404':
-          description: Not Found
+          description: User not found
           content:
             application/json:
               schema:
@@ -123,7 +135,7 @@ paths:
                     message: "There is no registered user for this email address. Check email and password or register a new user."
                     timestamp: "2024-12-08T19:30:00Z"
         '409':
-          description: Conflict
+          description: The user is already logged in.
           content:
             application/json:
               schema:
@@ -141,10 +153,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
-                directLoginNotAllowed:
-                  summary: When an OAuth user attempts to log in directly
+                invalidUserForThisRequest:
+                  summary: A user registered via OAuth is not allowed to attempt to log in directly.
                   value:
-                    message: "Direct login is not allowed for users created via OAuth."
+                    message: "The user was registered via Gmail; login via this request is not permitted. Please use the Gmail login link."
+                    timestamp: "2024-12-08T19:30:00Z"
+                emailFormatInvalid:
+                  summary: Format email not valid
+                  value:
+                    message: "This email is in an unauthorized format."
+                    timestamp: "2024-12-08T19:30:00Z"
+                passwordFormatInvalid:
+                  summary: Format password not valid
+                  value:
+                    message: "Invalid password. The password must contain 8 to 12 characters, including numbers, special characters, and uppercase letters."
                     timestamp: "2024-12-08T19:30:00Z"
     delete:
       tags:
@@ -163,6 +185,18 @@ paths:
       responses:
         '204':
           description: User successfully logged out
+        '401':
+          description: Unauthorized request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidToken:
+                  summary: When the token is invalid for some reason.
+                  value:
+                    message: "Invalid token, please log in to continue."
+                    timestamp: "2024-12-08T19:30:00Z"
   /password/change-password:
     patch:
       tags:
@@ -182,7 +216,7 @@ paths:
         '204':
           description: Password Changed
         '401':
-          description: Unauthorized
+          description: The old password has been saved; it is not the same password sent in the request.
           content:
             application/json:
               schema:
@@ -191,15 +225,15 @@ paths:
                 invalidCredentials:
                   summary: When the old password provided by the user does not match the password saved in the database.
                   value:
-                    message: "Invalid credencials"
+                    message: "Invalid email or password"
                     timestamp: "2024-12-08T19:30:00Z"
-                userNotLoggedIn:
-                  summary: The user can only change their password through this method, when logged into the application.
+                invalidToken:
+                  summary: When the token is invalid for some reason.
                   value:
-                    message: "User not authenticated. Please log to continue"
+                    message: "Invalid token, please log in to continue."
                     timestamp: "2024-12-08T19:30:00Z"
         '404':
-          description: Not Found
+          description: User Not Found
           content:
             application/json:
               schema:
@@ -222,6 +256,16 @@ paths:
                   value:
                     message: "Password changes are not allowed for users registered via Gmail."
                     timestamp: "2024-12-08T19:30:00Z"
+                emailFormatInvalid:
+                  summary: Format email not valid
+                  value:
+                    message: "This email is in an unauthorized format."
+                    timestamp: "2024-12-08T19:30:00Z"
+                passwordFormatInvalid:
+                  summary: Format password not valid
+                  value:
+                    message: "Invalid password. The password must contain 8 to 12 characters, including numbers, special characters, and uppercase letters."
+                    timestamp: "2024-12-08T19:30:00Z"
   /password/reset-request:
     post:
       tags:
@@ -237,13 +281,18 @@ paths:
               $ref: '#/components/schemas/PasswordResetRequest'
       responses:
         '201':
-          description: A validation code has been sent to the email address you provided. Please also check your spam folder. Expect an email from noreply@toxicbet.com.br.
+          description: A six-digit code is sent to the user's email address.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
+              example:
+                successMessage:
+                  summary: Message sent in the body of the email.
+                  value:
+                    message: "A validation code has been sent to the email address you provided. Please also check your spam folder. Expect an email from noreply@toxicbet.com.br."
         '400':
-          description: Not Found
+          description: Error to send email
           content:
             application/json:
               schema:
@@ -255,7 +304,7 @@ paths:
                     message: "Failed to send email. Please try again later."
                     timestamp: "2024-12-08T19:30:00Z"
         '404':
-          description: Not Found
+          description: User Not Found
           content:
             application/json:
               schema:
@@ -287,7 +336,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ValidateCodeResponse'
         '401':
-          description: Not Found
+          description: Validate code is not valid
           content:
             application/json:
               schema:
@@ -302,6 +351,11 @@ paths:
                   summary: The validation code has invalid.
                   value:
                     message: "The validation code provided is not valid."
+                    timestamp: "2024-12-08T19:30:00Z"
+                invalidToken:
+                  summary: When the token is invalid for some reason.
+                  value:
+                    message: "Invalid token, please log in to continue."
                     timestamp: "2024-12-08T19:30:00Z"
         '404':
           description: Not Found
@@ -340,10 +394,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
-                invalidCredentials:
-                  summary: When the Scope Token of the token is different from the Recovery Token
+                invalidToken:
+                  summary: When the token is invalid for some reason.
                   value:
-                    message: "The token passed in the request is not valid for this type of operation or is not inform."
+                    message: "Invalid token, please log in to continue."
                     timestamp: "2024-12-08T19:30:00Z"
   /token:
     post:
@@ -368,12 +422,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
-                invalidCredentials:
-                  summary: When the Scope Token of the token is different from the Recovery Token
+                invalidToken:
+                  summary: When the token is invalid for some reason.
                   value:
-                    message: "The token passed in the request is not valid for this type of operation or is not inform."
+                    message: "Invalid token, please log in to continue."
                     timestamp: "2024-12-08T19:30:00Z"
-
 components:
   securitySchemes:
     bearerAuth:
@@ -405,8 +458,9 @@ components:
         password:
           type: string
           format: password
-          description: User Password
+          description: User Password. It must contain 8 to 12 characters, at least one number, one special character, and one uppercase letter.
           minLength: 8
+          maxLength: 12
           example: SecurePass123!
         firstName:
           type: string
@@ -471,8 +525,10 @@ components:
         password:
           type: string
           format: password
-          description: User Password
+          description: User Password. It must contain 8 to 12 characters, at least one number, one special character, and one uppercase letter.
           minLength: 8
+          maxLength: 12
+          pattern: '^(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,12}$'
           example: SecurePass123!
     LoginResponse:
       type: object
@@ -519,6 +575,10 @@ components:
         timestamp:
           type: string
           format: date-time
+          example: "2025-12-10T02:32:10Z"
+      required:
+        - message
+        - timestamp
     ChangePasswordRequest:
       required:
         - email
@@ -534,14 +594,18 @@ components:
         oldPassword:
           type: string
           format: password
-          description: User Password
+          description: User Password. It must contain 8 to 12 characters, at least one number, one special character, and one uppercase letter.
           minLength: 8
+          maxLength: 12
+          pattern: '^(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,12}$'
           example: SecurePass123!
         newPassword:
           type: string
           format: password
-          description: User Password
+          description: User Password. It must contain 8 to 12 characters, at least one number, one special character, and one uppercase letter.
           minLength: 8
+          maxLength: 12
+          pattern: '^(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,12}$'
           example: SecurePass123!
     PasswordResetRequest:
       type: object
@@ -561,8 +625,10 @@ components:
         newPassword:
           type: string
           format: password
-          description: User Password
+          description: User Password. It must contain 8 to 12 characters, at least one number, one special character, and one uppercase letter.
           minLength: 8
+          maxLength: 12
+          pattern: '^(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,12}$'
           example: SecurePass123!
     ValidateCodeRequest:
       type: object

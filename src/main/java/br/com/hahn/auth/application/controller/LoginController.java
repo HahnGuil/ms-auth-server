@@ -25,6 +25,13 @@ public class LoginController extends AbstractController implements LoginApi {
     @Override
     public ResponseEntity<LoginResponse> postLogin(LoginRequest loginRequest) {
         log.info("LoginController: Starting login for user {}, at {}", loginRequest.getEmail(), Instant.now());
+
+        log.info("LoginController: Validate email format at: {}", Instant.now());
+        validateEmailFormat(loginRequest.getEmail());
+
+        log.info("LoginController: Validate password format at: {}", Instant.now());
+        validatePasswordFormat(loginRequest.getPassword());
+        
         var loginResponse = authService.userLogin(loginRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
