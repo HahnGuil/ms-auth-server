@@ -141,7 +141,7 @@ public class GlobalControllerHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         var message = ErrorsResponses.INVALID_FORMAT_ON_REQUEST.getMessage();
-        var error = generateErrorResponse(message, Instant.now());
+        var error = generateErrorResponse(ex + message, Instant.now());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
