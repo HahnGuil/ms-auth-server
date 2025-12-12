@@ -107,7 +107,6 @@
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
