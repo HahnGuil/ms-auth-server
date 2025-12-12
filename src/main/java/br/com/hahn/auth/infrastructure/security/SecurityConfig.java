@@ -68,9 +68,9 @@ public class SecurityConfig {
                         .accessDeniedHandler(customAccessDeniedHandler))
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
-                                .userService(oAuth2UserService()) // Corrected custom service
+                                .userService(oAuth2UserService())
                         )
-                        .successHandler(oAuth2AuthenticationSuccessHandler()) // Returns the JWT token
+                        .successHandler(oAuth2AuthenticationSuccessHandler())
                 )
                 .oauth2ResourceServer(resource -> resource.jwt(jwt -> log.info("SecurityConfig: Resource JWT: {}", jwt)))
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
@@ -81,11 +81,9 @@ public class SecurityConfig {
     public OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService() {
         return userRequest -> {
             if (userRequest instanceof OidcUserRequest oidcUserRequest) {
-                // Use OidcUserService for OIDC requests
                 OidcUserService oidcUserService = new OidcUserService();
                 return (OAuth2User) oidcUserService.loadUser(oidcUserRequest);
             } else {
-                // Handle generic OAuth2 requests
                 DefaultOAuth2UserService defaultOAuth2UserService = new DefaultOAuth2UserService();
                 return defaultOAuth2UserService.loadUser(userRequest);
             }
