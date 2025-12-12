@@ -55,7 +55,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.POST,"/auth").permitAll()
+                        .requestMatchers(HttpMethod.POST,"/users").permitAll()
                         .requestMatchers(HttpMethod.POST, "/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/password/reset-request").permitAll()
                         .requestMatchers(HttpMethod.POST, "/password/validate-code").permitAll()
@@ -72,6 +72,9 @@ public class SecurityConfig {
                         )
                         .successHandler(oAuth2AuthenticationSuccessHandler()) // Returns the JWT token
                 )
+                .oauth2ResourceServer(resource -> resource.jwt(jwt -> {
+                    // Intencionalmente vazio: configuramos um JwtDecoder bean.
+                }))
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

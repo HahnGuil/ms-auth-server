@@ -14,10 +14,9 @@ tags:
   - name: password
     description: Operations involving password changes, recovery, updates, and also password recovery code validation.
   - name: token
-    description: Operations for token refresh and validation.
-
+    description: Operations for token refresh and validation.x
 paths:
-  /auth:
+  /users:
     post:
       tags:
         - users
@@ -452,7 +451,6 @@ components:
           example: John Doe
         email:
           type: string
-          format: email
           description: User email
           example: john.doe@example.com
         password:
@@ -509,7 +507,7 @@ components:
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         refreshToken:
           type: string
-          description: Refreh JWT Token for a new Token Request
+          description: Refresh JWT Token for a new Token Request
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     LoginRequest:
       type: object
@@ -519,7 +517,6 @@ components:
       properties:
         email:
           type: string
-          format: email
           description: User email
           example: john.doe@example.com
         password:
@@ -528,7 +525,6 @@ components:
           description: User Password. It must contain 8 to 12 characters, at least one number, one special character, and one uppercase letter.
           minLength: 8
           maxLength: 12
-          pattern: '^(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,12}$'
           example: SecurePass123!
     LoginResponse:
       type: object
@@ -539,7 +535,6 @@ components:
           example: john_doe
         email:
           type: string
-          format: email
           description: user email
           example: john.doe@example.com
         token:
@@ -548,7 +543,7 @@ components:
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         refreshToken:
           type: string
-          description: Refreh JWT Token for a new Token Request
+          description: Refresh JWT Token for a new Token Request
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     LogOfRequest:
       required:
@@ -557,7 +552,6 @@ components:
       properties:
         email:
           type: string
-          format: email
           description: user email
           example: john.doe@example.com
     SuccessResponse:
@@ -588,7 +582,6 @@ components:
       properties:
         email:
           type: string
-          format: email
           description: user email
           example: john.doe@example.com
         oldPassword:
@@ -597,7 +590,6 @@ components:
           description: User Password. It must contain 8 to 12 characters, at least one number, one special character, and one uppercase letter.
           minLength: 8
           maxLength: 12
-          pattern: '^(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,12}$'
           example: SecurePass123!
         newPassword:
           type: string
@@ -605,7 +597,6 @@ components:
           description: User Password. It must contain 8 to 12 characters, at least one number, one special character, and one uppercase letter.
           minLength: 8
           maxLength: 12
-          pattern: '^(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,12}$'
           example: SecurePass123!
     PasswordResetRequest:
       type: object
@@ -614,7 +605,6 @@ components:
       properties:
         email:
           type: string
-          format: email
           description: User email
           example: john.doe@example.com
     NewPasswordRequest:
@@ -628,7 +618,6 @@ components:
           description: User Password. It must contain 8 to 12 characters, at least one number, one special character, and one uppercase letter.
           minLength: 8
           maxLength: 12
-          pattern: '^(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,12}$'
           example: SecurePass123!
     ValidateCodeRequest:
       type: object
@@ -638,7 +627,6 @@ components:
       properties:
         email:
           type: string
-          format: email
           description: User email
           example: john.doe@example.com
         recoveryCode:

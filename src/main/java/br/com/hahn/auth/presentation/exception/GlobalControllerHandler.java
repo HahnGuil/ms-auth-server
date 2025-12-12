@@ -135,7 +135,13 @@ public class GlobalControllerHandler {
     @ExceptionHandler(InvalidFormatTypeException.class)
     public ResponseEntity<ErrorResponse> handlerInvalidFormatTypeException(InvalidFormatTypeException ex){
         var error = generateErrorResponse(ex.getMessage(), Instant.now());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(UserAlreadyLoggedInException.class)
+    public ResponseEntity<ErrorResponse> handlerUserAlreadyLoggedInException(UserAlreadyLoggedInException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

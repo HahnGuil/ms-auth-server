@@ -1,3 +1,4 @@
+-- sql
 -- Database migration script V1: Creates domain tables and indexes for the authentication system
 
 -- Creating the users table
@@ -16,7 +17,9 @@ CREATE TABLE IF NOT EXISTS users (
     user_role VARCHAR(50)
     );
 
-CREATE UNIQUE INDEX IF NOT EXISTS ux_users_username ON users(user_name);
+-- Remove unique constraint on user_name to allow duplicate usernames.
+-- Keep a non-unique index for lookup performance.
+CREATE INDEX IF NOT EXISTS ix_users_username ON users(user_name);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email ON users(user_email);
 CREATE INDEX IF NOT EXISTS ix_users_role ON users(user_role);
 

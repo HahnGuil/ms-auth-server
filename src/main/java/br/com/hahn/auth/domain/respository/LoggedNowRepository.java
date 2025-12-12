@@ -6,14 +6,17 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
 public interface LoggedNowRepository extends JpaRepository<LoggedNow, UUID> {
 
-    boolean existsByUserId(UUID userId);
+    List<LoggedNow> findByUserId(UUID userId);
 
     @Modifying
-    @Query("DELETE FROM TokenLog ll WHERE ll.userId = :userId")
+    @Query("DELETE FROM LoggedNow ln WHERE ln.userId = :userId")
     void deleteByUserId(UUID userId);
+
+
 }

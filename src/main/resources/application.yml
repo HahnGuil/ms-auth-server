@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: ms-auth-server
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+  endpoint:
+    health:
+      show-details: always

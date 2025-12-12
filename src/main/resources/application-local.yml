@@ -1,0 +1,57 @@
+spring:
+  datasource:
+    url: "jdbc:postgresql://localhost:5050/authdb-local"
+    username: "${SPRING_DATASOURCE_USERNAME}"
+    password: "${SPRING_DATASOURCE_PASSWORD}"
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    validate-on-migrate: true
+    enabled: true
+    locations: "classpath:db/migration"
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "${G_CLIENT_ID}"
+            client-secret: "${G_CLIENT_SECRET}"
+            scope:
+              - email
+              - profile
+            redirect-uri: "http://localhost:2310/auth-server/login/oauth2/code/google"
+
+  kafka:
+    bootstrap-servers: "localhost:9093"
+    consumer:
+      group-id: update-user-data
+      auto-offset-reset: earliest
+
+logging:
+  level:
+    org.flywaydb: INFO
+    org.apache.kafka: OFF
+    org.springframework.kafka: OFF
+    org.apache.zookeeper: OFF
+
+server:
+  servlet:
+    context-path: /auth-server
+  port: 2310
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+resend:
+  api:
+    key: "${RESEND_API_KEY}"
+    url: "https://api.resend.com/emails"
+  sender: "${RESEND_EMAIL}"

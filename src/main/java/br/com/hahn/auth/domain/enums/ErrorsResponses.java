@@ -28,10 +28,10 @@ public enum ErrorsResponses {
     PRIVATE_KEY_NOT_AVAILABLE("Private key not available"),
     ID_PRIVATE_KEY_NOT_AVAILABLE("Private key ID not available"),
     INVALID_TOKEN("Invalid token, please log in to continue."),
-    INVALID_EMAIL_FORMAT_TYPE("This email is in an unauthorized format."),
-    INVALID_PASSWORD_FORMAT_TYPE("Invalid password. The password must contain 8 to 12 characters, including numbers, special characters, and uppercase letters."),
-    INVALID_FORMAT_ON_REQUEST("One of the values passed in the request is in the wrong format. Review the values and try again");
+    INVALID_EMAIL_FORMAT_TYPE("This email is in a invalid format."),
+    INVALID_PASSWORD_FORMAT_TYPE("Invalid password format. The password must contain 8 to 12 characters, including numbers, special characters, and uppercase and lowercase letters."),
+    INVALID_FORMAT_ON_REQUEST("Invalid email or password format. Email must be in the format email@email.com, and password must be 8 to 12 characters long, including numbers, special characters, uppercase and lowercase letters."),
+    FAIL_CONVERT_TOKEN("Token sent, but not recognized by the server. Check the Spring Security configuration (oauth2ResourceServer().jwt()).");
 
     private final String message;
-
 }

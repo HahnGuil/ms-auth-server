@@ -2,15 +2,11 @@ package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.application.execption.DirectLoginNotAllowedException;
 import br.com.hahn.auth.application.execption.InvalidCredentialsException;
-import br.com.hahn.auth.application.execption.UserAlreadyLoggedInException;
 import br.com.hahn.auth.application.execption.UserBlockException;
 import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
-import br.com.hahn.auth.domain.model.LoginRequest;
-import br.com.hahn.auth.domain.model.LoginResponse;
-import br.com.hahn.auth.domain.model.TokenLog;
-import br.com.hahn.auth.domain.model.User;
+import br.com.hahn.auth.domain.model.*;
 import br.com.hahn.auth.infrastructure.security.TokenService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -21,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -73,9 +70,7 @@ public class AuthService {
         log.info("Login Service: Validating credentials of the user: {} at: {}", user.getUserId(), Instant.now());
         validateCredentials(loginRequest.getPassword(), user.getPassword());
 
-        var tokenLog = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
-
-        return convertToLoginResponse(user, tokenLog);
+        return convertToLoginResponse(user);
     }
 
     /**
@@ -93,19 +88,16 @@ public class AuthService {
 
         String email = oAuth2User.getAttribute("email");
         User user;
-        TokenLog tokenLog;
 
         if(userService.existsByEmail(email)){
             log.info("AuthService: OAuth User exist. Starting login for OAuthUser with email: {} at {}: ", email, Instant.now());
             user = userService.findByEmail(email);
-            tokenLog = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
         }else {
             log.info("AuthService: OAuth user not exist. Starting create user for OAuthRequest with email: {}, at: {}", email, Instant.now());
             user = userService.createNewUserFromOAuth(oAuth2User);
-            tokenLog = tokenLogService.saveTokenLog(user, ScopeToken.REGISTER_TOKEN, LocalDateTime.now());
         }
 
-        return convertToLoginResponse(user, tokenLog);
+        return convertToLoginResponse(user);
     }
 
     /**
@@ -165,9 +157,8 @@ public class AuthService {
 
         log.info("AuthService: Generated new access token for user: {}, at: {}", userID, Instant.now());
         var user = userService.findByEmail(jwt.getSubject());
-        var tokenLog = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
 
-        return convertToLoginResponse(user, tokenLog);
+        return convertToLoginResponse(user);
     }
 
     /**
@@ -204,15 +195,16 @@ public class AuthService {
      *
      * @author HahnGuil
      * @param user the User object containing user details
-     * @param tokenLog the LoginLog object containing login details
      * @return LoginResponse containing the user's name, email, token, and refresh token
      */
-    private LoginResponse convertToLoginResponse(User user, TokenLog tokenLog){
+    private LoginResponse convertToLoginResponse(User user){
         log.info("AuthService: Generate token for user: {}, using token service at: {}", user.getUserId(), Instant.now());
-        var token = tokenService.generateToken(user, tokenLog);
+        var tokenLogLogin = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
+        var token = tokenService.generateToken(user, tokenLogLogin);
 
         log.info("AuthService: Generate refreshToken for user: {}, using token service at: {}", user.getUserId(), Instant.now());
-        var refreshToken = tokenService.generateRefreshToken(user, tokenLog);
+        var refreshTokenLogin = tokenLogService.saveTokenLog(user, ScopeToken.REFRESH_TOKEN, LocalDateTime.now());
+        var refreshToken = tokenService.generateRefreshToken(user, refreshTokenLogin);
 
         log.info("AuthService: Setting loginResponse attributes for user: {}, at: {}", user.getUserId(), Instant.now());
         LoginResponse loginResponse = new LoginResponse();
@@ -224,19 +216,35 @@ public class AuthService {
     }
 
     /**
-     * Validates if the user is already logged in.
-     * This method checks if there is an active session for the given user.
-     * If the user is already logged in, it throws a UserAlreadyLoggedInException.
-     *
+     * Validate if the user is already logged in.
+     * <p>
+     * This method performs the following steps:
+     * 1. Logs the start of the validation.
+     * 2. Retrieves all LoggedNow entries for the given user.
+     * 3. If the list is not empty:
+     *    - Deletes all LoggedNow records for that user.
+     *    - Deactivates the user's active token using TypeInvalidation.NEW_LOGIN.
+     * 4. Otherwise, it logs that no active tokens/sessions were found and allows the flow to continue.
+     * <p>
+     * Note: This method does not throw an exception; it forces a new login by cleaning previous
+     * session records and deactivating existing tokens.
+     * <p>
      * @author HahnGuil
-     * @param user the User object to check for an active session
-     * @throws UserAlreadyLoggedInException if the user is already logged in
+     * @param user the User object to check for active sessions
      */
     private void validateIfUserIsAlreadyLoggedIn(User user){
-        if(loggedNowService.existsByUserId(user.getUserId())){
-            throw new UserAlreadyLoggedInException(ErrorsResponses.USER_ALREADY_LOGGED.getMessage());
+        log.info("AuthService: Find LoggedNow fot user: {}, at: {}", user.getUserId(), Instant.now());
+        List<LoggedNow> logRegistersOfUser = loggedNowService.findByUserId(user.getUserId());
+
+        if(!logRegistersOfUser.isEmpty()){
+            log.info("AuthService: Find active session for the user: {}, starting do delete e desactivate the token at: {}", user.getUserId(), Instant.now());
+            loggedNowService.deleteByUserId(user.getUserId());
+            tokenLogService.deactivateActiveToken(user.getUserId(), TypeInvalidation.NEW_LOGIN);
         }
+
+        log.info("AuthService: Token not foud or is null. User: {}, is not logged, finish validation at {}: ",user.getUserId(), Instant.now());
     }
+
 
     /**
      * Validates if the user is blocked.

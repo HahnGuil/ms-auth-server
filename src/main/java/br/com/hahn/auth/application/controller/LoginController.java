@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 
 @RestController
-@RequestMapping("/login")
 @Slf4j
 @AllArgsConstructor
 public class LoginController extends AbstractController implements LoginApi {
