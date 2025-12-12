@@ -72,9 +72,7 @@ public class SecurityConfig {
                         )
                         .successHandler(oAuth2AuthenticationSuccessHandler()) // Returns the JWT token
                 )
-                .oauth2ResourceServer(resource -> resource.jwt(jwt -> {
-                    // Intencionalmente vazio: configuramos um JwtDecoder bean.
-                }))
+                .oauth2ResourceServer(resource -> resource.jwt(jwt -> log.info("SecurityConfig: Resource JWT: {}", jwt)))
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
