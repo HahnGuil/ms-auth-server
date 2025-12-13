@@ -15,6 +15,15 @@ import java.time.OffsetDateTime;
 @Component
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
+    /**
+     * Handles an access denied exception by sending a JSON response with an error message and timestamp.
+     *
+     * @author HahnGuil
+     * @param request the HTTP request that resulted in an AccessDeniedException
+     * @param response the HTTP response to be sent to the client
+     * @param accessDeniedException the exception that was thrown due to access being denied
+     * @throws IOException if an input or output error occurs while handling the response
+     */
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException {
         response.setContentType("application/json");

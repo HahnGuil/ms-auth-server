@@ -25,7 +25,6 @@ public class KafkaConfig {
     @Value("${spring.kafka.consumer.auto-offset-reset}")
     private String autoOffsetReset;
 
-
     /**
      * Creates a Kafka ConsumerFactory bean for deserializing messages with String keys
      * and UserSyncEvent values.
@@ -77,5 +76,4 @@ public class KafkaConfig {
 
         return factory;
     }
-
 }

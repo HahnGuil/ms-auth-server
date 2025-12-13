@@ -26,6 +26,19 @@ public class EmailService {
     @Value("${resend.sender}")
     private String sender;
 
+    /**
+     * Sends an email using the Resend API asynchronously.
+     *
+     * <p>Constructs a JSON payload containing the sender, recipient, subject and HTML body,
+     * then performs a POST request to the /emails endpoint using the configured WebClient.
+     * The method returns a reactive Mono that completes when the remote call finishes successfully.</p>
+     *
+     * @author HahnGuil
+     * @param to recipient email address
+     * @param subject email subject
+     * @param corpoHtml email body in HTML format
+     * @return a {@link reactor.core.publisher.Mono} that completes when the send operation finishes
+     */
     public Mono<Void> sendEmail(String to, String subject, String corpoHtml) {
         log.info("EmailService: Send email to: {}, at: {}", to, Instant.now());
         return webClient.post()

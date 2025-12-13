@@ -8,12 +8,12 @@ import br.com.hahn.auth.domain.model.InvalidatedToken;
 import br.com.hahn.auth.domain.model.TokenLog;
 import br.com.hahn.auth.domain.model.User;
 import br.com.hahn.auth.domain.respository.TokenLogRepository;
+import br.com.hahn.auth.util.DateTimeConverter;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +41,7 @@ public class TokenLogService {
      */
     @Transactional
     public void deactivateActiveToken(UUID userId, TypeInvalidation typeInvalidation){
-        log.info("TokenLogService: Detective token for user: {} at {}", userId, Instant.now());
+        log.info("TokenLogService: Detective token for user: {} at {}", userId, DateTimeConverter.formatInstantNow());
         loginLogRepository.deactivateActiveTokenByUserId(userId);
 
         var tokenLog = findLoginLogByUserId(userId);
@@ -66,10 +66,10 @@ public class TokenLogService {
      */
     @Transactional
     public TokenLog saveTokenLog(User user, ScopeToken scopeToken, LocalDateTime createDate) {
-        log.info("TokenLogService: Save Token on data base, for user: {}, Scope Token is: {}, at: {}", user.getUserId(), scopeToken, Instant.now());
+        log.info("TokenLogService: Save Token on data base, for user: {}, Scope Token is: {}, at: {}", user.getUserId(), scopeToken, DateTimeConverter.formatInstantNow());
         var loginLog = loginLogRepository.save(convertToEntity(user, scopeToken, createDate));
         if(!scopeToken.equals(ScopeToken.RECOVER_CODE)){
-            log.info("TokenLogService: Scope token, is different of RECOVER: {}. Save token for user: {} on LoggedNow at: {}", scopeToken, user.getUserId(), Instant.now());
+            log.info("TokenLogService: Scope token, is different of RECOVER: {}. Save token for user: {} on LoggedNow at: {}", scopeToken, user.getUserId(), DateTimeConverter.formatInstantNow());
             loggedNowService.save(user.getUserId(), loginLog.getIdTokenLog(), createDate);
         }
         return loginLog;
@@ -86,7 +86,7 @@ public class TokenLogService {
      * @return true if the token is active, false otherwise.
      */
     public boolean isTokenValid (UUID tokenLogId){
-        log.info("TokenLogService: Find active token for token log id: {}, at: {}", tokenLogId, Instant.now());
+        log.info("TokenLogService: Find active token for token log id: {}, at: {}", tokenLogId, DateTimeConverter.formatInstantNow());
         return loginLogRepository.findActiveTokenByLoginLogId(tokenLogId);
     }
 
@@ -101,7 +101,7 @@ public class TokenLogService {
      * @return A list of TokenLog entities representing the expired active tokens.
      */
     public List<TokenLog> findExpiredActiveTokens(LocalDateTime expirationTime) {
-        log.info("TokenLogServe: Find tokens log with expiration time to delete at: {}",Instant.now());
+        log.info("TokenLogServe: Find tokens log with expiration time to delete at: {}",DateTimeConverter.formatInstantNow());
         return loginLogRepository.findExpiredActiveTokens(expirationTime);
     }
 
@@ -118,7 +118,7 @@ public class TokenLogService {
      */
     public TokenLog findById(UUID tokenLogId){
         return loginLogRepository.findById(tokenLogId).orElseThrow(() -> {
-            log.error("TokenLogService: Not foud Token for user: {}. Throw InvalidTokenException at: {}", tokenLogId, Instant.now());
+            log.error("TokenLogService: Not foud Token for user: {}. Throw InvalidTokenException at: {}", tokenLogId, DateTimeConverter.formatInstantNow());
             return new InvalidTokenException(ErrorsResponses.INVALID_TOKEN.getMessage());
         });
     }
@@ -148,9 +148,9 @@ public class TokenLogService {
      * @throws InvalidTokenException if the token is inactive or invalid.
      */
     public void isTokenLogValid(TokenLog tokenLog){
-        log.info("TokenLogService: Check if the Token: {} is active: at: {}", tokenLog.getIdTokenLog(), Instant.now());
+        log.info("TokenLogService: Check if the Token: {} is active: at: {}", tokenLog.getIdTokenLog(), DateTimeConverter.formatInstantNow());
         if(!tokenLog.isActiveToken()){
-            log.error("TokenLogService: Token: {} is invalid or desactivade. Throw InvalidTokenException at: {}", tokenLog.getIdTokenLog(), Instant.now());
+            log.error("TokenLogService: Token: {} is invalid or deactivate. Throw InvalidTokenException at: {}", tokenLog.getIdTokenLog(), DateTimeConverter.formatInstantNow());
             throw new InvalidTokenException(ErrorsResponses.INVALID_TOKEN.getMessage());
         }
     }
@@ -168,10 +168,10 @@ public class TokenLogService {
      * @throws InvalidTokenException if the token scope is not LOGIN_TOKEN or REGISTER_TOKEN
      */
     public void isExpectedScopeToken(TokenLog tokenLog){
-        log.info("TokenLogService: Check the scope of token: {} at: {}", tokenLog.getIdTokenLog(), Instant.now());
+        log.info("TokenLogService: Check the scope of token: {} at: {}", tokenLog.getIdTokenLog(), DateTimeConverter.formatInstantNow());
         var scope = tokenLog.getScopeToken();
         if(!ScopeToken.LOGIN_TOKEN.equals(scope) && !ScopeToken.REGISTER_TOKEN.equals(scope)){
-            log.error("TokenLogService: Token: {} has invalid scope: {}. Throw InvalidTokenException at: {}", tokenLog.getIdTokenLog(), scope, Instant.now());
+            log.error("TokenLogService: Token: {} has invalid scope: {}. Throw InvalidTokenException at: {}", tokenLog.getIdTokenLog(), scope, DateTimeConverter.formatInstantNow());
             throw new InvalidTokenException(ErrorsResponses.SCOPE_TOKEN_INVALID.getMessage() + tokenLog.getScopeToken().toString());
         }
     }
@@ -189,7 +189,7 @@ public class TokenLogService {
      * @param typeInvalidation The type of invalidation to be applied to the token.
      */
     private void invalidateToken(TokenLog tokenLog, TypeInvalidation typeInvalidation){
-        log.info("LoginLogService: invalidate token for User {}, with LoginLog: {}, at {}", tokenLog.getUserId(), tokenLog.getIdTokenLog(), Instant.now());
+        log.info("LoginLogService: invalidate token for User {}, with LoginLog: {}, at {}", tokenLog.getUserId(), tokenLog.getIdTokenLog(), DateTimeConverter.formatInstantNow());
         var invalidateToken = convertToInvalidatedTokenEntity(tokenLog.getUserId(), tokenLog.getIdTokenLog(), typeInvalidation);
         invalidatedTokenService.save(invalidateToken);
     }
@@ -221,7 +221,7 @@ public class TokenLogService {
      * @return A TokenLog entity populated with the provided data.
      */
     private TokenLog convertToEntity(User user, ScopeToken scopeToken, LocalDateTime createDate) {
-        log.info("TokenLogService: Convert to entity TokenLog at: {}", Instant.now());
+        log.info("TokenLogService: Convert to entity TokenLog at: {}", DateTimeConverter.formatInstantNow());
         TokenLog tokenLog = new TokenLog();
         tokenLog.setUserId(user.getUserId());
         tokenLog.setScopeToken(scopeToken);
@@ -243,7 +243,7 @@ public class TokenLogService {
      * @return An InvalidatedToken entity populated with the provided data.
      */
     private InvalidatedToken convertToInvalidatedTokenEntity(UUID userId, UUID loginLogId, TypeInvalidation typeInvalidation){
-        log.info("TokenLogService: Convert to InvalidatedToken at: {}", Instant.now());
+        log.info("TokenLogService: Convert to InvalidatedToken at: {}", DateTimeConverter.formatInstantNow());
         InvalidatedToken invalidatedToken = new InvalidatedToken();
         invalidatedToken.setUserId(userId);
         invalidatedToken.setLoginLogId(loginLogId);

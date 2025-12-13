@@ -29,7 +29,6 @@ public class ApplicationScheduler {
     private final TokenLogService tokenLogService;
     private final PasswordService passwordService;
 
-
     /**
      * Cleans up expired password reset and recover codes.
      * <p>

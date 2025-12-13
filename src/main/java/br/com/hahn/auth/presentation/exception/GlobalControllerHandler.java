@@ -14,6 +14,20 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
+/**
+ * Global exception handler for controllers.
+ *
+ * <p>Centralizes mapping of application and framework exceptions to HTTP responses.
+ * Each handled exception is converted to an {@code ErrorResponse} containing
+ * a descriptive message and a UTC timestamp.</p>
+ *
+ * <p>The class is intended to be used as a {@code @ControllerAdvice} and provides
+ * {@code @ExceptionHandler} methods for various domain exceptions (for example:
+ * resource not found, invalid credentials, invalid tokens, validation errors, and
+ * database access errors), translating them into appropriate HTTP status codes.</p>
+ *
+ * @author HahnGuil
+ */
 @ControllerAdvice
 public class GlobalControllerHandler {
 
@@ -66,8 +80,8 @@ public class GlobalControllerHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
-    @ExceptionHandler(InvalidOperationExecption.class)
-    public ResponseEntity<ErrorResponse> handleOperationException(InvalidOperationExecption ex) {
+    @ExceptionHandler(InvalidOperationException.class)
+    public ResponseEntity<ErrorResponse> handleOperationException(InvalidOperationException ex) {
         var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }

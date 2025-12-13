@@ -2,12 +2,12 @@ package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.domain.model.LoggedNow;
 import br.com.hahn.auth.domain.respository.LoggedNowRepository;
+import br.com.hahn.auth.util.DateTimeConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +27,7 @@ public class LoggedNowService {
      * @return a list of LoggedNow entities associated with the specified user ID
      */
     public List<LoggedNow> findByUserId(UUID userId){
-        log.info("LoggedNowServe: Find LoggedNow for user: {} at: {}", userId, Instant.now());
+        log.info("LoggedNowServe: Find LoggedNow for user: {} at: {}", userId, DateTimeConverter.formatInstantNow());
         return loggedNowRepository.findByUserId(userId);
     }
 
@@ -41,7 +41,7 @@ public class LoggedNowService {
      */
     @Transactional
     public void save(UUID userId, UUID tokenLogId, LocalDateTime dateLogin){
-        log.info("LoggedNowService: Save LoggedNow to user: {}, with token id: {}, at: {}", userId, tokenLogId, Instant.now());
+        log.info("LoggedNowService: Save LoggedNow to user: {}, with token id: {}, at: {}", userId, tokenLogId, DateTimeConverter.formatInstantNow());
         var loggedNow = convertToEntity(userId, tokenLogId, dateLogin);
         loggedNowRepository.save(loggedNow);
     }
@@ -54,7 +54,7 @@ public class LoggedNowService {
      */
     @Transactional
     public void deleteByUserId(UUID userId){
-        log.info("LoggedNowService: Delete LoggedNow for user: {}, at: {}", userId, Instant.now());
+        log.info("LoggedNowService: Delete LoggedNow for user: {}, at: {}", userId, DateTimeConverter.formatInstantNow());
         loggedNowRepository.deleteByUserId(userId);
     }
 
@@ -68,7 +68,7 @@ public class LoggedNowService {
      * @return a LoggedNow entity populated with the provided data
      */
     private LoggedNow convertToEntity(UUID userId, UUID tokenLogId, LocalDateTime dateLogin){
-        log.info("LoggedNowService: Convert to LoggedNow Entity, for user: {}, with token id: {} at: {}", userId, tokenLogId, Instant.now());
+        log.info("LoggedNowService: Convert to LoggedNow Entity, for user: {}, with token id: {} at: {}", userId, tokenLogId, DateTimeConverter.formatInstantNow());
         LoggedNow loggedNow = new LoggedNow();
         loggedNow.setUserId(userId);
         loggedNow.setTokenLogId(tokenLogId);

@@ -4,8 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)
-public class InvalidOperationExecption extends RuntimeException {
-    public InvalidOperationExecption(String message) {
+public class InvalidOperationException extends RuntimeException {
+    public InvalidOperationException(String message) {
         super(message);
     }
 }

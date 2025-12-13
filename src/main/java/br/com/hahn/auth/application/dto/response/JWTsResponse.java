@@ -8,6 +8,6 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class JwksResponse {
+public class JWTsResponse {
     private List<JwkKey> keys;
 }

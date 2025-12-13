@@ -9,6 +9,7 @@ import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
 import br.com.hahn.auth.domain.model.*;
 import br.com.hahn.auth.infrastructure.security.TokenService;
+import br.com.hahn.auth.util.DateTimeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,7 +17,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -53,21 +53,21 @@ public class AuthService {
      * @return LoginResponse containing user data and tokens
      */
     public LoginResponse userLogin(LoginRequest loginRequest){
-        log.info("AuthService: Starting login on Login Service for user: {}, at: {}", loginRequest.getEmail(), Instant.now());
+        log.info("AuthService: Starting login on Login Service for user: {}, at: {}", loginRequest.getEmail(), DateTimeConverter.formatInstantNow());
 
         log.info("AuthService: Validating the existence of the email: {}", loginRequest.getEmail());
         var user = userService.findByEmail(loginRequest.getEmail());
 
-        log.info("AuthService: Checking if the user: {} is currently logged in at: {}.", user.getUserId(), Instant.now());
+        log.info("AuthService: Checking if the user: {} is currently logged in at: {}.", user.getUserId(), DateTimeConverter.formatInstantNow());
         validateIfUserIsAlreadyLoggedIn(user);
 
-        log.info("AuthService: Validating if the user: {}, are OAuth user at: {}", user.getUserId(), Instant.now());
+        log.info("AuthService: Validating if the user: {}, are OAuth user at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         validatingYourUserIsOauth(user);
 
-        log.info("AuthService: Validating if the user: {} are block at: {}", user.getUserId(), Instant.now());
+        log.info("AuthService: Validating if the user: {} are block at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         validateBlockUser(user);
 
-        log.info("Login Service: Validating credentials of the user: {} at: {}", user.getUserId(), Instant.now());
+        log.info("Login Service: Validating credentials of the user: {} at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         validateCredentials(loginRequest.getPassword(), user.getPassword());
 
         return convertToLoginResponse(user);
@@ -84,16 +84,16 @@ public class AuthService {
      * @return LoginResponse containing user data and tokens
      */
     public LoginResponse processOAuthUser(OAuth2User oAuth2User){
-        log.info("AuthService: Starting process Login or Register for OAuthUser with email: {},  at: {}", oAuth2User.getAttribute("email"), Instant.now());
+        log.info("AuthService: Starting process Login or Register for OAuthUser with email: {},  at: {}", oAuth2User.getAttribute("email"), DateTimeConverter.formatInstantNow());
 
         String email = oAuth2User.getAttribute("email");
         User user;
 
         if(userService.existsByEmail(email)){
-            log.info("AuthService: OAuth User exist. Starting login for OAuthUser with email: {} at {}: ", email, Instant.now());
+            log.info("AuthService: OAuth User exist. Starting login for OAuthUser with email: {} at {}: ", email, DateTimeConverter.formatInstantNow());
             user = userService.findByEmail(email);
         }else {
-            log.info("AuthService: OAuth user not exist. Starting create user for OAuthRequest with email: {}, at: {}", email, Instant.now());
+            log.info("AuthService: OAuth user not exist. Starting create user for OAuthRequest with email: {}, at: {}", email, DateTimeConverter.formatInstantNow());
             user = userService.createNewUserFromOAuth(oAuth2User);
         }
 
@@ -111,7 +111,7 @@ public class AuthService {
      * @param jwt the JWT token containing user information
      */
     public void logOffUser(Jwt jwt){
-        log.info("AuthService: Starting log off for user with email: {}, at: {}", jwt.getSubject(), Instant.now());
+        log.info("AuthService: Starting log off for user with email: {}, at: {}", jwt.getSubject(), DateTimeConverter.formatInstantNow());
         var userId = getUserIdFromToken(jwt);
         doLogOff(userId, TypeInvalidation.LOG_OFF);
 
@@ -130,7 +130,7 @@ public class AuthService {
      * @param typeInvalidation the type of invalidation to apply to the user's token
      */
     public void doLogOff(UUID userId, TypeInvalidation typeInvalidation){
-        log.info("AuthService: Execute user logOff for user: {}, with type: {} ,at: {}", userId, typeInvalidation.toString(), Instant.now());
+        log.info("AuthService: Execute user logOff for user: {}, with type: {} ,at: {}", userId, typeInvalidation.toString(), DateTimeConverter.formatInstantNow());
         loggedNowService.deleteByUserId(userId);
         tokenLogService.deactivateActiveToken(userId, typeInvalidation);
     }
@@ -146,7 +146,7 @@ public class AuthService {
      * @throws InvalidCredentialsException if the provided oldPassword does not match the user's stored password
      */
     public void validateOldPassword(User user, String oldPassword){
-        log.info("AuthService: Staring validating for oldPassword for user: {} at: {}", user.getUserId(), Instant.now());
+        log.info("AuthService: Staring validating for oldPassword for user: {} at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         validateCredentials(oldPassword, user.getPassword());
     }
 
@@ -163,22 +163,22 @@ public class AuthService {
      * @return LoginResponse containing the user's data and new tokens
      */
     public LoginResponse generateNewTokenForUser(Jwt jwt){
-        log.info("AuthService: Starting generate new token for user email: {}, at: {}", jwt.getSubject(), Instant.now());
+        log.info("AuthService: Starting generate new token for user email: {}, at: {}", jwt.getSubject(), DateTimeConverter.formatInstantNow());
 
 
-        log.info("AuthService: Extract token log id and validate the scope and expiration time for user: {}, already use for generate new token at: {}", jwt.getSubject(), Instant.now());
+        log.info("AuthService: Extract token log id and validate the scope and expiration time for user: {}, already use for generate new token at: {}", jwt.getSubject(), DateTimeConverter.formatInstantNow());
         String idToken = jwt.getClaim("token_log_id").toString();
         var tokenLogId = UUID.fromString(idToken);
 
         isRefreshToken(tokenLogId);
         checkTokenActive(tokenLogId);
 
-        log.info("AuthService: Extract user id for Deactivate the actual token of user: {}, at: {}", jwt.getSubject(), Instant.now());
+        log.info("AuthService: Extract user id for Deactivate the actual token of user: {}, at: {}", jwt.getSubject(), DateTimeConverter.formatInstantNow());
         String idUser = jwt.getClaim("user_id").toString();
         var userID = UUID.fromString(idUser);
         tokenLogService.deactivateActiveToken(userID, TypeInvalidation.USER_REFRESH);
 
-        log.info("AuthService: Generated new access token for user: {}, at: {}", userID, Instant.now());
+        log.info("AuthService: Generated new access token for user: {}, at: {}", userID, DateTimeConverter.formatInstantNow());
         var user = userService.findByEmail(jwt.getSubject());
 
         return convertToLoginResponse(user);
@@ -194,7 +194,7 @@ public class AuthService {
      */
     private void checkTokenActive (UUID tokenLogId) {
         if (!tokenLogService.isTokenValid(tokenLogId)) {
-            log.error("AuthService: Refresh token expired. Throw InvalidCredentialsException at: {}", Instant.now());
+            log.error("AuthService: Refresh token expired. Throw InvalidCredentialsException at: {}", DateTimeConverter.formatInstantNow());
             throw new InvalidCredentialsException(ErrorsResponses.EXPIRED_REFRESH_TOKEN.getMessage());
         }
     }
@@ -222,15 +222,15 @@ public class AuthService {
      * @return LoginResponse containing the user's name, email, token, and refresh token
      */
     private LoginResponse convertToLoginResponse(User user){
-        log.info("AuthService: Generate token for user: {}, using token service at: {}", user.getUserId(), Instant.now());
+        log.info("AuthService: Generate token for user: {}, using token service at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         var tokenLogLogin = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
         var token = tokenService.generateToken(user, tokenLogLogin);
 
-        log.info("AuthService: Generate refreshToken for user: {}, using token service at: {}", user.getUserId(), Instant.now());
+        log.info("AuthService: Generate refreshToken for user: {}, using token service at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         var refreshTokenLogin = tokenLogService.saveTokenLog(user, ScopeToken.REFRESH_TOKEN, LocalDateTime.now());
         var refreshToken = tokenService.generateRefreshToken(user, refreshTokenLogin);
 
-        log.info("AuthService: Setting loginResponse attributes for user: {}, at: {}", user.getUserId(), Instant.now());
+        log.info("AuthService: Setting loginResponse attributes for user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         LoginResponse loginResponse = new LoginResponse();
         loginResponse.setUserName(user.getFirstName() + user.getLastName());
         loginResponse.setEmail(user.getEmail());
@@ -257,16 +257,16 @@ public class AuthService {
      * @param user the User object to check for active sessions
      */
     private void validateIfUserIsAlreadyLoggedIn(User user){
-        log.info("AuthService: Find LoggedNow fot user: {}, at: {}", user.getUserId(), Instant.now());
+        log.info("AuthService: Find LoggedNow fot user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         List<LoggedNow> logRegistersOfUser = loggedNowService.findByUserId(user.getUserId());
 
         if(!logRegistersOfUser.isEmpty()){
-            log.info("AuthService: Find active session for the user: {}, starting do delete e deactivate the token at: {}", user.getUserId(), Instant.now());
+            log.info("AuthService: Find active session for the user: {}, starting do delete e deactivate the token at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
             loggedNowService.deleteByUserId(user.getUserId());
             tokenLogService.deactivateActiveToken(user.getUserId(), TypeInvalidation.NEW_LOGIN);
         }
 
-        log.info("AuthService: Token not foud or is null. User: {}, is not logged, finish validation at {}: ",user.getUserId(), Instant.now());
+        log.info("AuthService: Token not foud or is null. User: {}, is not logged, finish validation at {}: ",user.getUserId(), DateTimeConverter.formatInstantNow());
     }
 
 
@@ -313,7 +313,7 @@ public class AuthService {
      */
     private void validatingYourUserIsOauth(User user){
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            log.error("AuthService: User: {} try login with OAuth, throw exception at {}", user.getUserId(), Instant.now());
+            log.error("AuthService: User: {} try login with OAuth, throw exception at {}", user.getUserId(), DateTimeConverter.formatInstantNow());
             throw new DirectLoginNotAllowedException(ErrorsResponses.USER_OAUTH_CAN_NOT_LOGIN_DIRECT.getMessage());
         }
     }
@@ -331,13 +331,13 @@ public class AuthService {
      * @throws InvalidTokenException if the token does not have the "REFRESH_TOKEN" scope
      */
     private void isRefreshToken(UUID tokenLogId){
-        log.info("AuthService: validate if token: {}, have a Refresh Scope Token at: {}", tokenLogId, Instant.now());
+        log.info("AuthService: validate if token: {}, have a Refresh Scope Token at: {}", tokenLogId, DateTimeConverter.formatInstantNow());
         var tokenlog = tokenLogService.findById(tokenLogId);
 
         var scope = tokenlog.getScopeToken();
 
         if(!ScopeToken.REFRESH_TOKEN.equals(scope)){
-            log.error("AuthService: Inform token dont have the expect scope token. Inform token is: {}, user of request is: {}. Throw InvalidTokenException at: {}", scope, tokenlog.getUserId(), Instant.now());
+            log.error("AuthService: Inform token dont have the expect scope token. Inform token is: {}, user of request is: {}. Throw InvalidTokenException at: {}", scope, tokenlog.getUserId(), DateTimeConverter.formatInstantNow());
             throw new InvalidTokenException(ErrorsResponses.TOKEN_MUST_BE_REFRESH.getMessage() + scope);
         }
     }
