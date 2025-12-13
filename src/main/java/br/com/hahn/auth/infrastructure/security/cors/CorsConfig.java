@@ -15,8 +15,6 @@ public class CorsConfig implements WebMvcConfigurer {
      * methods, headers, and whether credentials are supported.</p>
      *
      * <ul>
-     *   <li><b>Allowed Origins:</b> Requests are permitted from "http://localhost:4200"
-     *   and "http://localhost:5173".</li>
      *   <li><b>Allowed Methods:</b> Supports GET, POST, DELETE, PUT, PATCH, and OPTIONS.</li>
      *   <li><b>Allowed Headers:</b> Includes Authorization, Content-Type, Accept, and any other headers.</li>
      *   <li><b>Credentials:</b> Disabled, meaning cookies or other credentials will not be sent.</li>
