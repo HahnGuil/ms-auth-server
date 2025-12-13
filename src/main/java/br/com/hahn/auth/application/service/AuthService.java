@@ -2,6 +2,7 @@ package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.application.execption.DirectLoginNotAllowedException;
 import br.com.hahn.auth.application.execption.InvalidCredentialsException;
+import br.com.hahn.auth.application.execption.InvalidTokenException;
 import br.com.hahn.auth.application.execption.UserBlockException;
 import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
@@ -37,7 +38,6 @@ public class AuthService {
         this.loggedNowService = loggedNowService;
         this.passwordEncoder = passwordEncoder;
     }
-
 
     /**
      * Method used to perform user login.
@@ -113,8 +113,26 @@ public class AuthService {
     public void logOffUser(Jwt jwt){
         log.info("AuthService: Starting log off for user with email: {}, at: {}", jwt.getSubject(), Instant.now());
         var userId = getUserIdFromToken(jwt);
+        doLogOff(userId, TypeInvalidation.LOG_OFF);
+
+    }
+
+    /**
+     * Performs the logoff process for a user.
+     * <p>
+     * This method executes the following steps:
+     * - Deletes the user's active session from the `loggedNowService`.
+     * - Deactivates the user's active token in the `tokenLogService` with the specified invalidation type.
+     * </p>
+     *
+     * @author HahnGuil
+     * @param userId the UUID of the user to log off
+     * @param typeInvalidation the type of invalidation to apply to the user's token
+     */
+    public void doLogOff(UUID userId, TypeInvalidation typeInvalidation){
+        log.info("AuthService: Execute user logOff for user: {}, with type: {} ,at: {}", userId, typeInvalidation.toString(), Instant.now());
         loggedNowService.deleteByUserId(userId);
-        tokenLogService.deactivateActiveToken(userId, TypeInvalidation.LOG_OFF);
+        tokenLogService.deactivateActiveToken(userId, typeInvalidation);
     }
 
     /**
@@ -147,12 +165,17 @@ public class AuthService {
     public LoginResponse generateNewTokenForUser(Jwt jwt){
         log.info("AuthService: Starting generate new token for user email: {}, at: {}", jwt.getSubject(), Instant.now());
 
-        log.info("AuthService: Extract token log id for validate if the refresh token of user: {}, already use for generate new token at: {}", jwt.getSubject(), Instant.now());
-        var tokenLogId = UUID.fromString(jwt.getClaim("token_log_id"));
+
+        log.info("AuthService: Extract token log id and validate the scope and expiration time for user: {}, already use for generate new token at: {}", jwt.getSubject(), Instant.now());
+        String idToken = jwt.getClaim("token_log_id").toString();
+        var tokenLogId = UUID.fromString(idToken);
+
+        isRefreshToken(tokenLogId);
         checkTokenActive(tokenLogId);
 
         log.info("AuthService: Extract user id for Deactivate the actual token of user: {}, at: {}", jwt.getSubject(), Instant.now());
-        var userID = UUID.fromString(jwt.getClaim("user_id"));
+        String idUser = jwt.getClaim("user_id").toString();
+        var userID = UUID.fromString(idUser);
         tokenLogService.deactivateActiveToken(userID, TypeInvalidation.USER_REFRESH);
 
         log.info("AuthService: Generated new access token for user: {}, at: {}", userID, Instant.now());
@@ -162,15 +185,15 @@ public class AuthService {
     }
 
     /**
-     * Checks if the token associated with the given loginLogId is still valid.
+     * Checks if the token associated with the given tokenLogId is still valid.
      * If the token is invalid, logs an error message and throws an InvalidCredentialsException.
      *
      * @author HahnGuil
-     * @param loginLogId the UUID of the token log to be validated
+     * @param tokenLogId the UUID of the token log to be validated
      * @throws InvalidCredentialsException if the token is no longer valid
      */
-    private void checkTokenActive (UUID loginLogId) {
-        if (!tokenLogService.isTokenValid(loginLogId)) {
+    private void checkTokenActive (UUID tokenLogId) {
+        if (!tokenLogService.isTokenValid(tokenLogId)) {
             log.error("AuthService: Refresh token expired. Throw InvalidCredentialsException at: {}", Instant.now());
             throw new InvalidCredentialsException(ErrorsResponses.EXPIRED_REFRESH_TOKEN.getMessage());
         }
@@ -185,7 +208,8 @@ public class AuthService {
      * @return the user ID as a UUID
      */
     private UUID getUserIdFromToken(Jwt jwt){
-        return UUID.fromString(jwt.getClaimAsString("user_id"));
+        String userId = jwt.getClaim("user_id").toString();
+        return UUID.fromString(userId);
     }
 
     /**
@@ -237,7 +261,7 @@ public class AuthService {
         List<LoggedNow> logRegistersOfUser = loggedNowService.findByUserId(user.getUserId());
 
         if(!logRegistersOfUser.isEmpty()){
-            log.info("AuthService: Find active session for the user: {}, starting do delete e desactivate the token at: {}", user.getUserId(), Instant.now());
+            log.info("AuthService: Find active session for the user: {}, starting do delete e deactivate the token at: {}", user.getUserId(), Instant.now());
             loggedNowService.deleteByUserId(user.getUserId());
             tokenLogService.deactivateActiveToken(user.getUserId(), TypeInvalidation.NEW_LOGIN);
         }
@@ -291,6 +315,30 @@ public class AuthService {
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             log.error("AuthService: User: {} try login with OAuth, throw exception at {}", user.getUserId(), Instant.now());
             throw new DirectLoginNotAllowedException(ErrorsResponses.USER_OAUTH_CAN_NOT_LOGIN_DIRECT.getMessage());
+        }
+    }
+
+    /**
+     * Validates if the provided token has the "REFRESH_TOKEN" scope.
+     * <p>
+     * This method checks the scope of the given `TokenLog` object to ensure it is
+     * a refresh token. If the token does not have the expected scope, an
+     * `InvalidTokenException` is thrown with an appropriate error message.
+     * </p>
+     *
+     * @author HahnGuil
+     * @param tokenLogId the id of `TokenLog` the object to be validated
+     * @throws InvalidTokenException if the token does not have the "REFRESH_TOKEN" scope
+     */
+    private void isRefreshToken(UUID tokenLogId){
+        log.info("AuthService: validate if token: {}, have a Refresh Scope Token at: {}", tokenLogId, Instant.now());
+        var tokenlog = tokenLogService.findById(tokenLogId);
+
+        var scope = tokenlog.getScopeToken();
+
+        if(!ScopeToken.REFRESH_TOKEN.equals(scope)){
+            log.error("AuthService: Inform token dont have the expect scope token. Inform token is: {}, user of request is: {}. Throw InvalidTokenException at: {}", scope, tokenlog.getUserId(), Instant.now());
+            throw new InvalidTokenException(ErrorsResponses.TOKEN_MUST_BE_REFRESH.getMessage() + scope);
         }
     }
 }

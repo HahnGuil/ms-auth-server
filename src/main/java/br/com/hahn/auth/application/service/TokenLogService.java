@@ -137,6 +137,46 @@ public class TokenLogService {
     }
 
     /**
+     * Validates if a given TokenLog is active.
+     * <p>
+     * This method checks whether the provided TokenLog entity is active. If the token is not active,
+     * it logs an error message and throws an InvalidTokenException.
+     * </p>
+     *
+     * @author HahnGuil
+     * @param tokenLog The TokenLog entity to be validated.
+     * @throws InvalidTokenException if the token is inactive or invalid.
+     */
+    public void isTokenLogValid(TokenLog tokenLog){
+        log.info("TokenLogService: Check if the Token: {} is active: at: {}", tokenLog.getIdTokenLog(), Instant.now());
+        if(!tokenLog.isActiveToken()){
+            log.error("TokenLogService: Token: {} is invalid or desactivade. Throw InvalidTokenException at: {}", tokenLog.getIdTokenLog(), Instant.now());
+            throw new InvalidTokenException(ErrorsResponses.INVALID_TOKEN.getMessage());
+        }
+    }
+
+    /**
+     * Validates that the provided TokenLog has a scope appropriate for login operations.
+     * <p>
+     * This method checks whether the token's scope is either {@code ScopeToken.LOGIN_TOKEN}
+     * or {@code ScopeToken.REGISTER_TOKEN}. If the scope is different, an error is logged
+     * and an {@link InvalidTokenException} is thrown.
+     * </p>
+     *
+     * @author HahnGuil
+     * @param tokenLog the TokenLog to validate; its scope is checked
+     * @throws InvalidTokenException if the token scope is not LOGIN_TOKEN or REGISTER_TOKEN
+     */
+    public void isExpectedScopeToken(TokenLog tokenLog){
+        log.info("TokenLogService: Check the scope of token: {} at: {}", tokenLog.getIdTokenLog(), Instant.now());
+        var scope = tokenLog.getScopeToken();
+        if(!ScopeToken.LOGIN_TOKEN.equals(scope) && !ScopeToken.REGISTER_TOKEN.equals(scope)){
+            log.error("TokenLogService: Token: {} has invalid scope: {}. Throw InvalidTokenException at: {}", tokenLog.getIdTokenLog(), scope, Instant.now());
+            throw new InvalidTokenException(ErrorsResponses.SCOPE_TOKEN_INVALID.getMessage() + tokenLog.getScopeToken().toString());
+        }
+    }
+
+    /**
      * Invalidates a token for a user based on the provided token log and invalidation type.
      * <p>
      * This method performs the following steps:

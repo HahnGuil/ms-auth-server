@@ -14,15 +14,17 @@ import java.util.UUID;
 public interface TokenLogRepository extends JpaRepository<TokenLog, UUID> {
 
     @Modifying
-    @Query("UPDATE TokenLog ll SET ll.activeToken = false WHERE ll.userId = :userId")
+    @Query("UPDATE TokenLog tl SET tl.activeToken = false WHERE tl.userId = :userId AND tl.activeToken = true")
     void deactivateActiveTokenByUserId(UUID userId);
 
-    @Query("SELECT ll.activeToken FROM TokenLog ll WHERE ll.createDate = :loginLogId")
+    @Query("SELECT CASE WHEN COUNT(tl) > 0 THEN true ELSE false END FROM TokenLog tl WHERE tl.idTokenLog = :loginLogId AND tl.activeToken = true")
     boolean findActiveTokenByLoginLogId(UUID loginLogId);
 
-    @Query("SELECT ll FROM TokenLog ll WHERE ll.activeToken = true AND ll.createDate < :expirationTime")
+    @Query("SELECT tl FROM TokenLog tl WHERE tl.activeToken = true AND tl.createDate < :expirationTime")
     List<TokenLog> findExpiredActiveTokens(LocalDateTime expirationTime);
 
     TokenLog findTopByUserIdOrderByCreateDateDesc(UUID userId);
+    
+    
 
 }

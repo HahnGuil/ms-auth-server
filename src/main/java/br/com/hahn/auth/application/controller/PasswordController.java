@@ -32,6 +32,9 @@ public class PasswordController extends AbstractController implements PasswordAp
         log.info("PasswordController: Validate old password format at: {}", Instant.now());
         validatePasswordFormat(changePasswordRequest.getOldPassword());
 
+        log.info("PasswordController: validate if the token is valid for user: {}, at: {}", changePasswordRequest.getEmail(), Instant.now());
+        passwordService.validateTokenForChangePassword(extractJwtFromContext());
+
         passwordService.changePassword(changePasswordRequest);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
@@ -43,6 +46,7 @@ public class PasswordController extends AbstractController implements PasswordAp
         log.info("PasswordController: Validate format email of reset request at: {}", Instant.now());
         validateEmailFormat(passwordResetRequest.getEmail());
 
+        log.info("PasswordController: Validate cod send to user email: {}, at: {}", passwordResetRequest.getEmail(), Instant.now());
         var response = passwordService.requestValidateCode(passwordResetRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
@@ -50,15 +54,18 @@ public class PasswordController extends AbstractController implements PasswordAp
     @Override
     public ResponseEntity<ValidateCodeResponse> postRequestValidateCode(ValidateCodeRequest validateCodeRequest) {
         log.info("PasswordController: Starting generate validate for recovery code to user: {}, at: {}", validateCodeRequest.getEmail(), Instant.now());
+
         var response = passwordService.validateResetCode(validateCodeRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Override
     public ResponseEntity<Void> patchResetPassword(NewPasswordRequest newPasswordRequest) {
-        passwordService.resetUserPassword(extractJwtFromContext(), newPasswordRequest);
+        log.info("PasswordController: password format at: {}", Instant.now());
+        validatePasswordFormat(newPasswordRequest.getNewPassword());
+
         log.info("PasswordController: Stating reset password at: {}", Instant.now());
+        passwordService.resetUserPassword(extractJwtFromContext(), newPasswordRequest);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
-
 }

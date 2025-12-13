@@ -32,7 +32,6 @@ public class PasswordService {
     private final TokenService tokenService;
     private final TokenLogService tokenLogService;
 
-
     /**
      * Changes the password of a user.
      * This method performs the following steps:
@@ -41,6 +40,7 @@ public class PasswordService {
      * - Checks if the user is an OAuth user (password change is not allowed for OAuth users).
      * - Validates the old password of the user.
      * - Updates the user's password with the new password.
+     * - Disables the token used to change the password.
      *
      * @author HahnGuil
      * @param changePasswordRequest the request object containing the user's email, old password, and new password
@@ -62,6 +62,9 @@ public class PasswordService {
 
         log.info("PasswordService: Call UserService to update user password to user: {} at: {}", user.getUserId(), Instant.now());
         userService.updatePassword(user.getEmail(), user.getUserId(), passwordEncoder.encode(changePasswordRequest.getNewPassword()), LocalDateTime.now());
+
+        log.info("PasswordService: Deactivate the token use for do the change password of user: {}, at: {}", user.getUserId(), Instant.now());
+        authService.doLogOff(user.getUserId(), TypeInvalidation.CHANGE_PASSWORD);
     }
 
     /**
@@ -86,6 +89,9 @@ public class PasswordService {
 
         log.info("PasswordService: Find user by email: {}, at: {}", passwordResetRequest.getEmail(), Instant.now());
         var user = userService.findByEmail(passwordResetRequest.getEmail());
+
+        log.info("PasswordService: Check user: {} is OAuth at: {}", user.getUserId(), Instant.now());
+        checkIfItIsAuthUser(user);
 
         log.info("PasswordService: Verify if already exists one change reset password for this email: {}, at: {}", passwordResetRequest.getEmail(), Instant.now());
         findAnDeleteResetPassword(passwordResetRequest);
@@ -140,6 +146,7 @@ public class PasswordService {
      * - Validates the scope of the recovery token from the JWT.
      * - Extracts the user ID and email from the JWT.
      * - Updates the user's password using the UserService.
+     * - Deactivates the received token so it cannot be used again.
      *
      * @author HahnGuil
      * @param jwt the JWT containing the user's information and recovery token scope
@@ -158,6 +165,9 @@ public class PasswordService {
 
         log.info("PasswordService: Call UserService for reset password from User: {} at: {}", userId, Instant.now());
         userService.updatePassword(userEmail, userId, passwordEncoder.encode(newPasswordRequest.getNewPassword()), LocalDateTime.now());
+
+        log.info("PasswordService: Deactivated recover token for user: {}, at: {}", userId, Instant.now());
+        tokenLogService.deactivateActiveToken(userId, TypeInvalidation.RESET_PASSWORD);
     }
 
     /**
@@ -173,6 +183,31 @@ public class PasswordService {
     public int deleteByExpirationDateBefore(LocalDateTime dataTime){
         log.info("ResetPasswordService: Delete reset password by expiration date");
         return resetPasswordRepository.deleteByExpirationDateBefore(dataTime);
+    }
+
+    /**
+     * Validates the token for changing a user's password.
+     * <p>
+     * This method performs the following steps:
+     * - Extracts the token log ID from the JWT.
+     * - Finds the token log entry by its ID.
+     * - Validates if the token log has the expected scope.
+     * - Checks if the token log is valid.
+     * </p>
+     *
+     * @author HahnGuil
+     * @param jwt the JWT containing the token log ID and user information
+     * @throws InvalidTokenException if the token log is invalid or has an unexpected scope
+     */
+    public void validateTokenForChangePassword(Jwt jwt){
+        log.info("PasswordServe: Extract tokens id and user and for jwt at: {}", Instant.now());
+        var tokensId = UUID.fromString(jwt.getClaim("token_log_id"));
+
+        log.info("PasswordService: Find token by id: {} at: {}", tokensId, Instant.now());
+        var token = tokenLogService.findById(tokensId);
+
+        tokenLogService.isExpectedScopeToken(token);
+        tokenLogService.isTokenLogValid(token);
     }
 
     /**
