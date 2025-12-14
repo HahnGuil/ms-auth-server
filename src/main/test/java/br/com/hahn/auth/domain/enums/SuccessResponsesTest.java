@@ -48,9 +48,7 @@ class SuccessResponsesTest {
 
     @Test
     void shouldThrowExceptionForInvalidEnumValue() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            SuccessResponses.valueOf("INVALID_SUCCESS_MESSAGE");
-        });
+        assertThrows(IllegalArgumentException.class, () -> SuccessResponses.valueOf("INVALID_SUCCESS_MESSAGE"));
     }
 
     @Test

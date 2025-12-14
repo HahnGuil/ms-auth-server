@@ -209,9 +209,7 @@ class ErrorsResponsesTest {
 
     @Test
     void shouldThrowExceptionForInvalidEnumValue() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            ErrorsResponses.valueOf("INVALID_ENUM_VALUE");
-        });
+        assertThrows(IllegalArgumentException.class, () -> ErrorsResponses.valueOf("INVALID_ENUM_VALUE"));
     }
 }
 

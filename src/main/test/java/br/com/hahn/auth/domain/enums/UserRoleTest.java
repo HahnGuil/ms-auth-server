@@ -39,9 +39,7 @@ class UserRoleTest {
 
     @Test
     void shouldThrowExceptionForInvalidEnumValue() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            UserRole.valueOf("INVALID_ROLE");
-        });
+        assertThrows(IllegalArgumentException.class, () -> UserRole.valueOf("INVALID_ROLE"));
     }
 
     @Test

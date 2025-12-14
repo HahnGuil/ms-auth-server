@@ -34,6 +34,7 @@ class InvalidatedTokenServiceTest {
     }
 
     @Test
+    @SuppressWarnings({"DataFlowIssue", "ConstantConditions"})
     void shouldThrowExceptionWhenInvalidatedTokenIsNull() {
         assertThrows(NullPointerException.class, () -> invalidatedTokenService.save(null));
         verifyNoInteractions(invalidatedTokenRepository);

@@ -3,10 +3,13 @@ package br.com.hahn.auth.application.service;
 import br.com.hahn.auth.domain.model.InvalidatedToken;
 import br.com.hahn.auth.domain.respository.InvalidatedTokenRepository;
 import br.com.hahn.auth.util.DateTimeConverter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +29,8 @@ public class InvalidatedTokenService {
      * @param invalidatedToken the invalidated token to be saved
      */
     @Transactional
-    public void save(InvalidatedToken invalidatedToken){
+    public void save(@NonNull InvalidatedToken invalidatedToken){
+        Objects.requireNonNull(invalidatedToken, "InvalidatedToken cannot be null");
         log.info("InvalidTokenService: Save invalidateToken: {} for user id: {}, at: {}", invalidatedToken.getId(), invalidatedToken.getUserId(), DateTimeConverter.formatInstantNow());
         invalidatedTokenRepository.save(invalidatedToken);
     }

@@ -39,7 +39,7 @@ class LoggedNowServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(userId, result.get(0).getUserId());
+        assertEquals(userId, result.getFirst().getUserId());
         verify(loggedNowRepository, times(1)).findByUserId(userId);
     }
 

@@ -86,9 +86,7 @@ class ScopeTokenTest {
 
     @Test
     void shouldThrowExceptionForInvalidEnumValue() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            ScopeToken.valueOf("INVALID_SCOPE_TOKEN");
-        });
+        assertThrows(IllegalArgumentException.class, () -> ScopeToken.valueOf("INVALID_SCOPE_TOKEN"));
     }
 
     @Test

@@ -71,9 +71,7 @@ class TypeInvalidationTest {
 
     @Test
     void shouldThrowExceptionForInvalidEnumValue() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            TypeInvalidation.valueOf("INVALID_TYPE");
-        });
+        assertThrows(IllegalArgumentException.class, () -> TypeInvalidation.valueOf("INVALID_TYPE"));
     }
 
     @Test

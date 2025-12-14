@@ -39,9 +39,7 @@ class TypeUserTest {
 
     @Test
     void shouldThrowExceptionForInvalidEnumValue() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            TypeUser.valueOf("INVALID_USER_TYPE");
-        });
+        assertThrows(IllegalArgumentException.class, () -> TypeUser.valueOf("INVALID_USER_TYPE"));
     }
 
     @Test
