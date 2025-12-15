@@ -203,9 +203,11 @@ Para habilitar login com Gmail via OAuth2, siga os passos:
    - Vá em `APIs e Serviços` → `Credenciais`  
    - Clique em **Criar credenciais** → **ID do cliente OAuth 2.0**  
    - Escolha **Aplicativo Web**  
-   - Adicione sua URI de redirecionamento:  
+   - Adicione as URI de redirecionamento:  
      ```
      http://localhost:8080/login/oauth2/code/google
+     http://localhost:2300/auth-server/login/oauth2/code/google
+     http://localhost:2310/auth-server/login/oauth2/code/google
      ```
 
 5. **Salve as credenciais**  

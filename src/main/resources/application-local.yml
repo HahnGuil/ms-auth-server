@@ -26,6 +26,7 @@ spring:
               - profile
             redirect-uri: "http://localhost:2310/auth-server/login/oauth2/code/google"
 
+
   kafka:
     bootstrap-servers: "localhost:9093"
     consumer:
