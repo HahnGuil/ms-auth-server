@@ -171,7 +171,7 @@ paths:
       tags:
         - login
       summary: Operation to allow the user to log off the application.
-      description: With this option, the user could log out of the application quickly, without waiting for the tokens to be invalidated.
+      description: With this option, the user could log out of the application quickly, without waiting for the tokens to be invalidated. ATTENTION, To use this endpoint, you need to configure the Postman Authorization tab as Bearer Token and paste the token received in the request into the field on the right.
       operationId: deleteLoggedUser
       requestBody:
         required: true
@@ -201,7 +201,7 @@ paths:
       tags:
         - password
       summary: Operation for a logged-in user to change the application password.
-      description: When logged in, the user will change their password, entering both the old and new passwords.
+      description: When logged in, the user will change their password, entering both the old and new passwords. ATTENTION, To use this endpoint, you need to configure the Postman Authorization tab as Bearer Token and paste the token received in the request into the field on the right.
       operationId: patchChangePassword
       security:
         - bearerAuth: []
@@ -373,7 +373,7 @@ paths:
       tags:
         - password
       summary: Operation to reset the user's password.
-      description: After the user validates the recovery code, the front-end will use this endpoint to register a new password for the user.
+      description: After the user validates the recovery code, the front-end will use this endpoint to register a new password for the user. ATTENTION, To use this endpoint, you need to configure the Postman Authorization tab as Bearer Token and paste the token received in the request into the field on the right.
       operationId: patchResetPassword
       security:
         - bearerAuth: []
@@ -403,7 +403,7 @@ paths:
       tags:
         - token
       summary: Operations for token refresh and validation.
-      description: Allows the front-end to use this to generate a new token from the refresh token sent.
+      description: Allows the front-end to use this to generate a new token from the refresh token sent. ATTENTION, To use this endpoint, you need to configure the Postman Authorization tab as Bearer Token and paste the refresh token received in the request into the field on the right.
       operationId: postRefreshToken
       security:
         - bearerAuth: []
