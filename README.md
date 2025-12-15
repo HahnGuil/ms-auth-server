@@ -212,6 +212,8 @@ To enable Gmail login via OAuth2, follow these steps:
    - Add your redirect URI:  
      ```
      http://localhost:8080/login/oauth2/code/google
+     http://localhost:2300/auth-server/login/oauth2/code/google
+     http://localhost:2310/auth-server/login/oauth2/code/google
      ```
 
 5. **Save the credentials**  
