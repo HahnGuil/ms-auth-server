@@ -1,4 +1,4 @@
-package br.com.hahn.auth.presentation.exception;
+package br.com.hahn.auth.application.controller;
 
 import br.com.hahn.auth.application.execption.*;
 import br.com.hahn.auth.domain.enums.ErrorsResponses;

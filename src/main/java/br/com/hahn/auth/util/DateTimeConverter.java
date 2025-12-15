@@ -51,7 +51,7 @@ public final class DateTimeConverter {
      * Formatter for date-time values, using the pattern "dd/MM/yyyy HH:mm:ss z"
      * and the default locale.
      */
-    private static final DateTimeFormatter FORMATTER =
+    static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss z")
                     .withLocale(Locale.getDefault());
 
