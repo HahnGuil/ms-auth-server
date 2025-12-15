@@ -4,6 +4,7 @@ import br.com.hahn.auth.application.execption.InvalidTokenException;
 import br.com.hahn.auth.application.execption.ResourceAlreadyExistException;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
 import br.com.hahn.auth.domain.model.ErrorResponse;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ class GlobalControllerHandlerTest {
             ResponseEntity<ErrorResponse> response = handler.handlerUserAlreadyExistForApplicationException(exception);
 
             assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+            Assertions.assertNotNull(response.getBody());
             assertEquals("Resource already exists", response.getBody().getMessage());
         }
     }
@@ -47,6 +49,7 @@ class GlobalControllerHandlerTest {
             ResponseEntity<ErrorResponse> response = handler.handleDataAccessException(exception);
 
             assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+            Assertions.assertNotNull(response.getBody());
             assertEquals("Error to process the request, try againDatabase error", response.getBody().getMessage());
         }
     }
@@ -78,6 +81,7 @@ class GlobalControllerHandlerTest {
             ResponseEntity<ErrorResponse> response = handler.handlerInvalidTokenException(exception);
 
             assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+            Assertions.assertNotNull(response.getBody());
             assertEquals("Invalid token", response.getBody().getMessage());
         }
     }
@@ -94,6 +98,7 @@ class GlobalControllerHandlerTest {
             ResponseEntity<ErrorResponse> response = handler.handleUserNotFoundException(exception);
 
             assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+            Assertions.assertNotNull(response.getBody());
             assertEquals("User not found", response.getBody().getMessage());
         }
     }
