@@ -2,8 +2,6 @@ package br.com.hahn.auth.infrastructure.security;
 
 import br.com.hahn.auth.application.service.AuthService;
 import br.com.hahn.auth.domain.model.LoginResponse;
-import br.com.hahn.auth.infrastructure.exception.CustomAccessDeniedHandler;
-import br.com.hahn.auth.infrastructure.exception.CustomAuthenticationEntryPointHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
@@ -35,12 +33,6 @@ import static org.mockito.Mockito.*;
 class SecurityConfigTest {
 
     @Mock
-    private CustomAccessDeniedHandler customAccessDeniedHandler;
-
-    @Mock
-    private CustomAuthenticationEntryPointHandler customAuthenticationEntryPointHandler;
-
-    @Mock
     private SecurityFilter securityFilter;
 
     @Mock
@@ -64,7 +56,7 @@ class SecurityConfigTest {
         when(httpSecurity.oauth2Login(any())).thenReturn(httpSecurity);
         when(httpSecurity.oauth2ResourceServer(any())).thenReturn(httpSecurity);
         when(httpSecurity.addFilterBefore(any(), any())).thenReturn(httpSecurity);
-        when(httpSecurity.build()).thenAnswer(invocation -> securityFilterChain);
+        when(httpSecurity.build()).thenAnswer(_ -> securityFilterChain);
 
         SecurityFilterChain filterChain = securityConfig.securityFilterChain(httpSecurity);
 
