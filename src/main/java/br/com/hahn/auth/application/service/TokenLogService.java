@@ -80,8 +80,7 @@ public class TokenLogService {
     public TokenLog saveApplicationTokenLog(Application application, ScopeToken scopeToken, LocalDateTime createDate){
         log.info("TokenLogService: Save token on data base, for Application: {}, Scope Token is: {}, at: {}",
                 application.getNameApplication(), scopeToken, DateTimeConverter.formatInstantNow());
-        var loginLog = loginLogRepository.save(convertToEntity(application, scopeToken, createDate));
-        return loginLog;
+        return loginLogRepository.save(convertToEntity(application, scopeToken, createDate));
     }
 
     /**
