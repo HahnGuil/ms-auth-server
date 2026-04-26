@@ -55,7 +55,7 @@ public class ApplicationService {
         return response;
     }
 
-    private Application findByPublicId(UUID publicId){
+    public Application findByPublicId(UUID publicId){
         log.info("ApplicationService: Find application for publicId: {} at: {}", publicId, DateTimeConverter.formatInstantNow());
 
         return applicationRepository.findApplicationByPublicId(publicId).orElseThrow(() -> {
