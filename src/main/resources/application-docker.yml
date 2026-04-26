@@ -9,11 +9,16 @@ spring:
     validate-on-migrate: true
     enabled: true
     locations: "classpath:db/migration"
+    schemas: toxic_bet
+    default-schema: toxic_bet
 
   jpa:
     hibernate:
       ddl-auto: none
     show-sql: false
+    properties:
+      hibernate:
+        default_schema: toxic_bet
 
   security:
     oauth2:

@@ -69,9 +69,9 @@ public class TokenLog {
 
     /**
      * The unique identifier of the user associated with this token log entry.
-     * This value is stored in the "user_id" column and cannot be null.
+     * Nullable for application-scoped tokens (no user involved).
      */
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = true)
     private UUID userId;
 
     /**
