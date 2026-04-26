@@ -224,7 +224,7 @@ public class AuthService {
     private LoginResponse convertToLoginResponse(User user){
         log.info("AuthService: Generate token for user: {}, using token service at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         var tokenLogLogin = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
-        var token = tokenService.generateToken(user, tokenLogLogin);
+        var token = tokenService.generateUserToken(user, tokenLogLogin);
 
         log.info("AuthService: Generate refreshToken for user: {}, using token service at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         var refreshTokenLogin = tokenLogService.saveTokenLog(user, ScopeToken.REFRESH_TOKEN, LocalDateTime.now());

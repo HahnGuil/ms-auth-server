@@ -7,7 +7,9 @@ public enum ScopeToken {
     LOGIN_TOKEN(1, "login_token"),
     REGISTER_TOKEN(2, "register_token"),
     RECOVER_CODE(3, "recoverCode"),
-    REFRESH_TOKEN(4, "refresh_token");
+    REFRESH_TOKEN(4, "refresh_token"),
+    APPLICATION_TOKEN(5, "application_token"),
+    APPLICATION_REFRESH_TOKEN(6, "application_refresh_token");
 
     private final int code;
     private final String value;

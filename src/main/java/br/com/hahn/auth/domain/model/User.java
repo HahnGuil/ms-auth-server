@@ -1,6 +1,7 @@
 package br.com.hahn.auth.domain.model;
 
 import br.com.hahn.auth.domain.enums.TypeUser;
+import br.com.hahn.auth.domain.enums.UserApplicationRole;
 import br.com.hahn.auth.domain.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -107,6 +108,11 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(name = "user_role")
     private UserRole role;
+
+    /** * The role of the user in the application context. * Stored in the "user_application_role" column as a string. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_application_role")
+    private UserApplicationRole userApplicationRole;
 
     /**
      * The set of token logs associated with the user.

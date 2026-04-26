@@ -5,10 +5,7 @@ import br.com.hahn.auth.application.execption.InvalidRefreshTokenException;
 import br.com.hahn.auth.application.service.TokenLogService;
 import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
-import br.com.hahn.auth.domain.model.Application;
-import br.com.hahn.auth.domain.model.ResetPassword;
-import br.com.hahn.auth.domain.model.TokenLog;
-import br.com.hahn.auth.domain.model.User;
+import br.com.hahn.auth.domain.model.*;
 import br.com.hahn.auth.util.DateTimeConverter;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -35,6 +32,8 @@ public class TokenService {
     private static final String ISSUER = "AuthenticationService";
     private static final ZoneOffset ZONE_OFFSET = ZoneOffset.of("-03:00");
     private static final long TOKEN_EXPIRATION_TIME_MINUTES = 15;
+    private static final long APPLICATION_TOKEN_EXPIRATION_TIME_HOURS = 12;
+    private static final long APPLICATION_REFRESH_TOKEN_EXPIRATION_TIME_HOURS = 15;
     private static final long REFRESH_TOKEN_EXPIRATION_TIME_MINUTES = 30;
     private final KeyManager keyManager;
     private final TokenLogService tokenLogService;
@@ -94,7 +93,7 @@ public class TokenService {
      * @return a signed JWT string representing the token
      * @throws IllegalStateException if there is an error creating the JWT or if signing material is unavailable
      */
-    public String generateToken(User user, TokenLog tokenLog) {
+    public String generateUserToken(User user, TokenLog tokenLog) {
         log.info("TokenService: Generate token for user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         try {
             Algorithm algorithm = createAlgorithm();
@@ -106,6 +105,7 @@ public class TokenService {
                     .withClaim("token_log_date_request", tokenLog.getCreateDate().toString())
                     .withClaim("scope", tokenLog.getScopeToken().getValue())
                     .withClaim("type_user", user.getTypeUser().toString())
+                    .withClaim("application_role", user.getUserApplicationRole().toString())
                     .withClaim("applications", Optional.ofNullable(user.getApplications())
                             .orElse(Set.of()).stream()
                             .map(Application::getNameApplication)
@@ -115,6 +115,43 @@ public class TokenService {
         } catch (JWTCreationException e) {
             log.error("TokenService: Error to generate token for user: {}, throw IllegalStateException at: {}", tokenLog.getUserId(), DateTimeConverter.formatInstantNow());
             throw new IllegalStateException(ErrorsResponses.GENERATE_TOKEN_ERROR.getMessage(), e);
+        }
+    }
+
+    public String generateApplicationToken(Application application, TokenLog tokenLog){
+        log.info("TokenService: Generate token for Application: {}, at: {}", application.getNameApplication(), DateTimeConverter.formatInstantNow());
+        try {
+            Algorithm algorithm = createAlgorithm();
+            return JWT.create()
+                    .withIssuer(ISSUER)
+                    .withSubject(application.getPublicId().toString())
+                    .withClaim("application_name", application.getNameApplication())
+                    .withClaim("token_log_id", tokenLog.getIdTokenLog().toString())
+                    .withClaim("token_log_date_request", tokenLog.getCreateDate().toString())
+                    .withClaim("scope", tokenLog.getScopeToken().getValue())
+                    .withExpiresAt(tokenLog.getCreateDate().plusHours(APPLICATION_TOKEN_EXPIRATION_TIME_HOURS).toInstant(ZONE_OFFSET))
+                    .sign(algorithm);
+        }catch (JWTCreationException e){
+            log.error("TokenService: Error to generate token for Application: {}, at: {}", application.getNameApplication(), DateTimeConverter.formatInstantNow());
+            throw new IllegalStateException(ErrorsResponses.GENERATE_TOKEN_ERROR.getMessage(), e);
+        }
+    }
+
+    public String generateApplicationRefreshToken(Application application, TokenLog tokenLog) {
+        log.info("TokenService: Generate refresh token for Application: {}, at: {}", application.getNameApplication(), DateTimeConverter.formatInstantNow());
+        try {
+            Algorithm algorithm = createAlgorithm();
+            return JWT.create()
+                    .withIssuer(ISSUER)
+                    .withSubject(application.getPublicId().toString())
+                    .withClaim("application_id", application.getId().toString())
+                    .withClaim("scope", ScopeToken.APPLICATION_REFRESH_TOKEN.getValue())
+                    .withClaim("token_log_id", tokenLog.getIdTokenLog().toString())
+                    .withExpiresAt(tokenLog.getCreateDate().plusMinutes(APPLICATION_REFRESH_TOKEN_EXPIRATION_TIME_HOURS).toInstant(ZONE_OFFSET))
+                    .sign(algorithm);
+        } catch (JWTCreationException e) {
+            log.error("TokenService: Error to generate refresh token for Application: {}, throw IllegalStateException at: {}", tokenLog.getApplicationId(), DateTimeConverter.formatInstantNow());
+            throw new IllegalStateException(ErrorsResponses.GENERATE_REFRESH_TOKEN_ERROR.getMessage(), e);
         }
     }
 

@@ -2,10 +2,7 @@ package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.application.execption.UserEmailAlreadyExistException;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
-import br.com.hahn.auth.domain.enums.ErrorsResponses;
-import br.com.hahn.auth.domain.enums.ScopeToken;
-import br.com.hahn.auth.domain.enums.TypeUser;
-import br.com.hahn.auth.domain.enums.UserRole;
+import br.com.hahn.auth.domain.enums.*;
 import br.com.hahn.auth.domain.model.*;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
@@ -133,6 +130,7 @@ public class UserService {
         user.setLastName(request.getLastName());
         user.setPictureUrl(request.getPictureUrl());
         user.setRole(UserRole.USER_NORMAL);
+        user.setUserApplicationRole(UserApplicationRole.USER);
         user.setTypeUser(TypeUser.valueOf(request.getTypeUser().toString()));
 
         if (request.getApplicationCode() != null) {
@@ -240,6 +238,14 @@ public class UserService {
         }
     }
 
+    public void updateUserApplicationRole(UUID userId, UUID applicationPublicId){
+        log.info("UserService: Update ");
+        var user = findById(userId);
+        applicationService.isUserRegisterOnApplication(applicationPublicId, user);
+        user.setUserApplicationRole(UserApplicationRole.ADMIN);
+        userRepository.save(user);
+    }
+
     /**
      * Converts an OAuth2User object into a UserRequest object.
      * This method performs the following steps:
@@ -282,7 +288,7 @@ public class UserService {
         userResponse.setUserId(user.getUserId());
         userResponse.setUserName(user.getFirstName() + " " + user.getLastName());
         userResponse.setEmail(user.getEmail());
-        var token = tokenService.generateToken(user, generateTokenLog(user, ScopeToken.REGISTER_TOKEN));
+        var token = tokenService.generateUserToken(user, generateTokenLog(user, ScopeToken.REGISTER_TOKEN));
         userResponse.setToken(token);
         var refreshToken = tokenService.generateRefreshToken(user, generateTokenLog(user, ScopeToken.REFRESH_TOKEN));
         userResponse.setRefreshToken(refreshToken);

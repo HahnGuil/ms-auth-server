@@ -15,7 +15,44 @@ tags:
     description: Operations involving password changes, recovery, updates, and also password recovery code validation.
   - name: token
     description: Operations for token refresh and validation.x
+  - name: application
+    description: Operations related to application authentication by publicId.
 paths:
+  /application:
+    post:
+      tags:
+        - application
+      summary: Generate access token by application publicId
+      description: Receives an application publicId in the request header and returns an access token and refresh token.
+      operationId: postApplicationToken
+      parameters:
+        - name: publicId
+          in: header
+          required: true
+          description: Public UUID identifier of the application.
+          schema:
+            type: string
+            format: uuid
+            example: d290f1ee-6c54-4b01-90e6-d701748f0851
+      responses:
+        '201':
+          description: Token and refresh token generated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationRegisterResponse'
+        '401':
+          description: Unauthorized request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Application not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /oauth2/authorization/google:
     get:
       summary: OAuth2 login with Google
@@ -136,6 +173,38 @@ paths:
                   value:
                     message: "Can't save user on database"
                     timestamp: "2024-12-08T19:30:00Z"
+    patch:
+      tags:
+        - users
+      summary: Update user by id received in header
+      description: Receives the user id in the header and performs the update operation.
+      operationId: patchUserById
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: UUID identifier of the user.
+          schema:
+            type: string
+            format: uuid
+            example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        - name: applicationPublicID
+          in: header
+          required: true
+          description: Public id of the application
+          schema:
+            type: string
+            format: uuid
+            example: d290f1ee-6c54-4b01-90e6-d701748f0851
+      responses:
+        '204':
+          description: User successfully updated.
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /login:
     post:
       tags:
@@ -582,6 +651,17 @@ components:
           minLength: 8
           maxLength: 12
           example: SecurePass123!
+    ApplicationRegisterResponse:
+      type: object
+      properties:
+        applicationToken:
+          type: string
+          description: JWT token for authentication of the application
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshApplicationToken:
+          type: string
+          description: Refresh JTW token for authentication of the application
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     LoginResponse:
       type: object
       properties:

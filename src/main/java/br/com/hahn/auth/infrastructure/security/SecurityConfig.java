@@ -77,6 +77,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST,"/users").permitAll()
                         .requestMatchers(HttpMethod.POST, "/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/application").permitAll()
                         .requestMatchers(HttpMethod.POST, "/password/reset-request").permitAll()
                         .requestMatchers(HttpMethod.POST, "/password/validate-code").permitAll()
                         .requestMatchers(HttpMethod.GET, "/public-key/jwks").permitAll()

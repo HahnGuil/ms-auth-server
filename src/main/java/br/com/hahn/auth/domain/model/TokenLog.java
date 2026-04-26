@@ -73,4 +73,20 @@ public class TokenLog {
      */
     @Column(name = "user_id", nullable = false)
     private UUID userId;
+
+    /**
+     * The application associated with this token log entry.
+     * This is a many-to-one relationship, fetched lazily, and mapped
+     * to the "application_id" column.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "application_id", insertable = false, updatable = false)
+    private Application application;
+
+    /**
+     * The identifier of the application associated with this token log entry.
+     * This value is stored in the "application_id" column.
+     */
+    @Column(name = "application_id")
+    private Long applicationId;
 }

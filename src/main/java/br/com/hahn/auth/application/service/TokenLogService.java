@@ -4,6 +4,7 @@ import br.com.hahn.auth.application.execption.InvalidTokenException;
 import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
+import br.com.hahn.auth.domain.model.Application;
 import br.com.hahn.auth.domain.model.InvalidatedToken;
 import br.com.hahn.auth.domain.model.TokenLog;
 import br.com.hahn.auth.domain.model.User;
@@ -72,6 +73,14 @@ public class TokenLogService {
             log.info("TokenLogService: Scope token, is different of RECOVER: {}. Save token for user: {} on LoggedNow at: {}", scopeToken, user.getUserId(), DateTimeConverter.formatInstantNow());
             loggedNowService.save(user.getUserId(), loginLog.getIdTokenLog(), createDate);
         }
+        return loginLog;
+    }
+
+    @Transactional
+    public TokenLog saveApplicationTokenLog(Application application, ScopeToken scopeToken, LocalDateTime createDate){
+        log.info("TokenLogService: Save token on data base, for Application: {}, Scope Token is: {}, at: {}",
+                application.getNameApplication(), scopeToken, DateTimeConverter.formatInstantNow());
+        var loginLog = loginLogRepository.save(convertToEntity(application, scopeToken, createDate));
         return loginLog;
     }
 
@@ -208,25 +217,25 @@ public class TokenLogService {
         return loginLogRepository.findTopByUserIdOrderByCreateDateDesc(userId);
     }
 
-    /**
-     * Converts the provided user, scope token, and creation date into a TokenLog entity.
-     * <p>
-     * This method initializes a new TokenLog object, sets its properties based on the
-     * provided parameters, and marks the token as active.
-     *
-     * @author HahnGuil
-     * @param user       The user for whom the token log is being created.
-     * @param scopeToken The scope of the token being created.
-     * @param createDate The creation date of the token log.
-     * @return A TokenLog entity populated with the provided data.
-     */
+
     private TokenLog convertToEntity(User user, ScopeToken scopeToken, LocalDateTime createDate) {
+        return convertToEntity(user.getUserId(), null, scopeToken, createDate);
+    }
+
+    private TokenLog convertToEntity(Application application, ScopeToken scopeToken, LocalDateTime createDate) {
+        return convertToEntity(null, application.getId(), scopeToken, createDate);
+    }
+
+    private TokenLog convertToEntity(UUID userId, Long applicationId, ScopeToken scopeToken, LocalDateTime createDate) {
         log.info("TokenLogService: Convert to entity TokenLog at: {}", DateTimeConverter.formatInstantNow());
+
         TokenLog tokenLog = new TokenLog();
-        tokenLog.setUserId(user.getUserId());
+        tokenLog.setUserId(userId);
+        tokenLog.setApplicationId(applicationId);
         tokenLog.setScopeToken(scopeToken);
         tokenLog.setCreateDate(createDate);
         tokenLog.setActiveToken(true);
+
         return tokenLog;
     }
 

@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @Slf4j
 @AllArgsConstructor
@@ -47,5 +49,11 @@ public class UserController extends AbstractController implements UsersApi {
         log.info("Calling UserService to create and log in the user at: {}", DateTimeConverter.formatInstantNow());
         var userResponse = userService.createUser(userRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
+    }
+
+    @Override
+    public ResponseEntity<Void> patchUserById(UUID userId, UUID applicationPublicID) {
+        userService.updateUserApplicationRole(userId, applicationPublicID);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }
