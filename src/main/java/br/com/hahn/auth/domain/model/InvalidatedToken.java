@@ -37,10 +37,18 @@ public class InvalidatedToken {
 
     /**
      * The unique identifier of the user associated with the invalidated token.
-     * This value is stored in the "user_id" column and cannot be null.
+     * This value is stored in the "user_id" column and can be null for
+     * application-scoped token invalidations.
      */
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id")
     private UUID userId;
+
+    /**
+     * The public identifier of the application associated with the invalidation.
+     * This value is stored in the "application_public_id" column and can be null.
+     */
+    @Column(name = "application_public_id")
+    private UUID applicationPublicId;
 
     /**
      * The unique identifier of the login log associated with the invalidated token.

@@ -46,6 +46,7 @@ public class ApplicationService {
     public ApplicationRegisterResponse registerApplication(UUID publicId){
         var application = findByPublicId(publicId);
 
+
         var applicationToken = tokenService.generateApplicationToken(application, generateTokenLog(application, ScopeToken.APPLICATION_TOKEN));
         var refreshApplicationToken = tokenService.generateApplicationRefreshToken(application, generateTokenLog(application, ScopeToken.APPLICATION_REFRESH_TOKEN));
 

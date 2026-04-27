@@ -35,10 +35,18 @@ public class LoggedNow {
 
     /**
      * The unique identifier of the user associated with the logged session.
-     * This value is stored in the "user_id" column and cannot be null.
+     * This value is stored in the "user_id" column and can be null for
+     * application-scoped sessions.
      */
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id")
     private UUID userId;
+
+    /**
+     * The public identifier of the application associated with the session.
+     * This value is stored in the "application_public_id" column and can be null.
+     */
+    @Column(name = "application_public_id")
+    private UUID applicationPublicId;
 
     /**
      * The unique identifier of the token log associated with the logged session.

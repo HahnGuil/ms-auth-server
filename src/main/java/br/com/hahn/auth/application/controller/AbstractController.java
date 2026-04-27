@@ -3,6 +3,7 @@ package br.com.hahn.auth.application.controller;
 import br.com.hahn.auth.application.execption.InvalidFormatTypeException;
 import br.com.hahn.auth.application.execption.InvalidRecoverTokenException;
 import br.com.hahn.auth.domain.enums.ErrorsResponses;
+import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.util.DateTimeConverter;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -130,4 +131,13 @@ public abstract class AbstractController {
 
         log.info("AbstractController: Finish password format at: {}", DateTimeConverter.formatInstantNow());
     }
+
+    public boolean isApplicationToken(Jwt jwt) {
+        return ScopeToken.APPLICATION_TOKEN.name().equals(getScopeToken(jwt));
+    }
+
+    private String getScopeToken(Jwt jwt) {
+        return jwt.getClaim("scope");
+    }
+
 }

@@ -69,7 +69,8 @@ CREATE INDEX IF NOT EXISTS ix_token_log_application_id ON toxic_bet.token_log(ap
 -- Creating the invalidated_token table
 CREATE TABLE IF NOT EXISTS toxic_bet.invalidated_token (
                                                            id UUID PRIMARY KEY,
-                                                           user_id UUID NOT NULL,
+                                                           user_id UUID,
+                                                           application_public_id UUID,
                                                            login_log_id UUID NOT NULL,
                                                            date_invalidate TIMESTAMP,
                                                            type_invalidation VARCHAR(50),
@@ -80,12 +81,14 @@ CREATE TABLE IF NOT EXISTS toxic_bet.invalidated_token (
 );
 
 CREATE INDEX IF NOT EXISTS ix_invalidated_token_user_id ON toxic_bet.invalidated_token(user_id);
+CREATE INDEX IF NOT EXISTS ix_invalidated_token_application_public_id ON toxic_bet.invalidated_token(application_public_id);
 CREATE INDEX IF NOT EXISTS ix_invalidated_token_login_log_id ON toxic_bet.invalidated_token(login_log_id);
 
 -- Creating the logged_now table
 CREATE TABLE IF NOT EXISTS toxic_bet.logged_now (
                                                     id UUID PRIMARY KEY,
-                                                    user_id UUID NOT NULL,
+                                                    user_id UUID,
+                                                    application_public_id UUID,
                                                     token_log_id UUID NOT NULL,
                                                     date_login TIMESTAMP,
                                                     is_use_refresh BOOLEAN,
@@ -97,6 +100,7 @@ CREATE TABLE IF NOT EXISTS toxic_bet.logged_now (
 );
 
 CREATE INDEX IF NOT EXISTS ix_logged_now_user_id ON toxic_bet.logged_now(user_id);
+CREATE INDEX IF NOT EXISTS ix_logged_now_application_public_id ON toxic_bet.logged_now(application_public_id);
 CREATE INDEX IF NOT EXISTS ix_logged_now_token_log_id ON toxic_bet.logged_now(token_log_id);
 
 -- Creating the reset_password table

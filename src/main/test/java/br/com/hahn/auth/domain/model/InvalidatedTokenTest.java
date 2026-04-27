@@ -15,14 +15,16 @@ class InvalidatedTokenTest {
     void shouldCreateInvalidatedTokenWithAllFields_whenTypeInvalidationIsExpirationTime() {
         UUID id = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
+        UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
         LocalDateTime dateInvalidate = LocalDateTime.now();
         TypeInvalidation typeInvalidation = TypeInvalidation.EXPIRATION_TIME;
 
-        InvalidatedToken token = new InvalidatedToken(id, userId, loginLogId, dateInvalidate, typeInvalidation);
+        InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
 
         assertEquals(id, token.getId());
         assertEquals(userId, token.getUserId());
+        assertEquals(applicationPublicId, token.getApplicationPublicId());
         assertEquals(loginLogId, token.getLoginLogId());
         assertEquals(dateInvalidate, token.getDateInvalidate());
         assertEquals(typeInvalidation, token.getTypeInvalidation());
@@ -32,14 +34,16 @@ class InvalidatedTokenTest {
     void shouldCreateInvalidatedTokenWithAllFields_whenTypeInvalidationIsUserRefresh() {
         UUID id = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
+        UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
         LocalDateTime dateInvalidate = LocalDateTime.now();
         TypeInvalidation typeInvalidation = TypeInvalidation.USER_REFRESH;
 
-        InvalidatedToken token = new InvalidatedToken(id, userId, loginLogId, dateInvalidate, typeInvalidation);
+        InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
 
         assertEquals(id, token.getId());
         assertEquals(userId, token.getUserId());
+        assertEquals(applicationPublicId, token.getApplicationPublicId());
         assertEquals(loginLogId, token.getLoginLogId());
         assertEquals(dateInvalidate, token.getDateInvalidate());
         assertEquals(typeInvalidation, token.getTypeInvalidation());
@@ -49,14 +53,16 @@ class InvalidatedTokenTest {
     void shouldCreateInvalidatedTokenWithAllFields_whenTypeInvalidationIsLog_Off() {
         UUID id = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
+        UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
         LocalDateTime dateInvalidate = LocalDateTime.now();
         TypeInvalidation typeInvalidation = TypeInvalidation.LOG_OFF;
 
-        InvalidatedToken token = new InvalidatedToken(id, userId, loginLogId, dateInvalidate, typeInvalidation);
+        InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
 
         assertEquals(id, token.getId());
         assertEquals(userId, token.getUserId());
+        assertEquals(applicationPublicId, token.getApplicationPublicId());
         assertEquals(loginLogId, token.getLoginLogId());
         assertEquals(dateInvalidate, token.getDateInvalidate());
         assertEquals(typeInvalidation, token.getTypeInvalidation());
@@ -66,14 +72,16 @@ class InvalidatedTokenTest {
     void shouldCreateInvalidatedTokenWithAllFields_whenTypeInvalidationIsNewLogin() {
         UUID id = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
+        UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
         LocalDateTime dateInvalidate = LocalDateTime.now();
         TypeInvalidation typeInvalidation = TypeInvalidation.NEW_LOGIN;
 
-        InvalidatedToken token = new InvalidatedToken(id, userId, loginLogId, dateInvalidate, typeInvalidation);
+        InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
 
         assertEquals(id, token.getId());
         assertEquals(userId, token.getUserId());
+        assertEquals(applicationPublicId, token.getApplicationPublicId());
         assertEquals(loginLogId, token.getLoginLogId());
         assertEquals(dateInvalidate, token.getDateInvalidate());
         assertEquals(typeInvalidation, token.getTypeInvalidation());
@@ -83,14 +91,16 @@ class InvalidatedTokenTest {
     void shouldCreateInvalidatedTokenWithAllFields_whenTypeInvalidationIsChangePassword() {
         UUID id = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
+        UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
         LocalDateTime dateInvalidate = LocalDateTime.now();
         TypeInvalidation typeInvalidation = TypeInvalidation.CHANGE_PASSWORD;
 
-        InvalidatedToken token = new InvalidatedToken(id, userId, loginLogId, dateInvalidate, typeInvalidation);
+        InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
 
         assertEquals(id, token.getId());
         assertEquals(userId, token.getUserId());
+        assertEquals(applicationPublicId, token.getApplicationPublicId());
         assertEquals(loginLogId, token.getLoginLogId());
         assertEquals(dateInvalidate, token.getDateInvalidate());
         assertEquals(typeInvalidation, token.getTypeInvalidation());
@@ -100,14 +110,16 @@ class InvalidatedTokenTest {
     void shouldCreateInvalidatedTokenWithAllFields_whenTypeInvalidationIsResetPassword() {
         UUID id = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
+        UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
         LocalDateTime dateInvalidate = LocalDateTime.now();
         TypeInvalidation typeInvalidation = TypeInvalidation.RESET_PASSWORD;
 
-        InvalidatedToken token = new InvalidatedToken(id, userId, loginLogId, dateInvalidate, typeInvalidation);
+        InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
 
         assertEquals(id, token.getId());
         assertEquals(userId, token.getUserId());
+        assertEquals(applicationPublicId, token.getApplicationPublicId());
         assertEquals(loginLogId, token.getLoginLogId());
         assertEquals(dateInvalidate, token.getDateInvalidate());
         assertEquals(typeInvalidation, token.getTypeInvalidation());
@@ -137,10 +149,11 @@ class InvalidatedTokenTest {
         UUID userId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
 
-        InvalidatedToken token = new InvalidatedToken(id, userId, loginLogId, null, null);
+        InvalidatedToken token = new InvalidatedToken(id, userId, null, loginLogId, null, null);
 
         assertEquals(id, token.getId());
         assertEquals(userId, token.getUserId());
+        assertNull(token.getApplicationPublicId());
         assertEquals(loginLogId, token.getLoginLogId());
         assertNull(token.getDateInvalidate());
         assertNull(token.getTypeInvalidation());

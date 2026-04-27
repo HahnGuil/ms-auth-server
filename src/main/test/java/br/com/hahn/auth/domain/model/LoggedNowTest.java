@@ -17,15 +17,17 @@ class LoggedNowTest {
     void shouldCreateLoggedNowWithAllFields() {
         UUID id = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
+        UUID applicationPublicId = UUID.randomUUID();
         UUID tokenLogId = UUID.randomUUID();
         LocalDateTime dateLogin = LocalDateTime.now();
         LocalDateTime dateRefresh = LocalDateTime.now();
         boolean isUseRefresh = true;
 
-        LoggedNow loggedNow = new LoggedNow(id, userId, tokenLogId, dateLogin, isUseRefresh, dateRefresh);
+        LoggedNow loggedNow = new LoggedNow(id, userId, applicationPublicId, tokenLogId, dateLogin, isUseRefresh, dateRefresh);
 
         assertEquals(id, loggedNow.getId());
         assertEquals(userId, loggedNow.getUserId());
+        assertEquals(applicationPublicId, loggedNow.getApplicationPublicId());
         assertEquals(tokenLogId, loggedNow.getTokenLogId());
         assertEquals(dateLogin, loggedNow.getDateLogin());
         assertTrue(loggedNow.isUseRefresh());
@@ -56,10 +58,11 @@ class LoggedNowTest {
         UUID userId = UUID.randomUUID();
         UUID tokenLogId = UUID.randomUUID();
 
-        LoggedNow loggedNow = new LoggedNow(id, userId, tokenLogId, null, false, null);
+        LoggedNow loggedNow = new LoggedNow(id, userId, null, tokenLogId, null, false, null);
 
         assertEquals(id, loggedNow.getId());
         assertEquals(userId, loggedNow.getUserId());
+        assertNull(loggedNow.getApplicationPublicId());
         assertEquals(tokenLogId, loggedNow.getTokenLogId());
         assertNull(loggedNow.getDateLogin());
         assertFalse(loggedNow.isUseRefresh());
