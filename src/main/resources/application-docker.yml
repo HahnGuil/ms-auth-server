@@ -30,6 +30,7 @@ spring:
             scope:
               - email
               - profile
+            redirect-uri: "https://auth.toxicbet.com.br/auth-server/login/oauth2/code/google"
 
   kafka:
     bootstrap-servers: "kafka:9092"
@@ -48,6 +49,7 @@ server:
   servlet:
     context-path: /auth-server
   port: 2300
+  forward-headers-strategy: framework
 
 springdoc:
   api-docs:
