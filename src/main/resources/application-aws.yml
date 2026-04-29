@@ -30,7 +30,7 @@ spring:
             scope:
               - email
               - profile
-            redirect-uri: "http://localhost:2300/auth-server/login/oauth2/code/google"
+            redirect-uri: "https://auth.toxicbet.com.br/auth-server/login/oauth2/code/google"
 
 logging:
   level:
@@ -58,4 +58,4 @@ resend:
 integration:
   toxicbet:
     users:
-      base-url: "http://toxic-bet-api:20000"
+      base-url: "https://api.toxicbet.com.br"
