@@ -137,27 +137,29 @@
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
                 <version>7.14.0</version>
+                <configuration>
+                    <inputSpec>${project.basedir}/src/main/resources/static/swagger.yml</inputSpec>
+                    <generatorName>spring</generatorName>
+                    <library>spring-boot</library>
+                    <apiPackage>br.com.hahn.auth</apiPackage>
+                    <modelPackage>br.com.hahn.auth.domain.model</modelPackage>
+                    <configOptions>
+                        <reactive>false</reactive>
+                        <useSpringBoot3>true</useSpringBoot3>
+                        <interfaceOnly>true</interfaceOnly>
+                        <skipDefaultInterface>true</skipDefaultInterface>
+                        <useTags>true</useTags>
+                        <dateLibrary>java8</dateLibrary>
+                        <openApiNullable>false</openApiNullable>
+                    </configOptions>
+                </configuration>
                 <executions>
                     <execution>
+                        <id>generate-openapi-sources</id>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>generate</goal>
                         </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/static/swagger.yml</inputSpec>
-                            <generatorName>spring</generatorName>
-                            <library>spring-boot</library>
-                            <apiPackage>br.com.hahn.auth</apiPackage>
-                            <modelPackage>br.com.hahn.auth.domain.model</modelPackage>
-                            <configOptions>
-                                <reactive>false</reactive>
-                                <useSpringBoot3>true</useSpringBoot3>
-                                <interfaceOnly>true</interfaceOnly>
-                                <skipDefaultInterface>true</skipDefaultInterface>
-                                <useTags>true</useTags>
-                                <dateLibrary>java8</dateLibrary>
-                                <openApiNullable>false</openApiNullable>
-                            </configOptions>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
