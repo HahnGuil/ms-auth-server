@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -214,28 +215,49 @@ public class UserService {
     }
 
     /**
-     * Associates an application with a user based on their IDs.
+     * Associates an application with an OAuth user based on JWT claims.
      * This method performs the following steps:
-     * - Logs the start of the process to associate the application with the user.
-     * - Retrieves the user and application entities using their respective IDs.
-     * - Checks if the application is already associated with the user.
-     * - If not, adds the application to the user's list of applications and saves the user.
+     * - Logs the start of the association process.
+     * - Reads the user type from the JWT and returns a message if the user is not OAuth.
+     * - Retrieves the user ID from the JWT claim and loads both user and application entities.
+     * - Checks whether the application is already associated with the user.
+     * - If not associated yet, adds the application to the user and persists the change.
      *
      * @author HahnGuil
-     * @param userId the unique identifier of the user
-     * @param applicationId the unique identifier of the application
+     * @param jwt JWT token containing user claims (e.g., userId and type_user)
+     * @param applicationPublicId the public identifier of the application to be associated
+     * @return SuccessResponse with the operation result message
      */
     @Transactional
-    public void setApplicationToUser(UUID userId, Long applicationId){
-        log.info("UserService: Set Application: {}, to User: {}, at: {}", applicationId, userId, DateTimeConverter.formatInstantNow());
+    public SuccessResponse setApplicationToUser(Jwt jwt, UUID applicationPublicId){
+        log.info("UserService: Start registration user to application at: {}", DateTimeConverter.formatInstantNow());
+        SuccessResponse response = new SuccessResponse();
+        String typeUser = jwt.getClaim("type_user");
+
+        if(!isUserOauth(typeUser)){
+            log.error("UserService: User is not OAuth. Send message to request");
+            response.setMessage("User is not OAuth, is not necessary registered");
+            return response;
+        }
+
+        var userIdToken = jwt.getClaim("user_id");
+        var userId = UUID.fromString((String) userIdToken);
         var user = findById(userId);
-        var application = applicationService.findById(applicationId);
+        var application = applicationService.findByPublicId(applicationPublicId);
 
         if(isApplicationAlreadySetForUser(user, application)){
             log.info("UserService: Application not yet registered to the user: {}. Adding the application to the user {}", user.getUserId(), application);
             user.getApplications().add(application);
             userRepository.save(user);
         }
+
+        log.info("UserService: End registration user to application at: {}", DateTimeConverter.formatInstantNow());
+        response.setMessage("Application has been set for the user");
+        return response;
+    }
+
+    private boolean isUserOauth(String typeUser){
+        return typeUser.equals(TypeUser.OAUTH_USER.toString());
     }
 
     /**

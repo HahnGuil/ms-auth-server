@@ -2,6 +2,7 @@ package br.com.hahn.auth.application.controller;
 
 import br.com.hahn.auth.UsersApi;
 import br.com.hahn.auth.application.service.UserService;
+import br.com.hahn.auth.domain.model.SuccessResponse;
 import br.com.hahn.auth.domain.model.UserRequest;
 import br.com.hahn.auth.domain.model.UserResponse;
 import br.com.hahn.auth.util.DateTimeConverter;
@@ -17,6 +18,10 @@ import java.util.UUID;
 @Slf4j
 @AllArgsConstructor
 public class UserController extends AbstractController implements UsersApi {
+    @Override
+    public ResponseEntity<Void> patchUserById(UUID userId, UUID applicationPublicID) {
+        return null;
+    }
 
     private final UserService userService;
 
@@ -52,7 +57,9 @@ public class UserController extends AbstractController implements UsersApi {
     }
 
     @Override
-    public ResponseEntity<Void> patchUserById(UUID userId, UUID applicationPublicID) {
-        return null;
+    public ResponseEntity<SuccessResponse> postRegisterUserByService(UUID applicationPublicId) {
+        var response = userService.setApplicationToUser(extractJwtFromContext(), applicationPublicId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
 }
