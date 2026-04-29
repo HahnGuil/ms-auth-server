@@ -15,5 +15,5 @@ RUN apk add --no-cache maven && \
 # Expose the application port
 EXPOSE 2300
 
-# Run the application (as variáveis virão do ambiente do Kubernetes)
-CMD ["java", "-Dspring.profiles.active=docker", "-jar", "target/ms-auth-server-1.0.0.jar"]
+# Run the application using the profile supplied by the environment
+CMD ["sh", "-c", "java -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-docker} -jar target/ms-auth-server-1.0.0.jar"]

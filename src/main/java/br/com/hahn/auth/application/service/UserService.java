@@ -6,7 +6,6 @@ import br.com.hahn.auth.domain.enums.*;
 import br.com.hahn.auth.domain.model.*;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
-import br.com.hahn.auth.infrastructure.service.UserUpdateProducer;
 import br.com.hahn.auth.util.DateTimeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -30,15 +29,13 @@ public class UserService {
     private final TokenLogService tokenLogService;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
-    private final UserUpdateProducer userUpdateProducer;
 
-    public UserService(UserRepository userRepository, ApplicationService applicationService, @Lazy TokenLogService tokenLogService, TokenService tokenService, PasswordEncoder passwordEncoder, UserUpdateProducer userUpdateProducer) {
+    public UserService(UserRepository userRepository, ApplicationService applicationService, @Lazy TokenLogService tokenLogService, TokenService tokenService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.applicationService = applicationService;
         this.tokenLogService = tokenLogService;
         this.tokenService = tokenService;
         this.passwordEncoder = passwordEncoder;
-        this.userUpdateProducer = userUpdateProducer;
     }
 
 
@@ -240,24 +237,6 @@ public class UserService {
             userRepository.save(user);
         }
     }
-
-    public void updateUserApplicationRole(UUID userId, UUID applicationPublicId){
-        log.info("UserService: Update ");
-        var user = findById(userId);
-        applicationService.isUserRegisterOnApplication(applicationPublicId, user);
-        user.setUserApplicationRole(UserApplicationRole.ADMIN);
-        userRepository.save(user);
-        sendMessage(user, applicationPublicId);
-    }
-
-    private void sendMessage(User user, UUID applicationPublicId){
-        var messageObject =  new UserUpdateEvent();
-        messageObject.setEmail(user.getEmail());
-        var application = applicationService.findByPublicId(applicationPublicId);
-        messageObject.setApplicationName(application.getNameApplication());
-        userUpdateProducer.sendUserUpdateEvent(messageObject);
-    }
-
 
     /**
      * Converts an OAuth2User object into a UserRequest object.

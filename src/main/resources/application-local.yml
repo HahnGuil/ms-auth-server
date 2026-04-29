@@ -31,18 +31,9 @@ spring:
               - profile
             redirect-uri: "http://localhost:2310/auth-server/login/oauth2/code/google"
 
-
-  kafka:
-    bootstrap-servers: "localhost:9093"
-    consumer:
-      group-id: update-user-data
-      auto-offset-reset: earliest
-
 logging:
   level:
     org.flywaydb: INFO
-    org.apache.kafka: OFF
-    org.springframework.kafka: OFF
     org.apache.zookeeper: OFF
 
 server:

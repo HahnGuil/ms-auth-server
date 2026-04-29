@@ -1,0 +1,49 @@
+services:
+  postgres-auth:
+    image: postgres:16
+    container_name: postgres-auth
+    environment:
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      POSTGRES_DB: authdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - shared-services
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_USERNAME} -d authdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ms-auth-server:
+    build: .
+    container_name: ms-auth-server
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_PROFILES_ACTIVE: docker
+      APP_KAFKA_ENABLED: ${APP_KAFKA_ENABLED:-false}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:-host.docker.internal:9092}
+      SPRING_KAFKA_CONSUMER_GROUP_ID: ${SPRING_KAFKA_CONSUMER_GROUP_ID:-auth-group}
+      SPRING_KAFKA_AUTO_OFFSET_RESET: ${SPRING_KAFKA_AUTO_OFFSET_RESET:-earliest}
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    ports:
+      - "2300:2300"
+    networks:
+      - shared-services
+
+volumes:
+  postgres-data:
+
+networks:
+  shared-services:
+    name: shared-services
+    driver: bridge
+

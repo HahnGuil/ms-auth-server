@@ -53,7 +53,6 @@ public class UserController extends AbstractController implements UsersApi {
 
     @Override
     public ResponseEntity<Void> patchUserById(UUID userId, UUID applicationPublicID) {
-        userService.updateUserApplicationRole(userId, applicationPublicID);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        return null;
     }
 }

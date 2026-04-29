@@ -227,7 +227,11 @@ Para habilitar login com Gmail via OAuth2, siga os passos:
 
 ### 📦 Executando com Docker Compose
 
-O projeto utiliza Docker Compose para orquestrar todos os serviços necessários: **PostgreSQL**, **Kafka**, **Zookeeper** e a aplicação **Auth-Server**.
+O projeto utiliza arquivos Docker Compose dedicados por perfil:
+
+- **`docker-compose.local.yml`** → suporte ao perfil local (somente PostgreSQL; a aplicação roda fora do Docker)
+- **`docker-compose.docker.yml`** → perfil docker (PostgreSQL + Auth-Server)
+- **`docker-compose.aws.yml`** → perfil aws (PostgreSQL + Auth-Server)
 
 #### Pré-requisitos
 - Docker e Docker Compose instalados
@@ -247,46 +251,45 @@ O projeto utiliza Docker Compose para orquestrar todos os serviços necessários
    ```
    Em seguida, edite o `.env` com suas credenciais.
 
-3. **Construa e inicie todos os serviços**:
+3. **Construa e inicie o perfil desejado**:
    ```bash
-   docker compose up -d --build
+   docker compose -f docker-compose.docker.yml up -d --build
    ```
    
-   > 💡 Este comando iniciará automaticamente todos os serviços necessários:
-   > - **PostgreSQL** (porta 5432 para Docker / 5050 para local)
-   > - **Zookeeper** (porta 2181)
-   > - **Kafka** (portas 9092 e 9093)
-   > - **Auth-Server** (porta 2300)
+   > 💡 Arquivos disponíveis:
+   > - `docker compose -f docker-compose.local.yml up -d`
+   > - `docker compose -f docker-compose.docker.yml up -d --build`
+   > - `docker compose -f docker-compose.aws.yml up -d --build`
 
 4. **Verifique se os containers estão rodando**:
    ```bash
-   docker compose ps
+   docker compose -f docker-compose.docker.yml ps
    ```
    
-   Você deverá ver os containers: `postgres-auth`, `postgres-auth-local`, `zookeeper`, `kafka` e `ms-auth-server`
+   Você deverá ver os containers do perfil selecionado, como `postgres-auth` e `ms-auth-server`.
 
 5. **Acompanhe os logs** (opcional):
    ```bash
-   docker compose logs -f ms-auth-server
+   docker compose -f docker-compose.docker.yml logs -f ms-auth-server
    ```
 
 #### 🛑 Parar os serviços
 
 Para parar todos os containers:
 ```bash
-docker compose down
+docker compose -f docker-compose.docker.yml down
 ```
 
 Para parar e remover volumes (⚠️ apaga dados do banco):
 ```bash
-docker compose down -v
+docker compose -f docker-compose.docker.yml down -v
 ```
 
 #### 🔄 Reconstruir a aplicação
 
 Se você fez alterações no código e precisa reconstruir:
 ```bash
-docker compose up -d --build ms-auth-server
+docker compose -f docker-compose.docker.yml up -d --build ms-auth-server
 ```
 
 #### 📍 Endpoints após Deploy
@@ -295,9 +298,11 @@ docker compose up -d --build ms-auth-server
 - **Swagger Docs**: `http://localhost:2300/auth-server/v3/api-docs`
 - **PostgreSQL (Docker)**: `localhost:5432`
 - **PostgreSQL (Local)**: `localhost:5050`
-- **Kafka**: `localhost:9093`
 
-📁 Arquivo: [`docker-compose.yml`](docker-compose.yml)
+📁 Arquivos:
+- [`docker-compose.local.yml`](docker-compose.local.yml)
+- [`docker-compose.docker.yml`](docker-compose.docker.yml)
+- [`docker-compose.aws.yml`](docker-compose.aws.yml)
 
 ---
 
@@ -309,7 +314,7 @@ Se preferir rodar a aplicação diretamente na sua máquina:
 
 2. **Inicie apenas os bancos de dados com Docker**:
    ```bash
-   docker compose up -d postgres-auth-local
+   docker compose -f docker-compose.local.yml up -d postgres-auth-local
    ```
 
 3. **Execute a aplicação com Maven**:
@@ -569,7 +574,7 @@ RESEND_API_KEY=re_sua_chave_resend_aqui
 RESEND_EMAIL=noreply@seudominio.com
 ```
 
-As configurações já estão prontas em `application-local.yml` e `application-docker.yml`:
+As configurações já estão prontas em `application-local.yml`, `application-docker.yml` e `application-aws.yml`:
 
 ```yaml
 resend:
@@ -617,6 +622,7 @@ Inicie a aplicação e os e-mails serão enviados automaticamente pelo Resend! �
 - ⚙️ Configurações: 
   - `src/main/resources/application-local.yml`
   - `src/main/resources/application-docker.yml`
+  - `src/main/resources/application-aws.yml`
 
 ---
 

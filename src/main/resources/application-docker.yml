@@ -30,19 +30,11 @@ spring:
             scope:
               - email
               - profile
-            redirect-uri: "https://auth.toxicbet.com.br/auth-server/login/oauth2/code/google"
-
-  kafka:
-    bootstrap-servers: kafka:9092
-    consumer:
-      group-id: auth-group
-      auto-offset-reset: earliest
+            redirect-uri: "http://localhost:2300/auth-server/login/oauth2/code/google"
 
 logging:
   level:
     org.flywaydb: INFO
-    org.apache.kafka: OFF
-    org.springframework.kafka: OFF
     org.apache.zookeeper: OFF
 
 server:
