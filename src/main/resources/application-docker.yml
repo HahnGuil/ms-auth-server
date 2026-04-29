@@ -33,9 +33,9 @@ spring:
             redirect-uri: "https://auth.toxicbet.com.br/auth-server/login/oauth2/code/google"
 
   kafka:
-    bootstrap-servers: "kafka:9092"
+    bootstrap-servers: kafka:9092
     consumer:
-      group-id: update-user-data
+      group-id: auth-group
       auto-offset-reset: earliest
 
 logging:
