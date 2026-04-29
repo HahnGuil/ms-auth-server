@@ -12,3 +12,8 @@ management:
   endpoint:
     health:
       show-details: always
+
+integration:
+  toxicbet:
+    users:
+      patch-user-email-path: /users

@@ -54,3 +54,8 @@ resend:
     key: "${RESEND_API_KEY}"
     url: "https://api.resend.com/emails"
   sender: "${RESEND_EMAIL}"
+
+integration:
+  toxicbet:
+    users:
+      base-url: "http://localhost:20000"

@@ -18,10 +18,6 @@ import java.util.UUID;
 @Slf4j
 @AllArgsConstructor
 public class UserController extends AbstractController implements UsersApi {
-    @Override
-    public ResponseEntity<Void> patchUserById(UUID userId, UUID applicationPublicID) {
-        return null;
-    }
 
     private final UserService userService;
 
@@ -62,4 +58,9 @@ public class UserController extends AbstractController implements UsersApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Override
+    public ResponseEntity<Void> patchUserById(UUID applicationPublicID) {
+        userService.updateUserApplicationRole(extractJwtFromContext(), applicationPublicID);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
 }

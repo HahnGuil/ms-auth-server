@@ -278,18 +278,12 @@ paths:
     patch:
       tags:
         - users
-      summary: Update user by id received in header
-      description: Receives the user id in the header and performs the update operation.
+      summary: Update logged user data
+      description: Updates the authenticated user data using the JWT token sent in the Authorization header.
       operationId: patchUserById
+      security:
+        - bearerAuth: []
       parameters:
-        - name: userId
-          in: header
-          required: true
-          description: UUID identifier of the user.
-          schema:
-            type: string
-            format: uuid
-            example: d290f1ee-6c54-4b01-90e6-d701748f0851
         - name: applicationPublicID
           in: header
           required: true
@@ -301,6 +295,18 @@ paths:
       responses:
         '204':
           description: User successfully updated.
+        '401':
+          description: Unauthorized request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidToken:
+                  summary: When the token is invalid for some reason.
+                  value:
+                    message: "Invalid token, please log in to continue."
+                    timestamp: "2024-12-08T19:30:00Z"
         '404':
           description: User not found.
           content:

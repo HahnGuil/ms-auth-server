@@ -6,6 +6,7 @@ import br.com.hahn.auth.domain.enums.*;
 import br.com.hahn.auth.domain.model.*;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
+import br.com.hahn.auth.infrastructure.service.UserDataClient;
 import br.com.hahn.auth.util.DateTimeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,13 +32,15 @@ public class UserService {
     private final TokenLogService tokenLogService;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
+    private final UserDataService userDataService;
 
-    public UserService(UserRepository userRepository, ApplicationService applicationService, @Lazy TokenLogService tokenLogService, TokenService tokenService, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, ApplicationService applicationService, @Lazy TokenLogService tokenLogService, TokenService tokenService, PasswordEncoder passwordEncoder, UserDataService userDataService) {
         this.userRepository = userRepository;
         this.applicationService = applicationService;
         this.tokenLogService = tokenLogService;
         this.tokenService = tokenService;
         this.passwordEncoder = passwordEncoder;
+        this.userDataService = userDataService;
     }
 
 
@@ -256,6 +260,29 @@ public class UserService {
         return response;
     }
 
+    public void updateUserApplicationRole(Jwt jwt, UUID applicationPublicId){
+        var userEmail = getUserEmailFromToken(jwt);
+        var user = findByEmail(userEmail);
+
+        if (isUserRegisteredOnApplication(user, applicationPublicId)) {
+            user.setUserApplicationRole(UserApplicationRole.ADMIN);
+            userRepository.save(user);
+            userDataService.updateUserByEmailHeader(jwt, userEmail);
+        }
+    }
+
+    private boolean isUserRegisteredOnApplication(User user, UUID applicationPublicId) {
+        return user.getApplications() != null &&
+                user.getApplications().stream()
+                        .filter(Objects::nonNull)
+                        .map(Application::getPublicId)
+                        .anyMatch(applicationPublicId::equals);
+    }
+
+    private String getUserEmailFromToken(Jwt jwt){
+        return jwt.getSubject();
+    }
+
     private boolean isUserOauth(String typeUser){
         return typeUser.equals(TypeUser.OAUTH_USER.toString());
     }
@@ -383,4 +410,5 @@ public class UserService {
     private TokenLog generateTokenLog(User user, ScopeToken scopeToken){
         return tokenLogService.saveTokenLog(user, scopeToken, LocalDateTime.now());
     }
+
 }
