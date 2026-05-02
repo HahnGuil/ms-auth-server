@@ -167,7 +167,7 @@ public class PasswordService {
         userService.updatePassword(userEmail, userId, passwordEncoder.encode(newPasswordRequest.getNewPassword()), LocalDateTime.now());
 
         log.info("PasswordService: Deactivated recover token for user: {}, at: {}", userId, DateTimeConverter.formatInstantNow());
-        tokenLogService.deactivateActiveToken(userId, TypeInvalidation.RESET_PASSWORD);
+        tokenLogService.deactivateActiveUserToken(userId, TypeInvalidation.RESET_PASSWORD);
     }
 
     /**
@@ -417,7 +417,7 @@ public class PasswordService {
      * @return the formatted HTML string for the email body
      */
     private String buildResetEmailBody(String username, String recoverCode) {
-        log.error("PasswordService: Build email body to user name: {}, at: {}", username, DateTimeConverter.formatInstantNow());
+        log.info("PasswordService: Build email body to user name: {}, at: {}", username, DateTimeConverter.formatInstantNow());
         return String.format("<p>Hello %s,</p><p>Your password reset code is: <strong>%s</strong></p><p>This code will expire in 30 minutes.</p>", username, recoverCode);
     }
 }

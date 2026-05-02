@@ -41,14 +41,25 @@ public class TokenLogService {
      * @param typeInvalidation The type of invalidation to be applied to the token.
      */
     @Transactional
-    public void deactivateActiveToken(UUID userId, TypeInvalidation typeInvalidation){
+    public void deactivateActiveUserToken(UUID userId, TypeInvalidation typeInvalidation){
         log.info("TokenLogService: Detective token for user: {} at {}", userId, DateTimeConverter.formatInstantNow());
         loginLogRepository.deactivateActiveTokenByUserId(userId);
 
         var tokenLog = findLoginLogByUserId(userId);
 
         log.info("LoginLogServe: Call Invalidate old token method for {}", tokenLog.getIdTokenLog());
-        invalidateToken(tokenLog, typeInvalidation);
+        invalidateUserToken(tokenLog, typeInvalidation);
+    }
+
+    @Transactional
+    public void deactiveActiveApplicationToken(UUID aplicationPublicId, TypeInvalidation typeInvalidation){
+        log.info("TokenLogService: Deactivate old token for {} at {}", aplicationPublicId, DateTimeConverter.formatInstantNow());
+        loginLogRepository.deactivateActiveTokenByApplicationPublicId(aplicationPublicId);
+
+        var tokenLog = findLoginLogByApplicationPublicId(aplicationPublicId);
+
+        log.info("LoginLogServe: Call Invalidate token method for {}", tokenLog.getIdTokenLog());
+        invalidateApplicationToken(tokenLog, typeInvalidation);
     }
 
     /**
@@ -196,9 +207,15 @@ public class TokenLogService {
      * @param tokenLog        The TokenLog entity containing details of the token to be invalidated.
      * @param typeInvalidation The type of invalidation to be applied to the token.
      */
-    private void invalidateToken(TokenLog tokenLog, TypeInvalidation typeInvalidation){
+    private void invalidateUserToken(TokenLog tokenLog, TypeInvalidation typeInvalidation){
         log.info("LoginLogService: invalidate token for User {}, with LoginLog: {}, at {}", tokenLog.getUserId(), tokenLog.getIdTokenLog(), DateTimeConverter.formatInstantNow());
-        var invalidateToken = convertToInvalidatedTokenEntity(tokenLog.getUserId(), tokenLog.getIdTokenLog(), typeInvalidation);
+        var invalidateToken = convertToInvalidatedTokenEntity(tokenLog.getUserId(), null, tokenLog.getIdTokenLog(), typeInvalidation);
+        invalidatedTokenService.save(invalidateToken);
+    }
+
+    private void invalidateApplicationToken(TokenLog tokenLog, TypeInvalidation typeInvalidation){
+        log.info("LoginLogService: invalidate token for applciation: {} with LoginLog: {}, at: {}", tokenLog.getApplication().getPublicId(), tokenLog.getIdTokenLog(), DateTimeConverter.formatInstantNow());
+        var invalidateToken = convertToInvalidatedTokenEntity(null,tokenLog.getApplication().getPublicId(), tokenLog.getIdTokenLog(), typeInvalidation);
         invalidatedTokenService.save(invalidateToken);
     }
 
@@ -214,6 +231,10 @@ public class TokenLogService {
      */
     private TokenLog findLoginLogByUserId(UUID userId){
         return loginLogRepository.findTopByUserIdOrderByCreateDateDesc(userId);
+    }
+
+    private TokenLog findLoginLogByApplicationPublicId(UUID applicationPublicId){
+        return loginLogRepository.findTopByApplicationPublicIdOrderByCreateDateDesc(applicationPublicId);
     }
 
 
@@ -250,13 +271,17 @@ public class TokenLogService {
      * @param typeInvalidation The type of invalidation to be applied to the token.
      * @return An InvalidatedToken entity populated with the provided data.
      */
-    private InvalidatedToken convertToInvalidatedTokenEntity(UUID userId, UUID loginLogId, TypeInvalidation typeInvalidation){
+    private InvalidatedToken convertToInvalidatedTokenEntity(UUID userId, UUID applicationPublicId, UUID loginLogId, TypeInvalidation typeInvalidation){
         log.info("TokenLogService: Convert to InvalidatedToken at: {}", DateTimeConverter.formatInstantNow());
         InvalidatedToken invalidatedToken = new InvalidatedToken();
         invalidatedToken.setUserId(userId);
+        invalidatedToken.setApplicationPublicId(applicationPublicId);
         invalidatedToken.setLoginLogId(loginLogId);
         invalidatedToken.setDateInvalidate(LocalDateTime.now());
         invalidatedToken.setTypeInvalidation(typeInvalidation);
         return invalidatedToken;
     }
+
+
+
 }

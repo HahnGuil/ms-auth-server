@@ -2,6 +2,7 @@ package br.com.hahn.auth.application.controller;
 
 import br.com.hahn.auth.TokenApi;
 import br.com.hahn.auth.application.service.AuthService;
+import br.com.hahn.auth.domain.model.ApplicationRegisterResponse;
 import br.com.hahn.auth.domain.model.LoginResponse;
 import br.com.hahn.auth.util.DateTimeConverter;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @Slf4j
@@ -32,9 +35,17 @@ public class TokenController extends AbstractController implements TokenApi {
      */
     @Override
     public ResponseEntity<LoginResponse> postRefreshToken() {
-        log.info("AuthController: Starting refresh token process at: {}", DateTimeConverter.formatInstantNow());
+        log.info("AuthController: Starting refresh token for user process at: {}", DateTimeConverter.formatInstantNow());
         var response = authService.generateNewTokenForUser(extractJwtFromContext());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @Override
+    public ResponseEntity<ApplicationRegisterResponse> postRefreshApplicationToken(UUID publicId) {
+        log.info("AuthController: Starting refresh token for application process at: {}", DateTimeConverter.formatInstantNow());
+        var response = authService.generateNewTokenForApplication(extractJwtFromContext(), publicId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
 }
 

@@ -622,6 +622,43 @@ paths:
                   value:
                     message: "Invalid token, please log in to continue."
                     timestamp: "2024-12-08T19:30:00Z"
+  /token/application:
+    post:
+      tags:
+        - token
+      summary: Operation for token refresh for application
+      description: Allows the front-edn to use this to generate a new token from the refresh token sent.
+      operationId: postRefreshApplicationToken
+      security:
+        - bearerAuth: []
+      parameters:
+      - name: publicId
+        in: header
+        required: true
+        description: Public UUID identifier of the application.
+        schema:
+          type: string
+          format: uuid
+          example: d290f1ee-6c54-4b01-90e6-d701748f0851
+      responses:
+        '201':
+          description: New token for application
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationRegisterResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidToken:
+                  summary: When the token is invalid for some reason.
+                  value:
+                    message: "Invalid token, please log in to continue."
+                    timestamp: "2024-12-08T19:30:00Z"
   /token:
     post:
       tags:

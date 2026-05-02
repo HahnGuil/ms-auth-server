@@ -1,16 +1,20 @@
 package br.com.hahn.auth.infrastructure.security;
 
 import br.com.hahn.auth.application.execption.InvalidCredentialsException;
+import br.com.hahn.auth.util.DateTimeConverter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -18,10 +22,12 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
     private final UserDetailsService userDetailsService;
+    private final JwtDecoderConfig jwtDecoderConfig;
 
     /**
      * Processes the HTTP request and applies security filtering.
@@ -39,38 +45,35 @@ public class SecurityFilter extends OncePerRequestFilter {
      * @throws IOException if an I/O error occurs during the filtering process
      */
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain)
             throws ServletException, IOException {
-        var token = this.recoverToken(request);
+
+        var token = recoverToken(request);
+
         try {
-            if (token != null) {
-                String email = tokenService.validateToken(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, token, userDetails.getAuthorities());
+            if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                Jwt jwt = jwtDecoderConfig.jwtDecoder().decode(token);
+                JwtAuthenticationToken authentication = new JwtAuthenticationToken(jwt);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+
             filterChain.doFilter(request, response);
         } catch (InvalidCredentialsException e) {
+            log.error("SecurityFilter: Invalid credentials at: {}", DateTimeConverter.formatInstantNow(), e);
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
+        } catch (Exception e) {
+            log.error("SecurityFilter: Error authenticating request at: {}", DateTimeConverter.formatInstantNow(), e);
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token, please log in to continue.");
         }
     }
 
-    /**
-     * Extracts the authentication token from the HTTP request.
-     *
-     * <p>This method retrieves the value of the "Authorization" header from the
-     * provided HTTP request. If the header is present, it removes the "Bearer "
-     * prefix from the token and returns the resulting string. If the header is
-     * absent, it returns null.</p>
-     *
-     * @author HahnGuil
-     * @param request the HTTP request containing the "Authorization" header
-     * @return the extracted token without the "Bearer " prefix, or null if the header is absent
-     */
     private String recoverToken(HttpServletRequest request){
         var authHeader = request.getHeader("Authorization");
-        if(authHeader == null) return null;
-        return authHeader.replace("Bearer ", "");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        return authHeader.substring(7);
     }
 }

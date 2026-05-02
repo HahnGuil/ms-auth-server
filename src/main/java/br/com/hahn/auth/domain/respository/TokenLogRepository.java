@@ -24,6 +24,17 @@ public interface TokenLogRepository extends JpaRepository<TokenLog, UUID> {
     List<TokenLog> findExpiredActiveTokens(LocalDateTime expirationTime);
 
     TokenLog findTopByUserIdOrderByCreateDateDesc(UUID userId);
+
+    @Modifying
+    @Query("""
+    UPDATE TokenLog tl
+       SET tl.activeToken = false
+     WHERE tl.application.publicId = :applicationPublicId
+       AND tl.activeToken = true
+    """)
+    void deactivateActiveTokenByApplicationPublicId(UUID applicationPublicId);
+
+    TokenLog findTopByApplicationPublicIdOrderByCreateDateDesc(UUID applicationPublicId);
     
     
 

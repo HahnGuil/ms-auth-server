@@ -102,11 +102,11 @@ public class ApplicationScheduler {
      * @author HahnGuil
      */
     @Scheduled(cron = "0 0 0 * * *")
-    @Transactional
-    public void blockUser(){
-        log.info("ApplicationScheduler: Start block user routine at: {}", Instant.now());
-        userService.findUserToBlock();
-    }
+//    @Transactional
+//    public void blockUser(){
+//        log.info("ApplicationScheduler: Start block user routine at: {}", Instant.now());
+//        userService.findUserToBlock();
+//    }
 
     /**
      * Invalidates expired tokens.
@@ -132,7 +132,7 @@ public class ApplicationScheduler {
         List<TokenLog> expiredTokens = tokenLogService.findExpiredActiveTokens(expirationTime);
 
         for (TokenLog tokenLog : expiredTokens) {
-            tokenLogService.deactivateActiveToken(tokenLog.getUserId(), TypeInvalidation.EXPIRATION_TIME);
+            tokenLogService.deactivateActiveUserToken(tokenLog.getUserId(), TypeInvalidation.EXPIRATION_TIME);
             log.info("ApplicationScheduler: Expired token invalidated for user.: {} at: {}", tokenLog.getUserId(), Instant.now()) ;
         }
         log.info("ApplicationScheduler: Routine for invalidating expired tokens completed at: {}", Instant.now());

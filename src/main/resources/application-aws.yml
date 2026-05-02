@@ -59,3 +59,7 @@ integration:
   toxicbet:
     users:
       base-url: "https://api.toxicbet.com.br"
+
+frontend:
+  origin: "https://toxicbet.com.br"
+  oauth-callback-path: "/oauth/callback"

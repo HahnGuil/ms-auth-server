@@ -7,5 +7,6 @@ public enum TypeInvalidation {
     LOG_OFF,
     NEW_LOGIN,
     CHANGE_PASSWORD,
-    RESET_PASSWORD
+    RESET_PASSWORD,
+    APPLICATION_REFRESH
 }

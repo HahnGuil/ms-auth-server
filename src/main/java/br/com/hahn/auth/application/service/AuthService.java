@@ -30,13 +30,15 @@ public class AuthService {
     private final TokenService tokenService;
     private final LoggedNowService loggedNowService;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationService applicationService;
 
-    public AuthService(@Lazy UserService userService, TokenLogService tokenLogService, TokenService tokenService, LoggedNowService loggedNowService, PasswordEncoder passwordEncoder) {
+    public AuthService(@Lazy UserService userService, TokenLogService tokenLogService, TokenService tokenService, LoggedNowService loggedNowService, PasswordEncoder passwordEncoder, ApplicationService applicationService) {
         this.userService = userService;
         this.tokenLogService = tokenLogService;
         this.tokenService = tokenService;
         this.loggedNowService = loggedNowService;
         this.passwordEncoder = passwordEncoder;
+        this.applicationService = applicationService;
     }
 
     /**
@@ -132,7 +134,7 @@ public class AuthService {
     public void doLogOff(UUID userId, TypeInvalidation typeInvalidation){
         log.info("AuthService: Execute user logOff for user: {}, with type: {} ,at: {}", userId, typeInvalidation.toString(), DateTimeConverter.formatInstantNow());
         loggedNowService.deleteByUserId(userId);
-        tokenLogService.deactivateActiveToken(userId, typeInvalidation);
+        tokenLogService.deactivateActiveUserToken(userId, typeInvalidation);
     }
 
     /**
@@ -176,12 +178,35 @@ public class AuthService {
         log.info("AuthService: Extract user id for Deactivate the actual token of user: {}, at: {}", jwt.getSubject(), DateTimeConverter.formatInstantNow());
         String idUser = jwt.getClaim("user_id").toString();
         var userID = UUID.fromString(idUser);
-        tokenLogService.deactivateActiveToken(userID, TypeInvalidation.USER_REFRESH);
+        tokenLogService.deactivateActiveUserToken(userID, TypeInvalidation.USER_REFRESH);
 
         log.info("AuthService: Generated new access token for user: {}, at: {}", userID, DateTimeConverter.formatInstantNow());
         var user = userService.findByEmail(jwt.getSubject());
 
         return convertToLoginResponse(user);
+    }
+
+    public ApplicationRegisterResponse generateNewTokenForApplication(Jwt jwt, UUID applicationPublicId){
+        log.info("AuthService: Starting generate new token for application with publicId: {}, at: {}", applicationPublicId, DateTimeConverter.formatInstantNow());
+
+        String idToken = jwt.getClaimAsString("token_log_id");
+        var tokenLogId = UUID.fromString(idToken);
+
+        isApplicationRefreshToken(tokenLogId);
+        checkTokenActive(tokenLogId);
+
+        String applicationTokenPublicId = jwt.getSubject();
+        var applicationPublicIdFromToken = UUID.fromString(applicationTokenPublicId);
+
+        if (!applicationPublicIdFromToken.equals(applicationPublicId)) {
+            throw new InvalidTokenException("The application publicId in token does not match the request header.");
+        }
+
+        tokenLogService.deactiveActiveApplicationToken(applicationPublicIdFromToken, TypeInvalidation.APPLICATION_REFRESH);
+
+        var application = applicationService.findByPublicId(applicationPublicIdFromToken);
+
+        return convertToApplicationRegisterResponse(application);
     }
 
     /**
@@ -239,6 +264,24 @@ public class AuthService {
         return loginResponse;
     }
 
+    private ApplicationRegisterResponse convertToApplicationRegisterResponse(Application application){
+        log.info("AuthService: Generate token for application: {} at: {}", application.getNameApplication(), DateTimeConverter.formatInstantNow());
+
+        var tokenLogLogin = tokenLogService.saveApplicationTokenLog(application, ScopeToken.APPLICATION_TOKEN, LocalDateTime.now());
+        var token = tokenService.generateApplicationToken(application, tokenLogLogin);
+
+        log.info("AuthService: Generate refreshToken for application: {}, at: {}", application.getNameApplication(), DateTimeConverter.formatInstantNow());
+        var refreshTokenLogin = tokenLogService.saveApplicationTokenLog(application, ScopeToken.APPLICATION_REFRESH_TOKEN, LocalDateTime.now());
+        var refreshToken = tokenService.generateApplicationRefreshToken(application, refreshTokenLogin);
+
+        log.info("AuthService: Setting ApplicationRegisterResponse attributes for application: {}, at: {}", application.getNameApplication(), DateTimeConverter.formatInstantNow());
+
+        ApplicationRegisterResponse applicationRegisterResponse = new ApplicationRegisterResponse();
+        applicationRegisterResponse.setApplicationToken(token);
+        applicationRegisterResponse.setRefreshApplicationToken(refreshToken);
+        return applicationRegisterResponse;
+    }
+
     /**
      * Validate if the user is already logged in.
      * <p>
@@ -263,7 +306,7 @@ public class AuthService {
         if(!logRegistersOfUser.isEmpty()){
             log.info("AuthService: Find active session for the user: {}, starting do delete e deactivate the token at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
             loggedNowService.deleteByUserId(user.getUserId());
-            tokenLogService.deactivateActiveToken(user.getUserId(), TypeInvalidation.NEW_LOGIN);
+            tokenLogService.deactivateActiveUserToken(user.getUserId(), TypeInvalidation.NEW_LOGIN);
         }
 
         log.info("AuthService: Token not foud or is null. User: {}, is not logged, finish validation at {}: ",user.getUserId(), DateTimeConverter.formatInstantNow());
@@ -331,7 +374,7 @@ public class AuthService {
      * @throws InvalidTokenException if the token does not have the "REFRESH_TOKEN" scope
      */
     private void isRefreshToken(UUID tokenLogId){
-        log.info("AuthService: validate if token: {}, have a Refresh Scope Token at: {}", tokenLogId, DateTimeConverter.formatInstantNow());
+        log.info("AuthService: validate if token: {}, have a user Refresh Scope Token at: {}", tokenLogId, DateTimeConverter.formatInstantNow());
         var tokenlog = tokenLogService.findById(tokenLogId);
 
         var scope = tokenlog.getScopeToken();
@@ -339,6 +382,18 @@ public class AuthService {
         if(!ScopeToken.REFRESH_TOKEN.equals(scope)){
             log.error("AuthService: Inform token dont have the expect scope token. Inform token is: {}, user of request is: {}. Throw InvalidTokenException at: {}", scope, tokenlog.getUserId(), DateTimeConverter.formatInstantNow());
             throw new InvalidTokenException(ErrorsResponses.TOKEN_MUST_BE_REFRESH.getMessage() + scope);
+        }
+    }
+
+    private void isApplicationRefreshToken(UUID tokenLogId){
+        log.info("AuthService: validate if token: {}, have an application Refresh Scope Token at: {}", tokenLogId, DateTimeConverter.formatInstantNow());
+        var tokenlog = tokenLogService.findById(tokenLogId);
+
+        var scope = tokenlog.getScopeToken();
+
+        if(!ScopeToken.APPLICATION_REFRESH_TOKEN.equals(scope)){
+            log.error("AuthService: Inform application token dont have the expected scope token. Inform token is: {}. Throw InvalidTokenException at: {}", scope, DateTimeConverter.formatInstantNow());
+            throw new InvalidTokenException("To request a new application token, the token provided must be APPLICATION_REFRESH_TOKEN. The token provided is: " + scope);
         }
     }
 }

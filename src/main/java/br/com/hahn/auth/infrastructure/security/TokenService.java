@@ -32,7 +32,7 @@ public class TokenService {
     private static final String ISSUER = "AuthenticationService";
     private static final ZoneOffset ZONE_OFFSET = ZoneOffset.of("-03:00");
     private static final long TOKEN_EXPIRATION_TIME_MINUTES = 15;
-    private static final long APPLICATION_TOKEN_EXPIRATION_TIME_HOURS = 12;
+    private static final long APPLICATION_TOKEN_EXPIRATION_TIME_HOURS = 10;
     private static final long APPLICATION_REFRESH_TOKEN_EXPIRATION_TIME_HOURS = 15;
     private static final long REFRESH_TOKEN_EXPIRATION_TIME_MINUTES = 30;
     private final KeyManager keyManager;

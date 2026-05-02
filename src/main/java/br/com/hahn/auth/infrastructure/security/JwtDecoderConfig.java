@@ -105,7 +105,9 @@ public class JwtDecoderConfig {
             if (maybeKey instanceof RSAPublicKey rsaKey) {
                 return rsaKey;
             }
-            log.warn("JwtDecoderConfig: Public key for kid {} not found or not RSA, falling back to current key", kid);
+
+            log.error("JwtDecoderConfig: Public key for kid {} not found or not RSA", kid);
+            throw new IllegalStateException("Public key not found for kid: " + kid);
         }
 
         KeyPair kp = keyManager.getCurrentKeyPair();
@@ -113,6 +115,7 @@ public class JwtDecoderConfig {
             log.error("JwtDecoderConfig: No available RSA public key");
             throw new IllegalStateException("Public key not available for JwtDecoder");
         }
+
         return (RSAPublicKey) kp.getPublic();
     }
 }
