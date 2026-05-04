@@ -31,9 +31,11 @@ public enum ErrorsResponses {
     TOKEN_MUST_BE_REFRESH("To request a new token, the token provided must be REFRESH_TOKEN. The token provided is :"),
     INVALID_EMAIL_FORMAT_TYPE("This email is in a invalid format."),
     INVALID_PASSWORD_FORMAT_TYPE("Invalid password format. The password must contain 8 to 12 characters, including numbers, special characters, and uppercase and lowercase letters."),
+    INVALID_USERNAME_FORMAT_TYPE("Invalid username format. The username must contain 3 to 30 characters and may include letters, numbers, dots, underscores, and hyphens."),
     INVALID_FORMAT_ON_REQUEST("Invalid email or password format. Email must be in the format email@email.com, and password must be 8 to 12 characters long, including numbers, special characters, uppercase and lowercase letters."),
     FAIL_CONVERT_TOKEN("Token sent, but not recognized by the server. Check the Spring Security configuration (oauth2ResourceServer().jwt())."),
-    SCOPE_TOKEN_INVALID("It is not permitted to change the password using a token of the following type: ");
+    SCOPE_TOKEN_INVALID("It is not permitted to change the password using a token of the following type: "),
+    USERNAME_ALREADY_REGISTER_ERROR("Username already registered. Please choose another username.");
 
     private final String message;
 }

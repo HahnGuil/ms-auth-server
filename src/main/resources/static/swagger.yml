@@ -313,6 +313,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /users/me:
+    get:
+      tags:
+        - users
+      summary: Get authenticated user profile
+      description: Returns the authenticated user's username, full name, and email.
+      operationId: getAuthenticatedUserProfile
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: Authenticated user profile returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/username:
+    patch:
+      tags:
+        - users
+      summary: Update authenticated user's username
+      description: Updates only the username of the authenticated user.
+      operationId: patchAuthenticatedUsername
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUsernameRequest'
+      responses:
+        '204':
+          description: Username successfully updated.
+        '401':
+          description: Unauthorized request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Username already in use.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid username format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /login:
     post:
       tags:
@@ -779,6 +849,31 @@ components:
           type: string
           description: Refresh JWT Token for a new Token Request
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    UserProfileResponse:
+      type: object
+      properties:
+        userName:
+          type: string
+          description: Username
+          example: john_doe
+        fullName:
+          type: string
+          description: Full name composed of first name and last name
+          example: John Doe
+        email:
+          type: string
+          format: email
+          description: User email
+          example: john.doe@example.com
+    UpdateUsernameRequest:
+      type: object
+      required:
+        - userName
+      properties:
+        userName:
+          type: string
+          description: New username for the authenticated user
+          example: john_doe_2
     LoginRequest:
       type: object
       required:

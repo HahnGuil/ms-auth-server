@@ -2,6 +2,8 @@ package br.com.hahn.auth.application.service;
 
 import br.com.hahn.auth.application.execption.UserEmailAlreadyExistException;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
+import br.com.hahn.auth.application.execption.InvalidFormatTypeException;
+import br.com.hahn.auth.application.execption.ResourceAlreadyExistException;
 import br.com.hahn.auth.domain.enums.*;
 import br.com.hahn.auth.domain.model.*;
 import br.com.hahn.auth.domain.respository.UserRepository;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -271,6 +274,36 @@ public class UserService {
         }
     }
 
+    public UserProfileResponse getAuthenticatedUserProfile(Jwt jwt) {
+        var userEmail = getUserEmailFromToken(jwt);
+        var user = findByEmail(userEmail);
+
+        var response = new UserProfileResponse();
+        response.setUserName(user.getUsername());
+        response.setFullName(buildFullName(user));
+        response.setEmail(user.getEmail());
+        return response;
+    }
+
+    @Transactional
+    public void updateAuthenticatedUsername(Jwt jwt, UpdateUsernameRequest request) {
+        var userEmail = getUserEmailFromToken(jwt);
+        var user = findByEmail(userEmail);
+        var requestedUserName = request.getUserName() == null ? null : request.getUserName().trim();
+
+        if (requestedUserName.equals(user.getUsername())) {
+            return;
+        }
+
+        if (userRepository.existsByUsernameIgnoreCaseAndUserIdNot(requestedUserName, user.getUserId())) {
+            throw new ResourceAlreadyExistException(ErrorsResponses.USERNAME_ALREADY_REGISTER_ERROR.getMessage());
+        }
+
+        user.setUsername(requestedUserName);
+        userRepository.save(user);
+        userDataService.updateUserByEmailHeader(jwt, userEmail);
+    }
+
     private boolean isUserRegisteredOnApplication(User user, UUID applicationPublicId) {
         return user.getApplications() != null &&
                 user.getApplications().stream()
@@ -285,6 +318,14 @@ public class UserService {
 
     private boolean isUserOauth(String typeUser){
         return typeUser.equals(TypeUser.OAUTH_USER.toString());
+    }
+
+
+
+    private String buildFullName(User user) {
+        var firstName = user.getFirstName() == null ? "" : user.getFirstName().trim();
+        var lastName = user.getLastName() == null ? "" : user.getLastName().trim();
+        return (firstName + " " + lastName).trim();
     }
 
     /**

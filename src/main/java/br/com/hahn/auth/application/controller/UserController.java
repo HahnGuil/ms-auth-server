@@ -3,7 +3,9 @@ package br.com.hahn.auth.application.controller;
 import br.com.hahn.auth.UsersApi;
 import br.com.hahn.auth.application.service.UserService;
 import br.com.hahn.auth.domain.model.SuccessResponse;
+import br.com.hahn.auth.domain.model.UpdateUsernameRequest;
 import br.com.hahn.auth.domain.model.UserRequest;
+import br.com.hahn.auth.domain.model.UserProfileResponse;
 import br.com.hahn.auth.domain.model.UserResponse;
 import br.com.hahn.auth.util.DateTimeConverter;
 import lombok.AllArgsConstructor;
@@ -62,5 +64,17 @@ public class UserController extends AbstractController implements UsersApi {
     public ResponseEntity<Void> patchUserById(UUID applicationPublicID) {
         userService.updateUserApplicationRole(extractJwtFromContext(), applicationPublicID);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @Override
+    public ResponseEntity<UserProfileResponse> getAuthenticatedUserProfile() {
+        var response = userService.getAuthenticatedUserProfile(extractJwtFromContext());
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Void> patchAuthenticatedUsername(UpdateUsernameRequest updateUsernameRequest) {
+        userService.updateAuthenticatedUsername(extractJwtFromContext(), updateUsernameRequest);
+        return ResponseEntity.noContent().build();
     }
 }

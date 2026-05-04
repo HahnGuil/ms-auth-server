@@ -58,7 +58,7 @@ resend:
 integration:
   toxicbet:
     users:
-      base-url: "http://toxic-bet-api:20000"
+      base-url: "http://localhost:20000"
 
 frontend:
   origin: "http://localhost:4200"
