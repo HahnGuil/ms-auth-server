@@ -242,7 +242,7 @@ public class UserService {
         String typeUser = jwt.getClaim("type_user");
 
         if(!isUserOauth(typeUser)){
-            log.error("UserService: User is not OAuth. Send message to request");
+            log.debug("UserService: Direct user does not need OAuth application registration");
             response.setMessage("User is not OAuth, is not necessary registered");
             return response;
         }
