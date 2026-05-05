@@ -16,6 +16,29 @@ It uses **JWT Tokens** for access control to resources and issues **public keys*
 
 ---
 
+## 🔗 API References
+
+### Runtime URLs
+
+- **Local Auth-Server API**: [`http://localhost:2310/auth-server`](http://localhost:2310/auth-server)
+- **Docker Auth-Server API**: [`http://localhost:2300/auth-server`](http://localhost:2300/auth-server)
+- **Production Auth-Server API**: [`https://auth.toxicbet.com.br/auth-server`](https://auth.toxicbet.com.br/auth-server)
+- **Frontend local URL**: [`http://localhost:4200`](http://localhost:4200)
+- **Toxic Bet API local URL**: [`http://localhost:10000`](http://localhost:10000)
+- **Toxic Bet API Docker URL**: [`http://localhost:20000`](http://localhost:20000)
+- **Toxic Bet API production URL**: [`https://api.toxicbet.com.br`](https://api.toxicbet.com.br)
+
+### Documentation and Security URLs
+
+- **Local Swagger UI**: [`http://localhost:2310/auth-server/swagger-ui/index.html`](http://localhost:2310/auth-server/swagger-ui/index.html)
+- **Docker Swagger UI**: [`http://localhost:2300/auth-server/swagger-ui/index.html`](http://localhost:2300/auth-server/swagger-ui/index.html)
+- **Local OpenAPI JSON**: [`http://localhost:2310/auth-server/v3/api-docs`](http://localhost:2310/auth-server/v3/api-docs)
+- **Docker OpenAPI JSON**: [`http://localhost:2300/auth-server/v3/api-docs`](http://localhost:2300/auth-server/v3/api-docs)
+- **Google OAuth2 login**: [`https://auth.toxicbet.com.br/auth-server/oauth2/authorization/google`](https://auth.toxicbet.com.br/auth-server/oauth2/authorization/google)
+- **JWK set for JWT validation**: [`https://auth.toxicbet.com.br/auth-server/public-key/jwks`](https://auth.toxicbet.com.br/auth-server/public-key/jwks)
+
+---
+
 ## 🛠️ Technologies
 
 ![Java](https://img.shields.io/badge/Java-ED8B00?style=flat&logo=java&logoColor=white)
@@ -717,4 +740,3 @@ Best regards,
 ## 🇧🇷 Portuguese Version
 
 For the Portuguese version of this README, access the file [`README_PT.md`](./README_PT.md).
-

@@ -10,6 +10,29 @@ O **Auth-Server** centraliza e controla o login de usuários e o tempo de sessã
 
 ---
 
+## 🔗 Referências da API
+
+### URLs de Execução
+
+- **Auth-Server local**: [`http://localhost:2310/auth-server`](http://localhost:2310/auth-server)
+- **Auth-Server Docker**: [`http://localhost:2300/auth-server`](http://localhost:2300/auth-server)
+- **Auth-Server produção**: [`https://auth.toxicbet.com.br/auth-server`](https://auth.toxicbet.com.br/auth-server)
+- **Frontend local**: [`http://localhost:4200`](http://localhost:4200)
+- **Toxic Bet API local**: [`http://localhost:10000`](http://localhost:10000)
+- **Toxic Bet API Docker**: [`http://localhost:20000`](http://localhost:20000)
+- **Toxic Bet API produção**: [`https://api.toxicbet.com.br`](https://api.toxicbet.com.br)
+
+### URLs de Documentação e Segurança
+
+- **Swagger UI local**: [`http://localhost:2310/auth-server/swagger-ui/index.html`](http://localhost:2310/auth-server/swagger-ui/index.html)
+- **Swagger UI Docker**: [`http://localhost:2300/auth-server/swagger-ui/index.html`](http://localhost:2300/auth-server/swagger-ui/index.html)
+- **OpenAPI JSON local**: [`http://localhost:2310/auth-server/v3/api-docs`](http://localhost:2310/auth-server/v3/api-docs)
+- **OpenAPI JSON Docker**: [`http://localhost:2300/auth-server/v3/api-docs`](http://localhost:2300/auth-server/v3/api-docs)
+- **Login Google OAuth2**: [`https://auth.toxicbet.com.br/auth-server/oauth2/authorization/google`](https://auth.toxicbet.com.br/auth-server/oauth2/authorization/google)
+- **JWK set para validação JWT**: [`https://auth.toxicbet.com.br/auth-server/public-key/jwks`](https://auth.toxicbet.com.br/auth-server/public-key/jwks)
+
+---
+
 ## 🛠️ Tecnologias
 
 ![Java](https://img.shields.io/badge/Java-ED8B00?style=flat&logo=java&logoColor=white)
