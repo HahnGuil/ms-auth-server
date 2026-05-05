@@ -34,7 +34,10 @@ spring:
 
 logging:
   level:
-    org.flywaydb: INFO
+    root: ERROR
+    org.flywaydb: ERROR
+    org.springframework.security: ERROR
+    br.com.hahn.auth: ERROR
     org.apache.zookeeper: OFF
 
 server:
