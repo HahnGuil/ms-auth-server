@@ -1,8 +1,7 @@
 package br.com.hahn.auth.application.service;
 
-import br.com.hahn.auth.application.execption.InvalidRecoverCodeException;
-import br.com.hahn.auth.application.execption.NotFoundResetPasswordRequestForUser;
-import br.com.hahn.auth.application.execption.UserCanNotChangePasswordException;
+import java.time.ZoneId;
+import br.com.hahn.auth.application.execption.InvalidOperationException;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
 import br.com.hahn.auth.domain.enums.TypeUser;
@@ -25,297 +24,123 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PasswordServiceTest {
+    private final UUID appPublicId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    @Mock UserService userService;
+    @Mock AuthService authService;
+    @Mock PasswordEncoder passwordEncoder;
+    @Mock ResetPasswordRepository resetPasswordRepository;
+    @Mock EmailService emailService;
+    @Mock TokenService tokenService;
+    @Mock TokenLogService tokenLogService;
+    @Mock ApplicationService applicationService;
+    @InjectMocks PasswordService passwordService;
 
-    private final String newPassword = "#Password25";
-    private final String correctEmailFormat = "user@example.com";
-    private final String recoveryCode = "123456";
-    private final String encodedCode = "encodedCode";
-
-    @Mock
-    private UserService userService;
-
-    @Mock
-    private AuthService authService;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
-    private ResetPasswordRepository resetPasswordRepository;
-
-    @Mock
-    private EmailService emailService;
-
-    @Mock
-    private TokenService tokenService;
-
-    @Mock
-    private TokenLogService tokenLogService;
-
-    @InjectMocks
-    private PasswordService passwordService;
-
-    private User createUser(UUID userId, TypeUser typeUser) {
-        User user = new User();
-        user.setUserId(userId);
-        user.setEmail("user@example.com");
-        String firstName = "John";
-        user.setFirstName(firstName);
-        String lastName = "Doe";
-        user.setLastName(lastName);
-        user.setTypeUser(typeUser);
-        String encodedPassword = "encodedPassword";
-        user.setPassword(encodedPassword);
+    private User user() {
+        User user = new User(); user.setUserId(UUID.randomUUID()); user.setEmail("user@example.com");
+        user.setFirstName("First"); user.setLastName("Last"); user.setTypeUser(TypeUser.DIRECT_USER);
         return user;
     }
-
-    private ChangePasswordRequest createChangePasswordRequest() {
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setEmail("user@example.com");
-        request.setOldPassword("#Password24");
-        request.setNewPassword("#Password25");
-        return request;
-    }
-
-    private PasswordResetRequest createPasswordResetRequest() {
-        PasswordResetRequest request = new PasswordResetRequest();
-        request.setEmail("user@example.com");
-        return request;
-    }
-
-    private ValidateCodeRequest createValidateCodeRequest() {
-        ValidateCodeRequest request = new ValidateCodeRequest();
-        request.setEmail("user@example.com");
-        request.setRecoveryCode("123456");
-        return request;
-    }
-
-    private ResetPassword createResetPassword(LocalDateTime expirationDate) {
-        ResetPassword resetPassword = new ResetPassword();
-        resetPassword.setUserEmail("user@example.com");
-        resetPassword.setRecoverCode(encodedCode);
-        resetPassword.setExpirationDate(expirationDate);
-        return resetPassword;
+    private Application application() {
+        Application app = new Application(); app.setId(9L); app.setPublicId(appPublicId);
+        app.setApplicationEmail("security@app.test"); app.setResendApiKey("resend-key"); app.setNameApplication("app");
+        return app;
     }
 
     @Test
-    void shouldChangePasswordSuccessfully() {
-        UUID userId = UUID.randomUUID();
-        ChangePasswordRequest request = createChangePasswordRequest();
-        User user = createUser(userId, TypeUser.DIRECT_USER);
-        String encodedNewPassword = "encodedNewPassword";
+    void recoveryCreatesApplicationScopedCodeAndSendsUsingApplicationCredentials() {
+        User user = user(); Application app = application();
+        PasswordParameters parameters = new PasswordParameters(); parameters.setApplication(app); parameters.setUser(user);
+        var request = new PasswordRecoverCodeRequest(user.getEmail(), appPublicId);
+        when(userService.findByEmail(user.getEmail())).thenReturn(user);
+        when(userService.findPasswordParameters(user, appPublicId)).thenReturn(parameters);
+        when(resetPasswordRepository.findByUserEmailAndApplicationId(user.getEmail(), app.getId())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded-code");
+        when(emailService.sendEmail(eq("resend-key"), eq("security@app.test"), eq(user.getEmail()), eq("Password Reset Request"), anyString())).thenReturn(Mono.empty());
 
-        when(userService.findByEmail(correctEmailFormat)).thenReturn(user);
-        when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
-        String oldPassword = "#Password24";
-        doNothing().when(authService).validateOldPassword(user, oldPassword);
-        doNothing().when(userService).updatePassword(eq(correctEmailFormat), eq(userId), anyString(), any(LocalDateTime.class));
-        doNothing().when(authService).doLogOff(userId, TypeInvalidation.CHANGE_PASSWORD);
+        assertNotNull(passwordService.passwordRecoveryCodeRequest(request).getMessage());
 
+        ArgumentCaptor<ResetPassword> saved = ArgumentCaptor.forClass(ResetPassword.class);
+        verify(resetPasswordRepository).save(saved.capture());
+        assertEquals(user.getEmail(), saved.getValue().getUserEmail());
+        assertEquals(app.getId(), saved.getValue().getApplicationId());
+        assertEquals("encoded-code", saved.getValue().getRecoverCode());
+        verify(emailService).sendEmail(eq("resend-key"), eq("security@app.test"), eq(user.getEmail()), eq("Password Reset Request"), contains("password reset code"));
+    }
+
+    @Test
+    void recoveryWithoutApplicationApiKeyFailsClearly() {
+        User user = user(); Application app = application(); app.setResendApiKey(null);
+        PasswordParameters parameters = new PasswordParameters(); parameters.setApplication(app);
+        when(userService.findByEmail(user.getEmail())).thenReturn(user);
+        when(userService.findPasswordParameters(user, appPublicId)).thenReturn(parameters);
+        when(resetPasswordRepository.findByUserEmailAndApplicationId(user.getEmail(), app.getId())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("hash");
+        assertThrows(InvalidOperationException.class, () -> passwordService.passwordRecoveryCodeRequest(new PasswordRecoverCodeRequest(user.getEmail(), appPublicId)));
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void validatesRecoveryCodeWithinRequestedApplication() {
+        User user = user(); Application app = application();
+        ResetPassword reset = new ResetPassword(); reset.setUserEmail(user.getEmail());
+        reset.setApplicationId(app.getId()); reset.setRecoverCode("hash"); reset.setExpirationDate(LocalDateTime.now(ZoneId.systemDefault()).plusMinutes(10));
+        TokenLog log = new TokenLog();
+        when(applicationService.findByPublicId(appPublicId)).thenReturn(app);
+        when(resetPasswordRepository.findByUserEmailAndApplicationId(user.getEmail(), app.getId())).thenReturn(Optional.of(reset));
+        when(passwordEncoder.matches("123456", "hash")).thenReturn(true);
+        when(userService.findByEmail(user.getEmail())).thenReturn(user);
+        when(tokenLogService.saveTokenLog(eq(user), eq(app), eq(ScopeToken.RECOVER_CODE), any())).thenReturn(log);
+        when(tokenService.generateRecoverToken(reset, log, appPublicId)).thenReturn("recover-token");
+
+        var response = passwordService.validateResetCode(new ValidateCodeRequest(appPublicId, user.getEmail(), "123456"));
+        assertEquals("recover-token", response.getRecoverToken());
+        verify(resetPasswordRepository).findByUserEmailAndApplicationId(user.getEmail(), app.getId());
+    }
+
+    @Test
+    void changingPasswordUpdatesOnlyRequestedApplicationAndLogsItOff() {
+        User user = user(); Application app = application();
+        PasswordParameters parameters = new PasswordParameters(); parameters.setUser(user); parameters.setApplication(app); parameters.setPassword("old-hash");
+        var request = new ChangePasswordRequest(appPublicId, user.getEmail(), "OldPass!1", "NewPass!1");
+        when(userService.findByEmail(user.getEmail())).thenReturn(user);
+        when(userService.findPasswordParameters(user, appPublicId)).thenReturn(parameters);
+        when(passwordEncoder.encode("NewPass!1")).thenReturn("new-hash");
         passwordService.changePassword(request);
-
-        verify(userService).findByEmail(correctEmailFormat);
-        verify(authService).validateOldPassword(user, oldPassword);
-        verify(passwordEncoder).encode(newPassword);
-        verify(userService).updatePassword(eq(correctEmailFormat), eq(userId), eq(encodedNewPassword), any(LocalDateTime.class));
-        verify(authService).doLogOff(userId, TypeInvalidation.CHANGE_PASSWORD);
+        verify(authService).validateOldPassword(parameters, "OldPass!1");
+        verify(userService).updatePassword(eq(parameters), eq("new-hash"), any(LocalDateTime.class));
+        verify(authService).doLogOff(user.getUserId(), appPublicId, TypeInvalidation.CHANGE_PASSWORD);
     }
 
     @Test
-    void shouldThrowExceptionWhenOAuthUserTriesToChangePassword() {
-        UUID userId = UUID.randomUUID();
-        ChangePasswordRequest request = createChangePasswordRequest();
-        User user = createUser(userId, TypeUser.OAUTH_USER);
-
-        when(userService.findByEmail(correctEmailFormat)).thenReturn(user);
-
-        assertThrows(UserCanNotChangePasswordException.class, () -> passwordService.changePassword(request));
-        verify(userService).findByEmail(correctEmailFormat);
-        verifyNoInteractions(passwordEncoder);
-        verifyNoInteractions(authService);
-    }
-
-    @Test
-    void shouldRequestValidateCodeSuccessfully() {
-        UUID userId = UUID.randomUUID();
-        PasswordResetRequest request = createPasswordResetRequest();
-        User user = createUser(userId, TypeUser.DIRECT_USER);
-
-        when(userService.findByEmail(correctEmailFormat)).thenReturn(user);
-        when(resetPasswordRepository.existsByUserEmail(correctEmailFormat)).thenReturn(false);
-        when(passwordEncoder.encode(anyString())).thenReturn(encodedCode);
-        when(emailService.sendEmail(anyString(), anyString(), anyString())).thenReturn(Mono.empty());
-
-        SuccessResponse response = passwordService.requestValidateCode(request);
-
-        assertNotNull(response);
-        assertNotNull(response.getMessage());
-        verify(userService).findByEmail(correctEmailFormat);
-        verify(resetPasswordRepository).save(any(ResetPassword.class));
-        verify(emailService).sendEmail(eq(correctEmailFormat), anyString(), anyString());
-    }
-
-    @Test
-    void shouldDeleteExistingResetPasswordBeforeCreatingNew() {
-        UUID userId = UUID.randomUUID();
-        Long resetPasswordId = 1L;
-        PasswordResetRequest request = createPasswordResetRequest();
-        User user = createUser(userId, TypeUser.DIRECT_USER);
-
-        ResetPassword existingResetPassword = new ResetPassword();
-        existingResetPassword.setId(resetPasswordId);
-        existingResetPassword.setUserEmail(correctEmailFormat);
-
-        when(userService.findByEmail(correctEmailFormat)).thenReturn(user);
-        when(resetPasswordRepository.existsByUserEmail(correctEmailFormat)).thenReturn(true);
-        when(resetPasswordRepository.findByUserEmail(correctEmailFormat)).thenReturn(Optional.of(existingResetPassword));
-        when(passwordEncoder.encode(anyString())).thenReturn(encodedCode);
-        when(emailService.sendEmail(anyString(), anyString(), anyString())).thenReturn(Mono.empty());
-
-        passwordService.requestValidateCode(request);
-
-        verify(resetPasswordRepository).deleteById(resetPasswordId);
-        verify(resetPasswordRepository).save(any(ResetPassword.class));
-    }
-
-    @Test
-    void shouldValidateResetCodeSuccessfully() {
-        UUID userId = UUID.randomUUID();
-        ValidateCodeRequest request = createValidateCodeRequest();
-        User user = createUser(userId, TypeUser.DIRECT_USER);
-        ResetPassword resetPassword = createResetPassword(LocalDateTime.now().plusMinutes(10));
-        TokenLog tokenLog = new TokenLog();
-
-        when(resetPasswordRepository.findByUserEmail(correctEmailFormat)).thenReturn(Optional.of(resetPassword));
-        when(passwordEncoder.matches(recoveryCode, encodedCode)).thenReturn(true);
-        when(userService.findByEmail(correctEmailFormat)).thenReturn(user);
-        when(tokenLogService.saveTokenLog(eq(user), eq(ScopeToken.RECOVER_CODE), any(LocalDateTime.class))).thenReturn(tokenLog);
-        String recoverToken = "recoverToken123";
-        when(tokenService.generateRecoverToken(resetPassword, tokenLog)).thenReturn(recoverToken);
-
-        ValidateCodeResponse response = passwordService.validateResetCode(request);
-
-        assertNotNull(response);
-        assertEquals(recoverToken, response.getRecoverToken());
-        verify(passwordEncoder).matches(recoveryCode, encodedCode);
-    }
-
-    @Test
-    void shouldThrowExceptionWhenRecoveryCodeDoesNotMatch() {
-        ValidateCodeRequest request = createValidateCodeRequest();
-        ResetPassword resetPassword = createResetPassword(LocalDateTime.now().plusMinutes(10));
-
-        when(resetPasswordRepository.findByUserEmail(correctEmailFormat)).thenReturn(Optional.of(resetPassword));
-        when(passwordEncoder.matches(recoveryCode, encodedCode)).thenReturn(false);
-
-        assertThrows(InvalidRecoverCodeException.class, () -> passwordService.validateResetCode(request));
-    }
-
-    @Test
-    void shouldThrowExceptionWhenRecoveryCodeIsExpired() {
-        ValidateCodeRequest request = createValidateCodeRequest();
-        ResetPassword resetPassword = createResetPassword(LocalDateTime.now().minusMinutes(1));
-
-        when(resetPasswordRepository.findByUserEmail(correctEmailFormat)).thenReturn(Optional.of(resetPassword));
-        when(passwordEncoder.matches(recoveryCode, encodedCode)).thenReturn(true);
-
-        assertThrows(InvalidRecoverCodeException.class, () -> passwordService.validateResetCode(request));
-    }
-
-    @Test
-    void shouldThrowExceptionWhenResetPasswordNotFoundForEmail() {
-        ValidateCodeRequest request = createValidateCodeRequest();
-
-        when(resetPasswordRepository.findByUserEmail(correctEmailFormat)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundResetPasswordRequestForUser.class, () -> passwordService.validateResetCode(request));
-    }
-
-    @Test
-    void shouldResetUserPasswordSuccessfully() {
-        UUID userId = UUID.randomUUID();
-        String encodedNewPassword = "encodedNewPassword";
-
-        NewPasswordRequest request = new NewPasswordRequest();
-        request.setNewPassword(newPassword);
-
+    void resettingPasswordReadsApplicationFromRecoveryJwtAndInvalidatesOnlyThatToken() {
+        User user = user(); PasswordParameters parameters = new PasswordParameters(); parameters.setUser(user);
         Jwt jwt = mock(Jwt.class);
-        when(jwt.getSubject()).thenReturn(correctEmailFormat);
-        when(jwt.<String>getClaim("scope")).thenReturn(ScopeToken.RECOVER_CODE.getValue());
-        when(jwt.<String>getClaim("user_id")).thenReturn(userId.toString());
-
-        when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
-        doNothing().when(userService).updatePassword(eq(correctEmailFormat), eq(userId), eq(encodedNewPassword), any(LocalDateTime.class));
-        doNothing().when(tokenLogService).deactivateActiveToken(userId, TypeInvalidation.RESET_PASSWORD);
-
-        passwordService.resetUserPassword(jwt, request);
-
-        verify(passwordEncoder).encode(newPassword);
-        verify(userService).updatePassword(eq(correctEmailFormat), eq(userId), eq(encodedNewPassword), any(LocalDateTime.class));
-        verify(tokenLogService).deactivateActiveToken(userId, TypeInvalidation.RESET_PASSWORD);
+        when(jwt.getSubject()).thenReturn(user.getEmail());
+        when(jwt.getClaim("scope")).thenReturn(ScopeToken.RECOVER_CODE.getValue());
+        when(jwt.getClaim("user_id")).thenReturn(user.getUserId().toString());
+        when(jwt.getClaimAsString("application_public_id")).thenReturn(appPublicId.toString());
+        when(userService.findByEmail(user.getEmail())).thenReturn(user);
+        when(userService.findPasswordParameters(user, appPublicId)).thenReturn(parameters);
+        when(passwordEncoder.encode("NewPass!1")).thenReturn("encoded");
+        passwordService.resetUserPassword(jwt, new NewPasswordRequest("NewPass!1"));
+        verify(userService).updatePassword(eq(parameters), eq("encoded"), any(LocalDateTime.class));
+        verify(tokenLogService).deactivateActiveUserToken(user.getUserId(), appPublicId, TypeInvalidation.RESET_PASSWORD);
     }
 
     @Test
-    void shouldDeleteExpiredResetPasswordEntries() {
-        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(1);
-
-        when(resetPasswordRepository.deleteByExpirationDateBefore(cutoffDate)).thenReturn(5);
-
-        int deletedCount = passwordService.deleteByExpirationDateBefore(cutoffDate);
-
-        assertEquals(5, deletedCount);
-        verify(resetPasswordRepository).deleteByExpirationDateBefore(cutoffDate);
-    }
-
-    @Test
-    void shouldValidateTokenForChangePasswordSuccessfully() {
-        UUID tokenLogId = UUID.randomUUID();
-
-        Jwt jwt = mock(Jwt.class);
-        when(jwt.<String>getClaim("token_log_id")).thenReturn(tokenLogId.toString());
-
+    void validatesChangePasswordTokenMatchesApplication() {
+        UUID tokenId = UUID.randomUUID(); Jwt jwt = mock(Jwt.class);
+        when(jwt.getClaim("token_log_id")).thenReturn(tokenId.toString());
+        when(jwt.getClaimAsString("application_public_id")).thenReturn(appPublicId.toString());
         TokenLog tokenLog = new TokenLog();
-        tokenLog.setIdTokenLog(tokenLogId);
-        tokenLog.setScopeToken(ScopeToken.LOGIN_TOKEN);
-        tokenLog.setActiveToken(true);
-
-        when(tokenLogService.findById(tokenLogId)).thenReturn(tokenLog);
-        doNothing().when(tokenLogService).isExpectedScopeToken(tokenLog);
-        doNothing().when(tokenLogService).isTokenLogValid(tokenLog);
-
-        passwordService.validateTokenForChangePassword(jwt);
-
-        verify(tokenLogService).findById(tokenLogId);
+        when(tokenLogService.findById(tokenId)).thenReturn(tokenLog);
+        passwordService.validateTokenForChangePassword(jwt, appPublicId);
         verify(tokenLogService).isExpectedScopeToken(tokenLog);
         verify(tokenLogService).isTokenLogValid(tokenLog);
-    }
-
-    @Test
-    void shouldSaveResetPasswordWithCorrectExpirationTime() {
-        UUID userId = UUID.randomUUID();
-        PasswordResetRequest request = createPasswordResetRequest();
-        User user = createUser(userId, TypeUser.DIRECT_USER);
-
-        when(userService.findByEmail(correctEmailFormat)).thenReturn(user);
-        when(resetPasswordRepository.existsByUserEmail(correctEmailFormat)).thenReturn(false);
-        when(passwordEncoder.encode(anyString())).thenReturn(encodedCode);
-        when(emailService.sendEmail(anyString(), anyString(), anyString())).thenReturn(Mono.empty());
-
-        passwordService.requestValidateCode(request);
-
-        ArgumentCaptor<ResetPassword> captor = ArgumentCaptor.forClass(ResetPassword.class);
-        verify(resetPasswordRepository).save(captor.capture());
-
-        ResetPassword savedResetPassword = captor.getValue();
-        assertNotNull(savedResetPassword.getExpirationDate());
-        assertTrue(savedResetPassword.getExpirationDate().isAfter(LocalDateTime.now().plusMinutes(29)));
-        assertTrue(savedResetPassword.getExpirationDate().isBefore(LocalDateTime.now().plusMinutes(31)));
     }
 }

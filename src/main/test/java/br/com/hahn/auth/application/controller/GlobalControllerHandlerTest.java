@@ -1,6 +1,8 @@
 package br.com.hahn.auth.application.controller;
 
 import br.com.hahn.auth.application.execption.InvalidTokenException;
+import br.com.hahn.auth.application.execption.ForbiddenOperationException;
+import br.com.hahn.auth.application.execption.*;
 import br.com.hahn.auth.application.execption.ResourceAlreadyExistException;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
 import br.com.hahn.auth.domain.model.ErrorResponse;
@@ -20,6 +22,28 @@ class GlobalControllerHandlerTest {
 
     private final GlobalControllerHandler handler = new GlobalControllerHandler();
 
+    @Test
+    @DisplayName("Maps remaining domain exceptions to their documented statuses")
+    void mapsRemainingDomainExceptions() {
+        assertEquals(HttpStatus.NOT_FOUND, handler.handleResourceNotFoundException(new ResourceNotFoundException("missing")).getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, handler.handleApplicationNotFoundException(new ApplicationNotFoundException("missing app")).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, handler.handleInvalidCredentialsException(new InvalidCredentialsException("bad credentials")).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, handler.handleInvalidFormatException(new InvalidFormatException("bad format")).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, handler.handleKeyRotationException(new KeyRotationException("key error")).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, handler.handleOperationException(new InvalidOperationException("operation error")).getStatusCode());
+        assertEquals(HttpStatus.CONFLICT, handler.handleUserExistException(new UserAlreadyExistException("duplicate")).getStatusCode());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, handler.handleDataBaseServerException(new DataBaseServerException("database error")).getStatusCode());
+        assertEquals(HttpStatus.NOT_ACCEPTABLE, handler.handleUserNotOAuthException(new UserNotOAuthException("not oauth")).getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, handler.handleResetPasswordNotFoundException(new ResetPasswordNotFoundException("missing reset")).getStatusCode());
+        assertEquals(HttpStatus.CONFLICT, handler.handlerUserEmailAlreadyExistException(new UserEmailAlreadyExistException("duplicate email")).getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, handler.handlerUserCanNotChangePasswordException(new UserCanNotChangePasswordException("not allowed")).getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, handler.handlerNotFoundResetPasswordRequestForUser(new NotFoundResetPasswordRequestForUser("missing request")).getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, handler.handlerInvalidRecoverTokenException(new InvalidRecoverTokenException("bad recover token")).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, handler.handlerInvalidRefreshTokenException(new InvalidRefreshTokenException("expired")).getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, handler.handlerInvalidFormatTypeException(new InvalidFormatTypeException("bad input")).getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, handler.handlerUserAlreadyLoggedInException(new UserAlreadyLoggedInException("already logged")).getStatusCode());
+    }
+
     @Nested
     @DisplayName("Handle ResourceAlreadyExistException")
     class HandleResourceAlreadyExistException {
@@ -35,6 +59,15 @@ class GlobalControllerHandlerTest {
             Assertions.assertNotNull(response.getBody());
             assertEquals("Resource already exists", response.getBody().getMessage());
         }
+    }
+
+    @Test
+    @DisplayName("Maps forbidden application operations to 403")
+    void mapsForbiddenOperationToForbidden() {
+        var response = handler.handleForbiddenOperationException(new ForbiddenOperationException("admin required"));
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        Assertions.assertNotNull(response.getBody());
+        assertEquals("admin required", response.getBody().getMessage());
     }
 
     @Nested

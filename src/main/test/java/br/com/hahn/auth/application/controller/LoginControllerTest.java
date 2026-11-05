@@ -12,6 +12,7 @@ import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,7 +27,7 @@ class LoginControllerTest {
 
     @Test
     void shouldReturnCreatedStatusAndLoginResponseForValidLoginRequest() {
-        LoginRequest loginRequest = new LoginRequest("user@example.com", "Password1!");
+        LoginRequest loginRequest = new LoginRequest(UUID.fromString("00000000-0000-0000-0000-000000000001"), "user@example.com", "Password1!");
         LoginResponse loginResponse = new LoginResponse();
         when(authService.userLogin(loginRequest)).thenReturn(loginResponse);
 
@@ -39,7 +40,7 @@ class LoginControllerTest {
 
     @Test
     void shouldThrowExceptionForInvalidEmailFormatInLoginRequest() {
-        LoginRequest loginRequest = new LoginRequest("invalid-email", "Password1!");
+        LoginRequest loginRequest = new LoginRequest(UUID.fromString("00000000-0000-0000-0000-000000000001"), "invalid-email", "Password1!");
 
         InvalidFormatTypeException exception = assertThrows(InvalidFormatTypeException.class, () ->
                 controller.postLogin(loginRequest)
@@ -51,7 +52,7 @@ class LoginControllerTest {
 
     @Test
     void shouldThrowExceptionForInvalidPasswordFormatInLoginRequest() {
-        LoginRequest loginRequest = new LoginRequest("user@example.com", "weak");
+        LoginRequest loginRequest = new LoginRequest(UUID.fromString("00000000-0000-0000-0000-000000000001"), "user@example.com", "weak");
 
         InvalidFormatTypeException exception = assertThrows(InvalidFormatTypeException.class, () ->
                 controller.postLogin(loginRequest)

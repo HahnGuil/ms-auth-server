@@ -1,5 +1,6 @@
 package br.com.hahn.auth.domain.model;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ class InvalidatedTokenTest {
         UUID userId = UUID.randomUUID();
         UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
-        LocalDateTime dateInvalidate = LocalDateTime.now();
+        LocalDateTime dateInvalidate = LocalDateTime.now(ZoneId.systemDefault());
         TypeInvalidation typeInvalidation = TypeInvalidation.EXPIRATION_TIME;
 
         InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
@@ -36,7 +37,7 @@ class InvalidatedTokenTest {
         UUID userId = UUID.randomUUID();
         UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
-        LocalDateTime dateInvalidate = LocalDateTime.now();
+        LocalDateTime dateInvalidate = LocalDateTime.now(ZoneId.systemDefault());
         TypeInvalidation typeInvalidation = TypeInvalidation.USER_REFRESH;
 
         InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
@@ -55,7 +56,7 @@ class InvalidatedTokenTest {
         UUID userId = UUID.randomUUID();
         UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
-        LocalDateTime dateInvalidate = LocalDateTime.now();
+        LocalDateTime dateInvalidate = LocalDateTime.now(ZoneId.systemDefault());
         TypeInvalidation typeInvalidation = TypeInvalidation.LOG_OFF;
 
         InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
@@ -74,7 +75,7 @@ class InvalidatedTokenTest {
         UUID userId = UUID.randomUUID();
         UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
-        LocalDateTime dateInvalidate = LocalDateTime.now();
+        LocalDateTime dateInvalidate = LocalDateTime.now(ZoneId.systemDefault());
         TypeInvalidation typeInvalidation = TypeInvalidation.NEW_LOGIN;
 
         InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
@@ -93,7 +94,7 @@ class InvalidatedTokenTest {
         UUID userId = UUID.randomUUID();
         UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
-        LocalDateTime dateInvalidate = LocalDateTime.now();
+        LocalDateTime dateInvalidate = LocalDateTime.now(ZoneId.systemDefault());
         TypeInvalidation typeInvalidation = TypeInvalidation.CHANGE_PASSWORD;
 
         InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
@@ -112,7 +113,7 @@ class InvalidatedTokenTest {
         UUID userId = UUID.randomUUID();
         UUID applicationPublicId = UUID.randomUUID();
         UUID loginLogId = UUID.randomUUID();
-        LocalDateTime dateInvalidate = LocalDateTime.now();
+        LocalDateTime dateInvalidate = LocalDateTime.now(ZoneId.systemDefault());
         TypeInvalidation typeInvalidation = TypeInvalidation.RESET_PASSWORD;
 
         InvalidatedToken token = new InvalidatedToken(id, userId, applicationPublicId, loginLogId, dateInvalidate, typeInvalidation);
@@ -128,7 +129,7 @@ class InvalidatedTokenTest {
     @Test
     void shouldAllowUpdatingDateInvalidate() {
         InvalidatedToken token = new InvalidatedToken();
-        LocalDateTime newDate = LocalDateTime.now();
+        LocalDateTime newDate = LocalDateTime.now(ZoneId.systemDefault());
 
         token.setDateInvalidate(newDate);
 

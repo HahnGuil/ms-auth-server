@@ -2,7 +2,6 @@ package br.com.hahn.auth.infrastructure.service;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -20,12 +19,6 @@ public class EmailService {
         this.webClient = webClientBuilder.baseUrl("https://api.resend.com").build();
     }
 
-    @Value("${resend.api.key}")
-    private String apiKey;
-
-    @Value("${resend.sender}")
-    private String sender;
-
     /**
      * Sends an email using the Resend API asynchronously.
      *
@@ -34,12 +27,14 @@ public class EmailService {
      * The method returns a reactive Mono that completes when the remote call finishes successfully.</p>
      *
      * @author HahnGuil
+     * @param apiKey Resend API key of the application
+     * @param sender sender email of the application
      * @param to recipient email address
      * @param subject email subject
      * @param corpoHtml email body in HTML format
      * @return a {@link reactor.core.publisher.Mono} that completes when the send operation finishes
      */
-    public Mono<Void> sendEmail(String to, String subject, String corpoHtml) {
+    public Mono<Void> sendEmail(String apiKey, String sender, String to, String subject, String corpoHtml) {
         log.info("EmailService: Send email to: {}, at: {}", to, Instant.now());
         return webClient.post()
                 .uri("/emails")

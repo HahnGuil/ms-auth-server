@@ -10,6 +10,7 @@ import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,9 +33,11 @@ class PasswordControllerTest {
         controller = new PasswordController(passwordService);
     }
 
+    private UUID appId() { return UUID.fromString("00000000-0000-0000-0000-000000000001"); }
+
     @Test
     void shouldChangePasswordSuccessfully() {
-        ChangePasswordRequest request = new ChangePasswordRequest(correctEmailFormat, oldPassword, newPassword);
+        ChangePasswordRequest request = new ChangePasswordRequest(appId(), correctEmailFormat, oldPassword, newPassword);
         Jwt jwt = mock(Jwt.class);
         PasswordController spyController = Mockito.spy(controller);
         Mockito.doReturn(jwt).when(spyController).extractJwtFromContext();
@@ -42,13 +45,13 @@ class PasswordControllerTest {
         ResponseEntity<Void> response = spyController.patchChangePassword(request);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        Mockito.verify(passwordService, times(1)).validateTokenForChangePassword(jwt);
+        Mockito.verify(passwordService, times(1)).validateTokenForChangePassword(jwt, appId());
         Mockito.verify(passwordService, times(1)).changePassword(request);
     }
 
     @Test
     void shouldThrowExceptionForInvalidEmailInChangePassword() {
-        ChangePasswordRequest request = new ChangePasswordRequest(incorrectEmailFormat, oldPassword, newPassword);
+        ChangePasswordRequest request = new ChangePasswordRequest(appId(), incorrectEmailFormat, oldPassword, newPassword);
 
         InvalidFormatTypeException exception = assertThrows(InvalidFormatTypeException.class, () ->
                 controller.patchChangePassword(request)
@@ -60,7 +63,7 @@ class PasswordControllerTest {
 
     @Test
     void shouldThrowExceptionForInvalidNewPasswordInChangePassword() {
-        ChangePasswordRequest request = new ChangePasswordRequest(correctEmailFormat, oldPassword, incorrectPasswordFormat);
+        ChangePasswordRequest request = new ChangePasswordRequest(appId(), correctEmailFormat, oldPassword, incorrectPasswordFormat);
 
         InvalidFormatTypeException exception = assertThrows(InvalidFormatTypeException.class, () ->
                 controller.patchChangePassword(request)
@@ -72,7 +75,7 @@ class PasswordControllerTest {
 
     @Test
     void shouldThrowExceptionForInvalidOldPasswordInChangePassword() {
-        ChangePasswordRequest request = new ChangePasswordRequest(correctEmailFormat, incorrectPasswordFormat, newPassword);
+        ChangePasswordRequest request = new ChangePasswordRequest(appId(), correctEmailFormat, incorrectPasswordFormat, newPassword);
 
         InvalidFormatTypeException exception = assertThrows(InvalidFormatTypeException.class, () ->
                 controller.patchChangePassword(request)
@@ -84,19 +87,19 @@ class PasswordControllerTest {
 
     @Test
     void shouldThrowExceptionWhenTokenIsInvalidForChangePassword() {
-        ChangePasswordRequest request = new ChangePasswordRequest(correctEmailFormat, oldPassword, newPassword);
+        ChangePasswordRequest request = new ChangePasswordRequest(appId(), correctEmailFormat, oldPassword, newPassword);
         Jwt jwt = mock(Jwt.class);
         PasswordController spyController = Mockito.spy(controller);
         Mockito.doReturn(jwt).when(spyController).extractJwtFromContext();
         doThrow(new InvalidFormatTypeException(ErrorsResponses.INVALID_TOKEN.getMessage()))
-                .when(passwordService).validateTokenForChangePassword(jwt);
+                .when(passwordService).validateTokenForChangePassword(jwt, appId());
 
         InvalidFormatTypeException exception = assertThrows(InvalidFormatTypeException.class, () ->
                 spyController.patchChangePassword(request)
         );
 
         assertEquals(ErrorsResponses.INVALID_TOKEN.getMessage(), exception.getMessage());
-        Mockito.verify(passwordService, times(1)).validateTokenForChangePassword(jwt);
+        Mockito.verify(passwordService, times(1)).validateTokenForChangePassword(jwt, appId());
         Mockito.verify(passwordService, never()).changePassword(any());
     }
 
@@ -145,49 +148,49 @@ class PasswordControllerTest {
 
     @Test
     void shouldGenerateValidationCodeSuccessfully() {
-        PasswordResetRequest request = new PasswordResetRequest(correctEmailFormat);
+        PasswordRecoverCodeRequest request = new PasswordRecoverCodeRequest(correctEmailFormat, appId());
         SuccessResponse successResponse = new SuccessResponse();
         successResponse.setMessage("Code sent successfully");
-        when(passwordService.requestValidateCode(request)).thenReturn(successResponse);
+        when(passwordService.passwordRecoveryCodeRequest(request)).thenReturn(successResponse);
 
-        ResponseEntity<SuccessResponse> response = controller.postPasswordResetRequest(request);
+        ResponseEntity<SuccessResponse> response = controller.postPasswordRecoverCodeRequest(request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(successResponse, response.getBody());
-        Mockito.verify(passwordService, times(1)).requestValidateCode(request);
+        Mockito.verify(passwordService, times(1)).passwordRecoveryCodeRequest(request);
     }
 
     @Test
-    void shouldThrowExceptionForInvalidEmailInPasswordResetRequest() {
-        PasswordResetRequest request = new PasswordResetRequest(incorrectEmailFormat);
+    void shouldThrowExceptionForInvalidEmailInPasswordRecoverCodeRequest() {
+        PasswordRecoverCodeRequest request = new PasswordRecoverCodeRequest(incorrectEmailFormat, appId());
 
         InvalidFormatTypeException exception = assertThrows(InvalidFormatTypeException.class, () ->
-                controller.postPasswordResetRequest(request)
+                controller.postPasswordRecoverCodeRequest(request)
         );
 
         assertEquals(ErrorsResponses.INVALID_EMAIL_FORMAT_TYPE.getMessage(), exception.getMessage());
-        Mockito.verify(passwordService, never()).requestValidateCode(any());
+        Mockito.verify(passwordService, never()).passwordRecoveryCodeRequest(any());
     }
 
     @Test
-    void shouldThrowExceptionForEmptyEmailInPasswordResetRequest() {
-        PasswordResetRequest request = new PasswordResetRequest("");
+    void shouldThrowExceptionForEmptyEmailInPasswordRecoverCodeRequest() {
+        PasswordRecoverCodeRequest request = new PasswordRecoverCodeRequest("", appId());
 
         InvalidFormatTypeException exception = assertThrows(InvalidFormatTypeException.class, () ->
-                controller.postPasswordResetRequest(request)
+                controller.postPasswordRecoverCodeRequest(request)
         );
 
         assertEquals(ErrorsResponses.INVALID_EMAIL_FORMAT_TYPE.getMessage(), exception.getMessage());
-        Mockito.verify(passwordService, never()).requestValidateCode(any());
+        Mockito.verify(passwordService, never()).passwordRecoveryCodeRequest(any());
     }
 
     @Test
     void shouldValidateRecoveryCodeSuccessfully() {
-        ValidateCodeRequest request = new ValidateCodeRequest(correctEmailFormat, "123456");
+        ValidateCodeRequest request = new ValidateCodeRequest(appId(), correctEmailFormat, "123456");
         ValidateCodeResponse responseMock = new ValidateCodeResponse();
         when(passwordService.validateResetCode(request)).thenReturn(responseMock);
 
-        ResponseEntity<ValidateCodeResponse> response = controller.postRequestValidateCode(request);
+        ResponseEntity<ValidateCodeResponse> response = controller.postValidateRecoveryCode(request);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(responseMock, response.getBody());

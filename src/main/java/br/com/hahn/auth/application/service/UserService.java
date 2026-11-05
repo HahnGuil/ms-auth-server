@@ -1,11 +1,15 @@
 package br.com.hahn.auth.application.service;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.application.execption.UserEmailAlreadyExistException;
 import br.com.hahn.auth.application.execption.UserNotFoundException;
 import br.com.hahn.auth.application.execption.InvalidFormatTypeException;
 import br.com.hahn.auth.application.execption.ResourceAlreadyExistException;
 import br.com.hahn.auth.domain.enums.*;
 import br.com.hahn.auth.domain.model.*;
+import br.com.hahn.auth.application.execption.ForbiddenOperationException;
+import br.com.hahn.auth.domain.respository.PasswordParametersRepository;
+import br.com.hahn.auth.domain.respository.PasswordPolicyRepository;
 import br.com.hahn.auth.domain.respository.UserRepository;
 import br.com.hahn.auth.infrastructure.security.TokenService;
 import br.com.hahn.auth.infrastructure.service.UserDataClient;
@@ -19,7 +23,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -36,9 +47,13 @@ public class UserService {
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
     private final UserDataService userDataService;
+    private final PasswordParametersRepository passwordParametersRepository;
+    private final PasswordPolicyRepository passwordPolicyRepository;
 
-    public UserService(UserRepository userRepository, ApplicationService applicationService, @Lazy TokenLogService tokenLogService, TokenService tokenService, PasswordEncoder passwordEncoder, UserDataService userDataService) {
+    public UserService(UserRepository userRepository, PasswordParametersRepository passwordParametersRepository, PasswordPolicyRepository passwordPolicyRepository, ApplicationService applicationService, @Lazy TokenLogService tokenLogService, TokenService tokenService, PasswordEncoder passwordEncoder, UserDataService userDataService) {
         this.userRepository = userRepository;
+        this.passwordParametersRepository = passwordParametersRepository;
+        this.passwordPolicyRepository = passwordPolicyRepository;
         this.applicationService = applicationService;
         this.tokenLogService = tokenLogService;
         this.tokenService = tokenService;
@@ -51,28 +66,82 @@ public class UserService {
      * Creates a new user based on the provided user request.
      * This method performs the following steps:
      * - Logs the start of the user creation process.
-     * - Checks if the email provided in the user request already exists.
-     * - Converts the user request into a User entity and encodes the password.
-     * - Saves the new user entity to the repository.
+     * - If the email already exists, registers the existing user in the requested application,
+     *   unless it is already registered there.
+     * - Otherwise creates the User entity.
+     * - Saves the encoded password in a PasswordParameters bound to the user and the application.
      * - Converts the saved user entity into a UserResponse object and returns it.
      *
      * @author HahnGuil
      * @param userRequest the request object containing user details
      * @return UserResponse containing the details of the created user
-     * @throws UserEmailAlreadyExistException if the email is already registered
+     * @throws UserEmailAlreadyExistException if the email is already registered in the requested application
      */
+    @Transactional
     public UserResponse createUser(UserRequest userRequest){
         log.info("UserService: Starting user creation for user email: {} at: {}", userRequest.getEmail(), DateTimeConverter.formatInstantNow());
 
-        if(this.existsByEmail(userRequest.getEmail())){
-            log.error("UserService: Email already registered for this user with email: {}. throw UserEmailAlreadyExistsException at: {}", userRequest.getEmail(), DateTimeConverter.formatInstantNow());
-            throw new UserEmailAlreadyExistException(ErrorsResponses.EMAIL_ALREADY_REGISTER_ERROR.getMessage());
+        var application = applicationService.findById(userRequest.getApplicationCode());
+        var encodedPassword = passwordEncoder.encode(userRequest.getPassword());
+
+        var existingUser = userRepository.findByEmailWithApplications(userRequest.getEmail());
+        if(existingUser.isPresent()){
+            return registerExistingUserInApplication(existingUser.get(), application, encodedPassword);
         }
 
         log.info("UserService: Starting convert user with email: {} to entity at: {}", userRequest.getEmail(), DateTimeConverter.formatInstantNow());
-        var user = convertToEntity(userRequest, passwordEncoder.encode(userRequest.getPassword()));
+        var user = convertToEntity(userRequest);
         userRepository.save(user);
-        return convertToUserResponse(user);
+        savePasswordParameters(user, application, encodedPassword);
+        return convertToUserResponse(user, application);
+    }
+
+    /**
+     * Registers an already existing user (same email) in another application.
+     * The email can be reused across applications, but not twice in the same one.
+     * The password is independent per application, so the informed password is stored only
+     * for the requested application and nothing is checked against the other applications.
+     */
+    private UserResponse registerExistingUserInApplication(User user, Application application, String encodedPassword){
+        var alreadyRegistered = TypeUser.OAUTH_USER.equals(user.getTypeUser())
+                || passwordParametersRepository.existsByUserUserIdAndApplicationId(user.getUserId(), application.getId());
+        if(alreadyRegistered){
+            log.error("UserService: Email already registered for application: {}. throw UserEmailAlreadyExistsException at: {}", application.getId(), DateTimeConverter.formatInstantNow());
+            throw new UserEmailAlreadyExistException(ErrorsResponses.EMAIL_ALREADY_REGISTER_ERROR.getMessage());
+        }
+
+        var applications = user.getApplications() == null ? new HashSet<Application>() : new HashSet<>(user.getApplications());
+        applications.add(application);
+        user.setApplications(applications);
+        userRepository.save(user);
+        savePasswordParameters(user, application, encodedPassword);
+        return convertToUserResponse(user, application);
+    }
+
+    private void savePasswordParameters(User user, Application application, String encodedPassword){
+        var parameters = new PasswordParameters();
+        parameters.setUser(user);
+        parameters.setApplication(application);
+        parameters.setPassword(encodedPassword);
+        parameters.setPasswordCreateDate(LocalDateTime.now(ZoneId.systemDefault()));
+        parameters.setBlockUser(false);
+        passwordParametersRepository.save(parameters);
+    }
+
+    /**
+     * Finds the password parameters of the user for the given application.
+     *
+     * @param user the user
+     * @param applicationPublicId the public id of the application
+     * @return the password parameters of the pair user/application
+     * @throws UserNotFoundException if the user is not registered with a password in that application
+     */
+    public PasswordParameters findPasswordParameters(User user, UUID applicationPublicId){
+        return passwordParametersRepository.findByUserAndApplicationPublicId(user.getUserId(), applicationPublicId)
+                .orElseThrow(() -> {
+                    log.error("UserService: User: {} has no password for application: {}. Throw UserNotFoundException at: {}", user.getUserId(), applicationPublicId, DateTimeConverter.formatInstantNow());
+                    return new UserNotFoundException(ErrorsResponses.USER_NOT_FOUD.getMessage());
+                });
     }
 
     /**
@@ -116,23 +185,22 @@ public class UserService {
      * This method performs the following steps:
      * - Logs the start of the conversion process.
      * - Maps the fields from the UserRequest object to a new User entity.
-     * - Encodes the password and sets it in the User entity.
+     * - The password is not stored in the User: it lives in PasswordParameters, per application.
      * - Sets default values for role and type of user.
      * - If an application code is provided, retrieves the corresponding application
      *   and associates it with the User entity.
      *
      * @author HahnGuil
      * @param request the UserRequest object containing user details
-     * @param encodePassword the encoded password to be set in the User entity
      * @return the User entity created from the UserRequest object
      */
-    public User convertToEntity(UserRequest request, String encodePassword){
+    public User convertToEntity(UserRequest request){
         log.info("UserService: Convert user with email: {} to entity at: {}", request.getEmail(), DateTimeConverter.formatInstantNow());
         var user = new User();
 
         user.setUsername(request.getUsername());
-        user.setPassword(encodePassword);
-        user.setPasswordCreateDate(LocalDateTime.now());
+        user.setPassword("");
+        user.setBlockUser(false);
         user.setEmail(request.getEmail());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -149,22 +217,21 @@ public class UserService {
     }
 
     /**
-     * Updates the password for a user identified by their email and ID.
-     * This method performs the following steps:
-     * - Logs the start of the password update process.
-     * - Updates the user's password in the repository using the provided email, ID,
-     *   new password, and password creation date.
+     * Updates the password of a user for one application only, resets its creation date
+     * and removes the block of that application.
      *
      * @author HahnGuil
-     * @param email the email address of the user whose password is being updated
-     * @param id the unique identifier of the user
-     * @param newPassword the new password to set for the user
+     * @param passwordParameters the password parameters (user + application) to update
+     * @param newPassword the new encoded password
      * @param passwordCreateDate the date and time when the new password was created
      */
     @Transactional
-    public void updatePassword(String email, UUID id, String newPassword, LocalDateTime passwordCreateDate) {
-        log.info("UserService: update password for the user: {} at: {}", id, DateTimeConverter.formatInstantNow());
-        userRepository.updatePasswordByEmailAndId(newPassword, email, id, passwordCreateDate);
+    public void updatePassword(PasswordParameters passwordParameters, String newPassword, LocalDateTime passwordCreateDate) {
+        log.info("UserService: update password for the user: {} on application: {} at: {}", passwordParameters.getUser().getUserId(), passwordParameters.getApplication().getId(), DateTimeConverter.formatInstantNow());
+        passwordParameters.setPassword(newPassword);
+        passwordParameters.setPasswordCreateDate(passwordCreateDate);
+        passwordParameters.setBlockUser(false);
+        passwordParametersRepository.save(passwordParameters);
     }
 
     /**
@@ -183,42 +250,84 @@ public class UserService {
     public User createNewUserFromOAuth (OAuth2User oAuth2User){
         log.info("UserService: Creating a new user: {}, from OAuth, at: {}", oAuth2User.getAttribute("email"), DateTimeConverter.formatInstantNow());
         var userRequest = convertToUserRequest(oAuth2User);
-        var newUserFromOAuth = convertToEntity(userRequest, "");
+        var newUserFromOAuth = convertToEntity(userRequest);
         userRepository.save(newUserFromOAuth);
         return newUserFromOAuth;
     }
 
     /**
-     * Retrieves a list of users whose passwords are expiring within a specified number of days.
-     * This method performs the following steps:
-     * - Logs the start of the retrieval process.
-     * - Calculates the date threshold based on the provided number of days until expiration.
-     * - Queries the repository for users with passwords older than the calculated threshold.
+     * Retrieves the passwords (user + application) that will expire in exactly the given number of days,
+     * according to the password policy of each application. Applications without a policy are ignored.
      *
      * @author HahnGuil
-     * @param daysUntilBlock the number of days until the passwords are considered expiring
-     * @return a list of users whose passwords are expiring within the specified timeframe
+     * @param daysUntilExpiration number of days left until the password expires
+     * @return the password parameters to be notified
      */
-    public List<User> getUsersWithPasswordExpiringInDays(int daysUntilBlock) {
-        log.info("UserService: get users with password expiring in dats: {}, at: {}", daysUntilBlock, DateTimeConverter.formatInstantNow());
-        var dateThreshold = LocalDateTime.now().minusDays(90L - daysUntilBlock);
-        return userRepository.findUsersWithPasswordOlderThan(dateThreshold);
+    public List<PasswordParameters> getUsersWithPasswordExpiringInDays(int daysUntilExpiration) {
+        log.info("UserService: get users with password expiring in days: {}, at: {}", daysUntilExpiration, DateTimeConverter.formatInstantNow());
+        var today = LocalDate.now(ZoneId.systemDefault());
+        return findPasswordsWithExpiringPolicy().entrySet().stream()
+                .filter(e -> {
+                    var expirationDate = e.getValue().calculateExpirationDate(e.getKey().getPasswordCreateDate());
+                    return expirationDate != null && ChronoUnit.DAYS.between(today, expirationDate.toLocalDate()) == daysUntilExpiration;
+                })
+                .map(Map.Entry::getKey)
+                .toList();
     }
 
     /**
-     * Finds and blocks users whose passwords were updated within the last 90 days.
-     * This method performs the following steps:
-     * - Logs the start of the search for users to block.
-     * - Calculates a reference date equal to 90 days ago.
-     * - Retrieves users with passwords updated after the reference date and delegates
-     *   the blocking logic to {@code blockUsers}.
+     * Blocks the passwords (user + application) already expired according to the policy of the application.
+     * Applications without a policy are never blocked.
      *
      * @author HahnGuil
      */
+    @Transactional
     public void findUserToBlock() {
         log.info("UserService: Find users to block at: {}", DateTimeConverter.formatInstantNow());
-        var referenceData = LocalDateTime.now().minusDays(90);
-        blockUsers(userRepository.findUsersWithPasswordNewerThan(referenceData));
+        var now = LocalDateTime.now(ZoneId.systemDefault());
+        var expired = findPasswordsWithExpiringPolicy().entrySet().stream()
+                .filter(e -> !Boolean.TRUE.equals(e.getKey().getBlockUser()))
+                .filter(e -> {
+                    var expirationDate = e.getValue().calculateExpirationDate(e.getKey().getPasswordCreateDate());
+                    return expirationDate != null && expirationDate.isBefore(now);
+                })
+                .map(Map.Entry::getKey)
+                .toList();
+        blockPasswords(expired);
+    }
+
+    private Map<PasswordParameters, PasswordPolicy> findPasswordsWithExpiringPolicy() {
+        var policies = passwordPolicyRepository.findAllWithExpirationEnabled().stream()
+                .collect(Collectors.toMap(p -> p.getApplication().getId(), Function.identity()));
+        if (policies.isEmpty()) {
+            return Map.of();
+        }
+        var result = new LinkedHashMap<PasswordParameters, PasswordPolicy>();
+        passwordParametersRepository.findByApplicationIds(policies.keySet())
+                .forEach(p -> result.put(p, policies.get(p.getApplication().getId())));
+        return result;
+    }
+
+    /**
+     * Validates that the JWT belongs to an active login of an admin user.
+     *
+     * @author HahnGuil
+     * @param jwt the JWT of the request
+     * @throws ForbiddenOperationException if the user is not an admin
+     */
+    public void validateAdminUser(Jwt jwt){
+        var scope = jwt.getClaimAsString("scope");
+        var tokenLogId = jwt.getClaimAsString("token_log_id");
+        var isUserToken = ScopeToken.LOGIN_TOKEN.getValue().equals(scope) || ScopeToken.REGISTER_TOKEN.getValue().equals(scope);
+        if(!isUserToken || tokenLogId == null || !tokenLogService.isTokenValid(UUID.fromString(tokenLogId))){
+            throw new ForbiddenOperationException(ErrorsResponses.ONLY_ADMIN_CAN_CREATE_APPLICATION.getMessage());
+        }
+
+        var user = findByEmail(getUserEmailFromToken(jwt));
+        if(user.getRole() != UserRole.USER_ADMIN && user.getRole() != UserRole.SUPER_USER){
+            log.error("UserService: User: {} is not admin. Throw ForbiddenOperationException at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
+            throw new ForbiddenOperationException(ErrorsResponses.ONLY_ADMIN_CAN_CREATE_APPLICATION.getMessage());
+        }
     }
 
     /**
@@ -364,15 +473,15 @@ public class UserService {
      * @param user the User entity containing user details
      * @return the UserResponse object populated with user details and a generated token
      */
-    private UserResponse convertToUserResponse(User user){
+    private UserResponse convertToUserResponse(User user, Application application){
         log.info("UserService: convert user: {}, to UserResponse, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         UserResponse userResponse = new UserResponse();
         userResponse.setUserId(user.getUserId());
         userResponse.setUserName(user.getFirstName() + " " + user.getLastName());
         userResponse.setEmail(user.getEmail());
-        var token = tokenService.generateUserToken(user, generateTokenLog(user, ScopeToken.REGISTER_TOKEN));
+        var token = tokenService.generateUserToken(user, generateTokenLog(user, application, ScopeToken.REGISTER_TOKEN), application);
         userResponse.setToken(token);
-        var refreshToken = tokenService.generateRefreshToken(user, generateTokenLog(user, ScopeToken.REFRESH_TOKEN));
+        var refreshToken = tokenService.generateRefreshToken(user, generateTokenLog(user, application, ScopeToken.REFRESH_TOKEN), application);
         userResponse.setRefreshToken(refreshToken);
         log.info("UserService: User: {}, converted to userResponse id: {}, at: {}", user.getUserId(), userResponse.getUserId(), DateTimeConverter.formatInstantNow());
         return userResponse;
@@ -413,28 +522,19 @@ public class UserService {
     }
 
     /**
-     * Blocks a list of users by setting their block status to true.
-     * This method performs the following steps:
-     * - Logs the start of the blocking process.
-     * - Checks if the provided list of users is null or empty and logs a message if so.
-     * - Filters the list to include only users with the role USER_NORMAL.
-     * - Sets the block status to true for each filtered user and saves the changes to the repository.
-     * - Logs the completion of the blocking process.
+     * Blocks the passwords (user/application pair) with the USER_NORMAL role.
+     * The block is independent per application.
      *
      * @author HahnGuil
-     * @param usersToBlock the list of users to be blocked
+     * @param passwordsToBlock the password parameters to be blocked
      */
-    private void blockUsers(List<User> usersToBlock) {
-        log.info("UserService: Starting block user of the list at: {}", DateTimeConverter.formatInstantNow());
-        if (usersToBlock == null || usersToBlock.isEmpty()) {
-            log.info("UserService: No users to block at: {}", DateTimeConverter.formatInstantNow());
-            return;
-        }
-        usersToBlock.stream().filter(u -> u.getRole() == UserRole.USER_NORMAL).forEach(u -> {
-                    u.setBlockUser(true);
-                    userRepository.save(u);
-                });
-        log.info("UserService: Finish block user from list at: {}", DateTimeConverter.formatInstantNow());
+    private void blockPasswords(List<PasswordParameters> passwordsToBlock) {
+        log.info("UserService: Starting block of passwords at: {}", DateTimeConverter.formatInstantNow());
+        passwordsToBlock.stream().filter(p -> p.getUser().getRole() == UserRole.USER_NORMAL).forEach(p -> {
+            p.setBlockUser(true);
+            passwordParametersRepository.save(p);
+        });
+        log.info("UserService: Finish block of passwords at: {}", DateTimeConverter.formatInstantNow());
     }
 
     /**
@@ -445,11 +545,12 @@ public class UserService {
      *
      * @author HahnGuil
      * @param user the User entity for whom the token log is being generated
+     * @param application the application the session belongs to
      * @param scopeToken the ScopeToken enum representing the scope of the token
      * @return the generated TokenLog entity
      */
-    private TokenLog generateTokenLog(User user, ScopeToken scopeToken){
-        return tokenLogService.saveTokenLog(user, scopeToken, LocalDateTime.now());
+    private TokenLog generateTokenLog(User user, Application application, ScopeToken scopeToken){
+        return tokenLogService.saveTokenLog(user, application, scopeToken, LocalDateTime.now(ZoneId.systemDefault()));
     }
 
 }

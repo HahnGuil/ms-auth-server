@@ -1,6 +1,5 @@
 package br.com.hahn.auth.infrastructure.security;
 
-import br.com.hahn.auth.application.execption.InvalidCredentialsException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,83 +11,54 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 
-import java.util.Collections;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SecurityFilterTest {
+    @Mock JwtDecoderConfig decoderConfig;
+    @Mock JwtDecoder decoder;
+    @Mock HttpServletRequest request;
+    @Mock HttpServletResponse response;
+    @Mock FilterChain filterChain;
+    @InjectMocks SecurityFilter filter;
 
-    @Mock
-    private TokenService tokenService;
-
-    @Mock
-    private UserDetailsService userDetailsService;
-
-    @Mock
-    private HttpServletRequest request;
-
-    @Mock
-    private HttpServletResponse response;
-
-    @Mock
-    private FilterChain filterChain;
-
-    @Mock
-    private UserDetails userDetails;
-
-    @InjectMocks
-    private SecurityFilter securityFilter;
-
-    @BeforeEach
-    void setUp() {
-        SecurityContextHolder.clearContext();
-    }
-
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
+    @BeforeEach void setUp() { SecurityContextHolder.clearContext(); }
+    @AfterEach void tearDown() { SecurityContextHolder.clearContext(); }
 
     @Test
-    void shouldAuthenticateAndContinueFilterChainWhenTokenIsValid() throws Exception {
+    void acceptsValidJwtAndContinuesFilterChain() throws Exception {
+        Jwt jwt = Jwt.withTokenValue("validToken").header("alg", "none").claim("sub", "user@example.com").build();
         when(request.getHeader("Authorization")).thenReturn("Bearer validToken");
-        when(tokenService.validateToken("validToken")).thenReturn("user@example.com");
-        when(userDetailsService.loadUserByUsername("user@example.com")).thenReturn(userDetails);
-        when(userDetails.getAuthorities()).thenReturn(Collections.emptyList());
-
-        securityFilter.doFilterInternal(request, response, filterChain);
-
-        verify(tokenService).validateToken("validToken");
-        verify(userDetailsService).loadUserByUsername("user@example.com");
+        when(decoderConfig.jwtDecoder()).thenReturn(decoder);
+        when(decoder.decode("validToken")).thenReturn(jwt);
+        filter.doFilterInternal(request, response, filterChain);
+        verify(decoder).decode("validToken");
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
     @Test
-    void shouldReturnUnauthorizedWhenTokenIsInvalid() throws Exception {
+    void returnsUnauthorizedForInvalidJwt() throws Exception {
         when(request.getHeader("Authorization")).thenReturn("Bearer invalidToken");
-        when(tokenService.validateToken("invalidToken")).thenThrow(new InvalidCredentialsException("Invalid token"));
-
-        securityFilter.doFilterInternal(request, response, filterChain);
-
-        verify(response).sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+        when(decoderConfig.jwtDecoder()).thenReturn(decoder);
+        when(decoder.decode("invalidToken")).thenThrow(new JwtException("invalid"));
+        filter.doFilterInternal(request, response, filterChain);
+        verify(response).sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token, please log in to continue.");
         verify(filterChain, never()).doFilter(request, response);
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
     @Test
-    void shouldContinueFilterChainWhenNoTokenIsProvided() throws Exception {
+    void continuesWithoutBearerToken() throws Exception {
         when(request.getHeader("Authorization")).thenReturn(null);
-
-        securityFilter.doFilterInternal(request, response, filterChain);
-
+        filter.doFilterInternal(request, response, filterChain);
         verify(filterChain).doFilter(request, response);
+        verifyNoInteractions(decoderConfig);
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 }

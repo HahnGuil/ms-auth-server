@@ -2,6 +2,57 @@ spring:
   application:
     name: ms-auth-server
 
+  datasource:
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    validate-on-migrate: true
+    enabled: true
+    locations: "classpath:db/migration"
+    schemas: auth_service
+    default-schema: auth_service
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        default_schema: auth_service
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "${G_CLIENT_ID}"
+            client-secret: "${G_CLIENT_SECRET}"
+            scope:
+              - email
+              - profile
+
+logging:
+  level:
+    root: INFO
+    org.flywaydb: ERROR
+    org.springframework.security: ERROR
+    br.com.hahn.auth: ERROR
+    org.apache.zookeeper: OFF
+
+server:
+  servlet:
+    context-path: /auth-server
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+frontend:
+  origin: "http://localhost:4200"
+  oauth-callback-path: "/login-callback"
+
 management:
   endpoints:
     web:

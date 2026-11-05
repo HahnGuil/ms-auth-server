@@ -192,7 +192,7 @@ class ErrorsResponsesTest {
     void shouldReturnAllEnumValues() {
         ErrorsResponses[] allErrors = ErrorsResponses.values();
 
-        assertEquals(25, allErrors.length);
+        assertEquals(31, allErrors.length);
         assertNotNull(allErrors);
     }
 

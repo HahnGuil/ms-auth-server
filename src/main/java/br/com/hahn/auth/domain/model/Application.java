@@ -39,13 +39,33 @@ public class Application {
     @Column(name = "public_id", nullable = false, unique = true, updatable = false)
     private UUID publicId;
 
-
     /**
      * The name of the application.
      * This value is stored in the "name_application" column in the database.
      */
     @Column(name = "name_application")
     private String nameApplication;
+
+    /**
+     * The domain of the application
+     * This value is stored in the "application_domain" column in a database and is used to send email to recover code to the user
+     */
+    @Column(name = "application_domain")
+    private String applicationDomain;
+
+    /**
+     * The email of the application
+     * This value is stored in the "application_email" column in the database and is used to send email to recover code to the user
+     */
+    @Column(name = "application_email")
+    private String applicationEmail;
+
+    /**
+     * Resend API key of the application, used together with applicationEmail (sender) to send its emails.
+     * Never returned by the API.
+     */
+    @Column(name = "resend_api_key")
+    private String resendApiKey;
 
     /**
      * The set of users associated with this application.

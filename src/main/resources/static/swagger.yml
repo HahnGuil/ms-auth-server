@@ -53,6 +53,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /application/register:
+    post:
+      tags:
+        - application
+      summary: Create a new application
+      description: Creates a new application with its own password policy. Only authenticated admin users can use this endpoint. The password policy is optional (definePasswordPolicy=false means no policy at all, not even the default one). When defined, the application can use the default policy (90 days) or a custom expiration time in months.
+      operationId: postCreateApplication
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationCreateRequest'
+      responses:
+        '201':
+          description: Application created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationResponse'
+        '400':
+          description: Invalid request data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: The authenticated user is not an admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Application name, email or domain already registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /oauth2/authorization/google:
     get:
       summary: OAuth2 login with Google
@@ -565,13 +611,13 @@ paths:
         - password
       summary: Request a password reset code
       description: Sends a password reset code to the user's email address.
-      operationId: postPasswordResetRequest
+      operationId: postPasswordRecoverCodeRequest
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequest'
+              $ref: '#/components/schemas/PasswordRecoverCodeRequest'
       responses:
         '201':
           description: A six-digit code is sent to the user's email address.
@@ -614,7 +660,7 @@ paths:
         - password
       summary: Validate recovery code
       description: Receive the recovery code and the user's email for validation.
-      operationId: postRequestValidateCode
+      operationId: postValidateRecoveryCode
       requestBody:
         required: true
         content:
@@ -877,9 +923,15 @@ components:
     LoginRequest:
       type: object
       required:
+        - applicationPublicId
         - email
         - password
       properties:
+        applicationPublicId:
+          type: string
+          format: uuid
+          description: Public ID of the application the password belongs to
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
         email:
           type: string
           description: User email
@@ -891,6 +943,71 @@ components:
           minLength: 8
           maxLength: 12
           example: SecurePass123!
+    ApplicationCreateRequest:
+      type: object
+      required:
+        - nameApplication
+        - applicationEmail
+        - applicationDomain
+        - resendApiKey
+        - definePasswordPolicy
+      properties:
+        nameApplication:
+          type: string
+          description: Name of the application
+          example: my-app
+        applicationEmail:
+          type: string
+          description: Email of the application, used to send emails to the users
+          example: no-reply@my-app.com
+        applicationDomain:
+          type: string
+          description: Domain of the application
+          example: my-app.com
+        resendApiKey:
+          type: string
+          writeOnly: true
+          description: Resend API key used to send the emails of the application (the applicationEmail is the sender)
+          example: re_xxxxxxxx
+        definePasswordPolicy:
+          type: boolean
+          description: If false, no password policy is applied to the application, not even the default one.
+          example: true
+        useDefaultPasswordPolicy:
+          type: boolean
+          description: Used only when definePasswordPolicy is true. If true, uses the default policy (password expires in 90 days).
+          example: false
+        passwordExpirationMonths:
+          type: integer
+          minimum: 1
+          description: Used when definePasswordPolicy is true and useDefaultPasswordPolicy is false. Time, in months, for the password to expire.
+          example: 6
+    ApplicationResponse:
+      type: object
+      properties:
+        applicationPublicId:
+          type: string
+          format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        nameApplication:
+          type: string
+          example: my-app
+        applicationEmail:
+          type: string
+          example: no-reply@my-app.com
+        applicationDomain:
+          type: string
+          example: my-app.com
+        definePasswordPolicy:
+          type: boolean
+          example: true
+        useDefaultPasswordPolicy:
+          type: boolean
+          example: false
+        passwordExpirationMonths:
+          type: integer
+          nullable: true
+          example: 6
     ApplicationRegisterResponse:
       type: object
       properties:
@@ -951,11 +1068,17 @@ components:
         - timestamp
     ChangePasswordRequest:
       required:
+        - applicationPublicId
         - email
         - oldPassword
         - newPassword
       type: object
       properties:
+        applicationPublicId:
+          type: string
+          format: uuid
+          description: Public ID of the application the password belongs to
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
         email:
           type: string
           description: user email
@@ -974,15 +1097,21 @@ components:
           minLength: 8
           maxLength: 12
           example: SecurePass123!
-    PasswordResetRequest:
+    PasswordRecoverCodeRequest:
       type: object
       required:
         - email
+        - applicationPublicId
       properties:
         email:
           type: string
           description: User email
           example: john.doe@example.com
+        applicationPublicId:
+          type: string
+          format: uuid
+          description: Public ID of the application the password belongs to
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
     NewPasswordRequest:
       type: object
       required:
@@ -998,9 +1127,15 @@ components:
     ValidateCodeRequest:
       type: object
       required:
+        - applicationPublicId
         - email
         - recoveryCode
       properties:
+        applicationPublicId:
+          type: string
+          format: uuid
+          description: Public ID of the application the password belongs to
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
         email:
           type: string
           description: User email

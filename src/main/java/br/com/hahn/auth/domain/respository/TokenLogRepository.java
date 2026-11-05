@@ -14,8 +14,12 @@ import java.util.UUID;
 public interface TokenLogRepository extends JpaRepository<TokenLog, UUID> {
 
     @Modifying
-    @Query("UPDATE TokenLog tl SET tl.activeToken = false WHERE tl.userId = :userId AND tl.activeToken = true")
-    void deactivateActiveTokenByUserId(UUID userId);
+    @Query("UPDATE TokenLog tl SET tl.activeToken = false WHERE tl.userId = :userId AND tl.application.publicId = :applicationPublicId AND tl.activeToken = true")
+    void deactivateActiveTokenByUserIdAndApplicationPublicId(UUID userId, UUID applicationPublicId);
+
+    @Modifying
+    @Query("UPDATE TokenLog tl SET tl.activeToken = false WHERE tl.userId = :userId AND tl.applicationId IS NULL AND tl.activeToken = true")
+    void deactivateActiveTokenByUserIdWithoutApplication(UUID userId);
 
     @Query("SELECT CASE WHEN COUNT(tl) > 0 THEN true ELSE false END FROM TokenLog tl WHERE tl.idTokenLog = :loginLogId AND tl.activeToken = true")
     boolean findActiveTokenByLoginLogId(UUID loginLogId);
@@ -23,18 +27,21 @@ public interface TokenLogRepository extends JpaRepository<TokenLog, UUID> {
     @Query("SELECT tl FROM TokenLog tl WHERE tl.activeToken = true AND tl.createDate < :expirationTime")
     List<TokenLog> findExpiredActiveTokens(LocalDateTime expirationTime);
 
-    TokenLog findTopByUserIdOrderByCreateDateDesc(UUID userId);
+    TokenLog findTopByUserIdAndApplicationPublicIdOrderByCreateDateDesc(UUID userId, UUID applicationPublicId);
+
+    TokenLog findTopByUserIdAndApplicationIdIsNullOrderByCreateDateDesc(UUID userId);
 
     @Modifying
     @Query("""
     UPDATE TokenLog tl
        SET tl.activeToken = false
      WHERE tl.application.publicId = :applicationPublicId
+       AND tl.userId IS NULL
        AND tl.activeToken = true
     """)
     void deactivateActiveTokenByApplicationPublicId(UUID applicationPublicId);
 
-    TokenLog findTopByApplicationPublicIdOrderByCreateDateDesc(UUID applicationPublicId);
+    TokenLog findTopByApplicationPublicIdAndUserIdIsNullOrderByCreateDateDesc(UUID applicationPublicId);
     
     
 

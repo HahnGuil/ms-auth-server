@@ -1,5 +1,6 @@
 package br.com.hahn.auth.infrastructure.exception;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.domain.model.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -31,7 +32,7 @@ public class CustomAuthenticationEntryPointHandler implements AuthenticationEntr
 
         ErrorResponse errorResponse = new ErrorResponse()
                 .message("User not authenticated. Please log to continue")
-                .timestamp(OffsetDateTime.now());
+                .timestamp(OffsetDateTime.now(ZoneId.systemDefault()));
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());

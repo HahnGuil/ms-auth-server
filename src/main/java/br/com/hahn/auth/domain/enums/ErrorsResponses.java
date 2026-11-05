@@ -35,7 +35,11 @@ public enum ErrorsResponses {
     INVALID_FORMAT_ON_REQUEST("Invalid email or password format. Email must be in the format email@email.com, and password must be 8 to 12 characters long, including numbers, special characters, uppercase and lowercase letters."),
     FAIL_CONVERT_TOKEN("Token sent, but not recognized by the server. Check the Spring Security configuration (oauth2ResourceServer().jwt())."),
     SCOPE_TOKEN_INVALID("It is not permitted to change the password using a token of the following type: "),
-    USERNAME_ALREADY_REGISTER_ERROR("Username already registered. Please choose another username.");
+    USERNAME_ALREADY_REGISTER_ERROR("Username already registered. Please choose another username."),
+    ONLY_ADMIN_CAN_CREATE_APPLICATION("Only admin users can create applications."),
+    APPLICATION_ALREADY_REGISTER_ERROR("An application with this name, email or domain is already registered."),
+    INVALID_PASSWORD_POLICY("Invalid password policy. When a custom policy is defined, passwordExpirationMonths must be greater than zero."),
+    INVALID_APPLICATION_DATA("Application name, email and domain are required.");
 
     private final String message;
 }

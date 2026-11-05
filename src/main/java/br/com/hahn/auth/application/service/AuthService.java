@@ -1,5 +1,6 @@
 package br.com.hahn.auth.application.service;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.application.execption.DirectLoginNotAllowedException;
 import br.com.hahn.auth.application.execption.InvalidCredentialsException;
 import br.com.hahn.auth.application.execption.InvalidTokenException;
@@ -7,6 +8,7 @@ import br.com.hahn.auth.application.execption.UserBlockException;
 import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
+import br.com.hahn.auth.domain.enums.TypeUser;
 import br.com.hahn.auth.domain.model.*;
 import br.com.hahn.auth.infrastructure.security.TokenService;
 import br.com.hahn.auth.util.DateTimeConverter;
@@ -60,19 +62,22 @@ public class AuthService {
         log.info("AuthService: Validating the existence of the email: {}", loginRequest.getEmail());
         var user = userService.findByEmail(loginRequest.getEmail());
 
-        log.info("AuthService: Checking if the user: {} is currently logged in at: {}.", user.getUserId(), DateTimeConverter.formatInstantNow());
-        validateIfUserIsAlreadyLoggedIn(user);
-
         log.info("AuthService: Validating if the user: {}, are OAuth user at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         validatingYourUserIsOauth(user);
 
+        log.info("AuthService: Find the password of user: {} for application: {} at: {}", user.getUserId(), loginRequest.getApplicationPublicId(), DateTimeConverter.formatInstantNow());
+        var passwordParameters = userService.findPasswordParameters(user, loginRequest.getApplicationPublicId());
+
         log.info("AuthService: Validating if the user: {} are block at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        validateBlockUser(user);
+        validateBlockUser(passwordParameters);
 
         log.info("Login Service: Validating credentials of the user: {} at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        validateCredentials(loginRequest.getPassword(), user.getPassword());
+        validateCredentials(loginRequest.getPassword(), passwordParameters.getPassword());
 
-        return convertToLoginResponse(user);
+        log.info("AuthService: Checking if the user: {} is currently logged in on the application: {} at: {}.", user.getUserId(), passwordParameters.getApplication().getPublicId(), DateTimeConverter.formatInstantNow());
+        validateIfUserIsAlreadyLoggedIn(user, passwordParameters.getApplication().getPublicId());
+
+        return convertToLoginResponse(user, passwordParameters.getApplication());
     }
 
     /**
@@ -99,7 +104,7 @@ public class AuthService {
             user = userService.createNewUserFromOAuth(oAuth2User);
         }
 
-        return convertToLoginResponse(user);
+        return convertToLoginResponse(user, null);
     }
 
     /**
@@ -115,7 +120,7 @@ public class AuthService {
     public void logOffUser(Jwt jwt){
         log.info("AuthService: Starting log off for user with email: {}, at: {}", jwt.getSubject(), DateTimeConverter.formatInstantNow());
         var userId = getUserIdFromToken(jwt);
-        doLogOff(userId, TypeInvalidation.LOG_OFF);
+        doLogOff(userId, getApplicationPublicIdFromToken(jwt), TypeInvalidation.LOG_OFF);
 
     }
 
@@ -131,10 +136,10 @@ public class AuthService {
      * @param userId the UUID of the user to log off
      * @param typeInvalidation the type of invalidation to apply to the user's token
      */
-    public void doLogOff(UUID userId, TypeInvalidation typeInvalidation){
-        log.info("AuthService: Execute user logOff for user: {}, with type: {} ,at: {}", userId, typeInvalidation.toString(), DateTimeConverter.formatInstantNow());
-        loggedNowService.deleteByUserId(userId);
-        tokenLogService.deactivateActiveUserToken(userId, typeInvalidation);
+    public void doLogOff(UUID userId, UUID applicationPublicId, TypeInvalidation typeInvalidation){
+        log.info("AuthService: Execute user logOff for user: {}, on application: {}, with type: {} ,at: {}", userId, applicationPublicId, typeInvalidation.toString(), DateTimeConverter.formatInstantNow());
+        loggedNowService.deleteByUserIdAndApplication(userId, applicationPublicId);
+        tokenLogService.deactivateActiveUserToken(userId, applicationPublicId, typeInvalidation);
     }
 
     /**
@@ -147,9 +152,9 @@ public class AuthService {
      * @param oldPassword the plain-text old password provided for validation
      * @throws InvalidCredentialsException if the provided oldPassword does not match the user's stored password
      */
-    public void validateOldPassword(User user, String oldPassword){
-        log.info("AuthService: Staring validating for oldPassword for user: {} at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        validateCredentials(oldPassword, user.getPassword());
+    public void validateOldPassword(PasswordParameters passwordParameters, String oldPassword){
+        log.info("AuthService: Staring validating for oldPassword for user: {} at: {}", passwordParameters.getUser().getUserId(), DateTimeConverter.formatInstantNow());
+        validateCredentials(oldPassword, passwordParameters.getPassword());
     }
 
     /**
@@ -178,12 +183,15 @@ public class AuthService {
         log.info("AuthService: Extract user id for Deactivate the actual token of user: {}, at: {}", jwt.getSubject(), DateTimeConverter.formatInstantNow());
         String idUser = jwt.getClaim("user_id").toString();
         var userID = UUID.fromString(idUser);
-        tokenLogService.deactivateActiveUserToken(userID, TypeInvalidation.USER_REFRESH);
+        tokenLogService.deactivateActiveUserToken(userID, getApplicationPublicIdFromToken(jwt), TypeInvalidation.USER_REFRESH);
 
         log.info("AuthService: Generated new access token for user: {}, at: {}", userID, DateTimeConverter.formatInstantNow());
         var user = userService.findByEmail(jwt.getSubject());
 
-        return convertToLoginResponse(user);
+        var applicationPublicId = getApplicationPublicIdFromToken(jwt);
+        var application = applicationPublicId == null ? null : applicationService.findByPublicId(applicationPublicId);
+
+        return convertToLoginResponse(user, application);
     }
 
     public ApplicationRegisterResponse generateNewTokenForApplication(Jwt jwt, UUID applicationPublicId){
@@ -246,14 +254,14 @@ public class AuthService {
      * @param user the User object containing user details
      * @return LoginResponse containing the user's name, email, token, and refresh token
      */
-    private LoginResponse convertToLoginResponse(User user){
+    private LoginResponse convertToLoginResponse(User user, Application application){
         log.info("AuthService: Generate token for user: {}, using token service at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        var tokenLogLogin = tokenLogService.saveTokenLog(user, ScopeToken.LOGIN_TOKEN, LocalDateTime.now());
-        var token = tokenService.generateUserToken(user, tokenLogLogin);
+        var tokenLogLogin = tokenLogService.saveTokenLog(user, application, ScopeToken.LOGIN_TOKEN, LocalDateTime.now(ZoneId.systemDefault()));
+        var token = application == null ? tokenService.generateUserToken(user, tokenLogLogin) : tokenService.generateUserToken(user, tokenLogLogin, application);
 
         log.info("AuthService: Generate refreshToken for user: {}, using token service at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        var refreshTokenLogin = tokenLogService.saveTokenLog(user, ScopeToken.REFRESH_TOKEN, LocalDateTime.now());
-        var refreshToken = tokenService.generateRefreshToken(user, refreshTokenLogin);
+        var refreshTokenLogin = tokenLogService.saveTokenLog(user, application, ScopeToken.REFRESH_TOKEN, LocalDateTime.now(ZoneId.systemDefault()));
+        var refreshToken = tokenService.generateRefreshToken(user, refreshTokenLogin, application);
 
         log.info("AuthService: Setting loginResponse attributes for user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         LoginResponse loginResponse = new LoginResponse();
@@ -267,11 +275,11 @@ public class AuthService {
     private ApplicationRegisterResponse convertToApplicationRegisterResponse(Application application){
         log.info("AuthService: Generate token for application: {} at: {}", application.getNameApplication(), DateTimeConverter.formatInstantNow());
 
-        var tokenLogLogin = tokenLogService.saveApplicationTokenLog(application, ScopeToken.APPLICATION_TOKEN, LocalDateTime.now());
+        var tokenLogLogin = tokenLogService.saveApplicationTokenLog(application, ScopeToken.APPLICATION_TOKEN, LocalDateTime.now(ZoneId.systemDefault()));
         var token = tokenService.generateApplicationToken(application, tokenLogLogin);
 
         log.info("AuthService: Generate refreshToken for application: {}, at: {}", application.getNameApplication(), DateTimeConverter.formatInstantNow());
-        var refreshTokenLogin = tokenLogService.saveApplicationTokenLog(application, ScopeToken.APPLICATION_REFRESH_TOKEN, LocalDateTime.now());
+        var refreshTokenLogin = tokenLogService.saveApplicationTokenLog(application, ScopeToken.APPLICATION_REFRESH_TOKEN, LocalDateTime.now(ZoneId.systemDefault()));
         var refreshToken = tokenService.generateApplicationRefreshToken(application, refreshTokenLogin);
 
         log.info("AuthService: Setting ApplicationRegisterResponse attributes for application: {}, at: {}", application.getNameApplication(), DateTimeConverter.formatInstantNow());
@@ -283,47 +291,29 @@ public class AuthService {
     }
 
     /**
-     * Validate if the user is already logged in.
-     * <p>
-     * This method performs the following steps:
-     * 1. Logs the start of the validation.
-     * 2. Retrieves all LoggedNow entries for the given user.
-     * 3. If the list is not empty:
-     *    - Deletes all LoggedNow records for that user.
-     *    - Deactivates the user's active token using TypeInvalidation.NEW_LOGIN.
-     * 4. Otherwise, it logs that no active tokens/sessions were found and allows the flow to continue.
-     * <p>
-     * Note: This method does not throw an exception; it forces a new login by cleaning previous
-     * session records and deactivating existing tokens.
-     * <p>
-     * @author HahnGuil
-     * @param user the User object to check for active sessions
+     * Ends the active session of the user on the given application, if any.
+     * Sessions on other applications are not affected.
      */
-    private void validateIfUserIsAlreadyLoggedIn(User user){
-        log.info("AuthService: Find LoggedNow fot user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        List<LoggedNow> logRegistersOfUser = loggedNowService.findByUserId(user.getUserId());
+    private void validateIfUserIsAlreadyLoggedIn(User user, UUID applicationPublicId){
+        log.info("AuthService: Find LoggedNow for user: {} on application: {}, at: {}", user.getUserId(), applicationPublicId, DateTimeConverter.formatInstantNow());
+        List<LoggedNow> logRegistersOfUser = loggedNowService.findByUserIdAndApplication(user.getUserId(), applicationPublicId);
 
         if(!logRegistersOfUser.isEmpty()){
             log.info("AuthService: Find active session for the user: {}, starting do delete e deactivate the token at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-            loggedNowService.deleteByUserId(user.getUserId());
-            tokenLogService.deactivateActiveUserToken(user.getUserId(), TypeInvalidation.NEW_LOGIN);
+            loggedNowService.deleteByUserIdAndApplication(user.getUserId(), applicationPublicId);
+            tokenLogService.deactivateActiveUserToken(user.getUserId(), applicationPublicId, TypeInvalidation.NEW_LOGIN);
         }
 
         log.info("AuthService: Token not foud or is null. User: {}, is not logged, finish validation at {}: ",user.getUserId(), DateTimeConverter.formatInstantNow());
     }
 
+    private UUID getApplicationPublicIdFromToken(Jwt jwt){
+        var applicationPublicId = jwt.getClaimAsString("application_public_id");
+        return applicationPublicId == null ? null : UUID.fromString(applicationPublicId);
+    }
 
-    /**
-     * Validates if the user is blocked.
-     * This method checks if the user's `blockUser` attribute is set to `true`.
-     * If the user is blocked, a `UserBlockException` is thrown.
-     *
-     * @author HahnGuil
-     * @param user the User object to be validated
-     * @throws UserBlockException if the user is blocked
-     */
-    private void validateBlockUser(User user){
-        if(Boolean.TRUE.equals(user.getBlockUser())){
+    private void validateBlockUser(PasswordParameters passwordParameters){
+        if(Boolean.TRUE.equals(passwordParameters.getBlockUser())){
             log.error("AuthService: User block, throw exception");
             throw new UserBlockException(ErrorsResponses.USER_BLOCK.getMessage());
         }
@@ -355,7 +345,7 @@ public class AuthService {
      * @throws DirectLoginNotAllowedException if the user is an OAuth user attempting direct login
      */
     private void validatingYourUserIsOauth(User user){
-        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+        if (TypeUser.OAUTH_USER.equals(user.getTypeUser())) {
             log.error("AuthService: User: {} try login with OAuth, throw exception at {}", user.getUserId(), DateTimeConverter.formatInstantNow());
             throw new DirectLoginNotAllowedException(ErrorsResponses.USER_OAUTH_CAN_NOT_LOGIN_DIRECT.getMessage());
         }

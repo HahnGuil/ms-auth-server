@@ -1,5 +1,6 @@
 package br.com.hahn.auth.domain.model;
 
+import java.time.ZoneId;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -19,8 +20,8 @@ class LoggedNowTest {
         UUID userId = UUID.randomUUID();
         UUID applicationPublicId = UUID.randomUUID();
         UUID tokenLogId = UUID.randomUUID();
-        LocalDateTime dateLogin = LocalDateTime.now();
-        LocalDateTime dateRefresh = LocalDateTime.now();
+        LocalDateTime dateLogin = LocalDateTime.now(ZoneId.systemDefault());
+        LocalDateTime dateRefresh = LocalDateTime.now(ZoneId.systemDefault());
         boolean isUseRefresh = true;
 
         LoggedNow loggedNow = new LoggedNow(id, userId, applicationPublicId, tokenLogId, dateLogin, isUseRefresh, dateRefresh);
@@ -37,7 +38,7 @@ class LoggedNowTest {
     @Test
     void shouldAllowUpdatingDateLogin() {
         LoggedNow loggedNow = new LoggedNow();
-        LocalDateTime newDateLogin = LocalDateTime.now();
+        LocalDateTime newDateLogin = LocalDateTime.now(ZoneId.systemDefault());
 
         loggedNow.setDateLogin(newDateLogin);
 

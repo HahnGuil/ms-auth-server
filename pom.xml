@@ -104,6 +104,7 @@
         </dependency>
     </dependencies>
     <build>
+        <testSourceDirectory>src/main/test/java</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -174,6 +175,53 @@
                                 <source>${project.build.directory}/generated-sources/openapi/src/main/java</source>
                             </sources>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.13</version>
+                <configuration>
+                    <excludes>
+                        <exclude>br/com/hahn/auth/ApiUtil*</exclude>
+                        <exclude>br/com/hahn/auth/ApplicationApi*</exclude>
+                        <exclude>br/com/hahn/auth/DefaultApi*</exclude>
+                        <exclude>br/com/hahn/auth/LoginApi*</exclude>
+                        <exclude>br/com/hahn/auth/PasswordApi*</exclude>
+                        <exclude>br/com/hahn/auth/TokenApi*</exclude>
+                        <exclude>br/com/hahn/auth/UsersApi*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/ApplicationCreateRequest*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/ApplicationRegisterResponse*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/ApplicationResponse*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/ChangePasswordRequest*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/ErrorResponse*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/LogOfRequest*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/LoginRequest*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/LoginResponse*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/NewPasswordRequest*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/PasswordRecoverCodeRequest*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/SuccessResponse*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/UpdateUsernameRequest*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/UserProfileResponse*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/UserRequest*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/UserResponse*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/ValidateCodeRequest*</exclude>
+                        <exclude>br/com/hahn/auth/domain/model/ValidateCodeResponse*</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

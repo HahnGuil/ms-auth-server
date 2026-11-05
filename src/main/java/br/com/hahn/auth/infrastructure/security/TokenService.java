@@ -1,5 +1,6 @@
 package br.com.hahn.auth.infrastructure.security;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.application.execption.InvalidCredentialsException;
 import br.com.hahn.auth.application.execption.InvalidRefreshTokenException;
 import br.com.hahn.auth.application.service.TokenLogService;
@@ -20,6 +21,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -56,13 +58,14 @@ public class TokenService {
      * @return a signed JWT string representing the recovery token
      * @throws IllegalStateException if there is an error creating the JWT or if signing material is unavailable
      */
-    public String generateRecoverToken(ResetPassword resetPassword, TokenLog tokenLog){
+    public String generateRecoverToken(ResetPassword resetPassword, TokenLog tokenLog, UUID applicationPublicId){
         log.info("TokenService: Generate RecoverToken for user: {}, at: {}", tokenLog.getUserId(), DateTimeConverter.formatInstantNow());
         try {
             Algorithm algorithm = createAlgorithm();
             return JWT.create()
                     .withIssuer(ISSUER)
                     .withSubject(resetPassword.getUserEmail())
+                    .withClaim("application_public_id", applicationPublicId.toString())
                     .withClaim("scope", tokenLog.getScopeToken().getValue())
                     .withClaim("user_id", tokenLog.getUserId().toString())
                     .withClaim("token_log_id", tokenLog.getIdTokenLog().toString())
@@ -94,6 +97,21 @@ public class TokenService {
      * @throws IllegalStateException if there is an error creating the JWT or if signing material is unavailable
      */
     public String generateUserToken(User user, TokenLog tokenLog) {
+        return generateUserToken(user, tokenLog, Optional.ofNullable(user.getApplications())
+                .orElse(Set.of()).stream()
+                .map(Application::getNameApplication)
+                .toList(), null);
+    }
+
+    /**
+     * Generates a user token restricted to a single application. The token only exposes the
+     * application it was issued for, never the other applications the user is registered in.
+     */
+    public String generateUserToken(User user, TokenLog tokenLog, Application application) {
+        return generateUserToken(user, tokenLog, List.of(application.getNameApplication()), application.getPublicId());
+    }
+
+    private String generateUserToken(User user, TokenLog tokenLog, List<String> applicationNames, UUID applicationPublicId) {
         log.info("TokenService: Generate token for user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         try {
             Algorithm algorithm = createAlgorithm();
@@ -106,10 +124,8 @@ public class TokenService {
                     .withClaim("scope", tokenLog.getScopeToken().getValue())
                     .withClaim("type_user", user.getTypeUser().toString())
                     .withClaim("application_role", user.getUserApplicationRole().toString())
-                    .withClaim("applications", Optional.ofNullable(user.getApplications())
-                            .orElse(Set.of()).stream()
-                            .map(Application::getNameApplication)
-                            .toList())
+                    .withClaim("applications", applicationNames)
+                    .withClaim("application_public_id", applicationPublicId == null ? null : applicationPublicId.toString())
                     .withExpiresAt(tokenLog.getCreateDate().plusMinutes(TOKEN_EXPIRATION_TIME_MINUTES).toInstant(ZONE_OFFSET))
                     .sign(algorithm);
         } catch (JWTCreationException e) {
@@ -174,6 +190,10 @@ public class TokenService {
      * @throws IllegalStateException if there is an error creating the JWT or if signing material is unavailable
      */
     public String generateRefreshToken(User user, TokenLog tokenLog) {
+        return generateRefreshToken(user, tokenLog, null);
+    }
+
+    public String generateRefreshToken(User user, TokenLog tokenLog, Application application) {
         log.info("TokenService: Generate refresh token for user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         try {
             Algorithm algorithm = createAlgorithm();
@@ -182,6 +202,7 @@ public class TokenService {
                     .withSubject(user.getEmail())
                     .withClaim("user_id", user.getUserId().toString())
                     .withClaim("scope", ScopeToken.REFRESH_TOKEN.getValue())
+                    .withClaim("application_public_id", application == null ? null : application.getPublicId().toString())
                     .withClaim("token_log_id", tokenLog.getIdTokenLog().toString())
                     .withExpiresAt(tokenLog.getCreateDate().plusMinutes(REFRESH_TOKEN_EXPIRATION_TIME_MINUTES).toInstant(ZONE_OFFSET))
                     .sign(algorithm);
@@ -294,7 +315,7 @@ public class TokenService {
         log.info("TokenService: Call TokenLogService to find tokenLog expirationTime at: {}", DateTimeConverter.formatInstantNow());
         var tokenLog = tokenLogService.findById(UUID.fromString(tokenLogId));
         var expirationTime = tokenLog.getCreateDate().plusMinutes(TOKEN_EXPIRATION_TIME_MINUTES);
-        return expirationTime.isAfter(LocalDateTime.now());
+        return expirationTime.isAfter(LocalDateTime.now(ZoneId.systemDefault()));
     }
 
     /**

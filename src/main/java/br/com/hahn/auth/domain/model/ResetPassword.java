@@ -49,6 +49,9 @@ public class ResetPassword {
      * The date and time when the recovery code expires.
      * Stored in the "expiration_date" column.
      */
+    @Column(name = "application_id")
+    private Long applicationId;
+
     @Column(name = "expiration_date")
     private LocalDateTime expirationDate;
 }

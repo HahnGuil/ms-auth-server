@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
 
     Optional<Application> findApplicationByPublicId(UUID publicId);
+
+    boolean existsByNameApplicationIgnoreCaseOrApplicationDomainIgnoreCaseOrApplicationEmailIgnoreCase(String name, String domain, String email);
 }

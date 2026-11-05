@@ -10,9 +10,9 @@ import java.util.Optional;
 @Repository
 public interface ResetPasswordRepository extends JpaRepository<ResetPassword, Long> {
 
-    Optional<ResetPassword> findByUserEmail(String userEmail);
+    Optional<ResetPassword> findByUserEmailAndApplicationId(String userEmail, Long applicationId);
 
-    boolean existsByUserEmail(String email);
+    boolean existsByUserEmailAndApplicationId(String email, Long applicationId);
 
     int deleteByExpirationDateBefore(LocalDateTime dateTime);
 

@@ -1,5 +1,6 @@
 package br.com.hahn.auth.application.service;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.domain.model.LoggedNow;
 import br.com.hahn.auth.domain.respository.LoggedNowRepository;
 import org.junit.jupiter.api.Test;
@@ -10,110 +11,63 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-
 @ExtendWith(MockitoExtension.class)
 class LoggedNowServiceTest {
-
-    @Mock
-    private LoggedNowRepository loggedNowRepository;
-
-    @InjectMocks
-    private LoggedNowService loggedNowService;
+    @Mock LoggedNowRepository repository;
+    @InjectMocks LoggedNowService service;
 
     @Test
-    void shouldReturnLoggedNowListWhenUserIdExists() {
-        UUID userId = UUID.randomUUID();
-        LoggedNow loggedNow = new LoggedNow();
-        loggedNow.setUserId(userId);
-
-        when(loggedNowRepository.findByUserId(userId)).thenReturn(List.of(loggedNow));
-
-        List<LoggedNow> result = loggedNowService.findByUserId(userId);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(userId, result.getFirst().getUserId());
-        verify(loggedNowRepository, times(1)).findByUserId(userId);
+    void findsSessionsOnlyForRequestedApplication() {
+        UUID userId = UUID.randomUUID(), appId = UUID.randomUUID();
+        var session = new LoggedNow();
+        when(repository.findByUserIdAndApplicationPublicId(userId, appId)).thenReturn(List.of(session));
+        assertEquals(List.of(session), service.findByUserIdAndApplication(userId, appId));
+        verify(repository).findByUserIdAndApplicationPublicId(userId, appId);
+        verify(repository, never()).findByUserIdAndApplicationPublicIdIsNull(any());
     }
 
     @Test
-    void shouldReturnEmptyListWhenUserHasNoLoggedSessions() {
+    void findsLegacySessionsWithoutApplication() {
         UUID userId = UUID.randomUUID();
-
-        when(loggedNowRepository.findByUserId(userId)).thenReturn(Collections.emptyList());
-
-        List<LoggedNow> result = loggedNowService.findByUserId(userId);
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(loggedNowRepository, times(1)).findByUserId(userId);
+        when(repository.findByUserIdAndApplicationPublicIdIsNull(userId)).thenReturn(List.of());
+        assertTrue(service.findByUserIdAndApplication(userId, null).isEmpty());
+        verify(repository).findByUserIdAndApplicationPublicIdIsNull(userId);
     }
 
     @Test
-    void shouldSaveLoggedNowSuccessfully() {
-        UUID userId = UUID.randomUUID();
-        UUID tokenLogId = UUID.randomUUID();
-        LocalDateTime dateLogin = LocalDateTime.now();
-
-        loggedNowService.save(userId, tokenLogId, dateLogin);
-
+    void savesSessionWithUserApplicationAndToken() {
+        UUID userId = UUID.randomUUID(), appId = UUID.randomUUID(), tokenId = UUID.randomUUID();
+        LocalDateTime loginTime = LocalDateTime.now(ZoneId.systemDefault());
+        service.save(userId, appId, tokenId, loginTime);
         ArgumentCaptor<LoggedNow> captor = ArgumentCaptor.forClass(LoggedNow.class);
-        verify(loggedNowRepository, times(1)).save(captor.capture());
-
-        LoggedNow savedLoggedNow = captor.getValue();
-        assertEquals(userId, savedLoggedNow.getUserId());
-        assertEquals(tokenLogId, savedLoggedNow.getTokenLogId());
-        assertEquals(dateLogin, savedLoggedNow.getDateLogin());
-        assertFalse(savedLoggedNow.isUseRefresh());
-        assertNull(savedLoggedNow.getDateRefresh());
+        verify(repository).save(captor.capture());
+        var saved = captor.getValue();
+        assertEquals(userId, saved.getUserId());
+        assertEquals(appId, saved.getApplicationPublicId());
+        assertEquals(tokenId, saved.getTokenLogId());
+        assertEquals(loginTime, saved.getDateLogin());
+        assertFalse(saved.isUseRefresh());
+        assertNull(saved.getDateRefresh());
     }
 
     @Test
-    void shouldDeleteLoggedNowByUserId() {
-        UUID userId = UUID.randomUUID();
-
-        loggedNowService.deleteByUserId(userId);
-
-        verify(loggedNowRepository, times(1)).deleteByUserId(userId);
+    void deletesSessionsOnlyWithinApplication() {
+        UUID userId = UUID.randomUUID(), appId = UUID.randomUUID();
+        service.deleteByUserIdAndApplication(userId, appId);
+        verify(repository).deleteByUserIdAndApplicationPublicId(userId, appId);
+        verify(repository, never()).deleteByUserIdWithoutApplication(any());
     }
 
     @Test
-    void shouldReturnMultipleLoggedSessionsForUser() {
+    void deletesLegacySessionsWhenApplicationIsNull() {
         UUID userId = UUID.randomUUID();
-        LoggedNow loggedNow1 = new LoggedNow();
-        loggedNow1.setUserId(userId);
-        LoggedNow loggedNow2 = new LoggedNow();
-        loggedNow2.setUserId(userId);
-
-        when(loggedNowRepository.findByUserId(userId)).thenReturn(List.of(loggedNow1, loggedNow2));
-
-        List<LoggedNow> result = loggedNowService.findByUserId(userId);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(loggedNowRepository, times(1)).findByUserId(userId);
-    }
-
-    @Test
-    void shouldSaveLoggedNowWithCorrectDefaultValues() {
-        UUID userId = UUID.randomUUID();
-        UUID tokenLogId = UUID.randomUUID();
-        LocalDateTime dateLogin = LocalDateTime.of(2023, 12, 14, 10, 30);
-
-        loggedNowService.save(userId, tokenLogId, dateLogin);
-
-        ArgumentCaptor<LoggedNow> captor = ArgumentCaptor.forClass(LoggedNow.class);
-        verify(loggedNowRepository, times(1)).save(captor.capture());
-
-        LoggedNow savedLoggedNow = captor.getValue();
-        assertFalse(savedLoggedNow.isUseRefresh());
-        assertNull(savedLoggedNow.getDateRefresh());
+        service.deleteByUserIdAndApplication(userId, null);
+        verify(repository).deleteByUserIdWithoutApplication(userId);
     }
 }

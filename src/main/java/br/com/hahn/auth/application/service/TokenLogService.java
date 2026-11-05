@@ -1,5 +1,6 @@
 package br.com.hahn.auth.application.service;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.application.execption.InvalidTokenException;
 import br.com.hahn.auth.domain.enums.ErrorsResponses;
 import br.com.hahn.auth.domain.enums.ScopeToken;
@@ -41,14 +42,19 @@ public class TokenLogService {
      * @param typeInvalidation The type of invalidation to be applied to the token.
      */
     @Transactional
-    public void deactivateActiveUserToken(UUID userId, TypeInvalidation typeInvalidation){
-        log.info("TokenLogService: Detective token for user: {} at {}", userId, DateTimeConverter.formatInstantNow());
-        loginLogRepository.deactivateActiveTokenByUserId(userId);
-
-        var tokenLog = findLoginLogByUserId(userId);
+    public void deactivateActiveUserToken(UUID userId, UUID applicationPublicId, TypeInvalidation typeInvalidation){
+        log.info("TokenLogService: Detective token for user: {} on application: {} at {}", userId, applicationPublicId, DateTimeConverter.formatInstantNow());
+        TokenLog tokenLog;
+        if(applicationPublicId == null){
+            loginLogRepository.deactivateActiveTokenByUserIdWithoutApplication(userId);
+            tokenLog = loginLogRepository.findTopByUserIdAndApplicationIdIsNullOrderByCreateDateDesc(userId);
+        } else {
+            loginLogRepository.deactivateActiveTokenByUserIdAndApplicationPublicId(userId, applicationPublicId);
+            tokenLog = loginLogRepository.findTopByUserIdAndApplicationPublicIdOrderByCreateDateDesc(userId, applicationPublicId);
+        }
 
         log.info("LoginLogServe: Call Invalidate old token method for {}", tokenLog.getIdTokenLog());
-        invalidateUserToken(tokenLog, typeInvalidation);
+        invalidateUserToken(tokenLog, applicationPublicId, typeInvalidation);
     }
 
     @Transactional
@@ -77,12 +83,12 @@ public class TokenLogService {
      * @return The saved TokenLog entity.
      */
     @Transactional
-    public TokenLog saveTokenLog(User user, ScopeToken scopeToken, LocalDateTime createDate) {
+    public TokenLog saveTokenLog(User user, Application application, ScopeToken scopeToken, LocalDateTime createDate) {
         log.info("TokenLogService: Save Token on data base, for user: {}, Scope Token is: {}, at: {}", user.getUserId(), scopeToken, DateTimeConverter.formatInstantNow());
-        var loginLog = loginLogRepository.save(convertToEntity(user, scopeToken, createDate));
+        var loginLog = loginLogRepository.save(convertToEntity(user, application, scopeToken, createDate));
         if(!scopeToken.equals(ScopeToken.RECOVER_CODE)){
             log.info("TokenLogService: Scope token, is different of RECOVER: {}. Save token for user: {} on LoggedNow at: {}", scopeToken, user.getUserId(), DateTimeConverter.formatInstantNow());
-            loggedNowService.save(user.getUserId(), loginLog.getIdTokenLog(), createDate);
+            loggedNowService.save(user.getUserId(), application == null ? null : application.getPublicId(), loginLog.getIdTokenLog(), createDate);
         }
         return loginLog;
     }
@@ -207,9 +213,9 @@ public class TokenLogService {
      * @param tokenLog        The TokenLog entity containing details of the token to be invalidated.
      * @param typeInvalidation The type of invalidation to be applied to the token.
      */
-    private void invalidateUserToken(TokenLog tokenLog, TypeInvalidation typeInvalidation){
+    private void invalidateUserToken(TokenLog tokenLog, UUID applicationPublicId, TypeInvalidation typeInvalidation){
         log.info("LoginLogService: invalidate token for User {}, with LoginLog: {}, at {}", tokenLog.getUserId(), tokenLog.getIdTokenLog(), DateTimeConverter.formatInstantNow());
-        var invalidateToken = convertToInvalidatedTokenEntity(tokenLog.getUserId(), null, tokenLog.getIdTokenLog(), typeInvalidation);
+        var invalidateToken = convertToInvalidatedTokenEntity(tokenLog.getUserId(), applicationPublicId, tokenLog.getIdTokenLog(), typeInvalidation);
         invalidatedTokenService.save(invalidateToken);
     }
 
@@ -229,17 +235,13 @@ public class TokenLogService {
      * @param userId The UUID of the user whose most recent login log is to be retrieved.
      * @return The most recent TokenLog entity for the user.
      */
-    private TokenLog findLoginLogByUserId(UUID userId){
-        return loginLogRepository.findTopByUserIdOrderByCreateDateDesc(userId);
-    }
-
     private TokenLog findLoginLogByApplicationPublicId(UUID applicationPublicId){
-        return loginLogRepository.findTopByApplicationPublicIdOrderByCreateDateDesc(applicationPublicId);
+        return loginLogRepository.findTopByApplicationPublicIdAndUserIdIsNullOrderByCreateDateDesc(applicationPublicId);
     }
 
 
-    private TokenLog convertToEntity(User user, ScopeToken scopeToken, LocalDateTime createDate) {
-        return convertToEntity(user.getUserId(), null, scopeToken, createDate);
+    private TokenLog convertToEntity(User user, Application application, ScopeToken scopeToken, LocalDateTime createDate) {
+        return convertToEntity(user.getUserId(), application == null ? null : application.getId(), scopeToken, createDate);
     }
 
     private TokenLog convertToEntity(Application application, ScopeToken scopeToken, LocalDateTime createDate) {
@@ -277,7 +279,7 @@ public class TokenLogService {
         invalidatedToken.setUserId(userId);
         invalidatedToken.setApplicationPublicId(applicationPublicId);
         invalidatedToken.setLoginLogId(loginLogId);
-        invalidatedToken.setDateInvalidate(LocalDateTime.now());
+        invalidatedToken.setDateInvalidate(LocalDateTime.now(ZoneId.systemDefault()));
         invalidatedToken.setTypeInvalidation(typeInvalidation);
         return invalidatedToken;
     }

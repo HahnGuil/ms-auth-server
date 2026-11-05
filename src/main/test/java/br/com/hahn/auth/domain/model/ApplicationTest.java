@@ -14,7 +14,10 @@ class ApplicationTest {
      */
     @Test
     void shouldCreateApplicationWithAllFields() {
-        Application application = new Application(1L, "TestApp", Set.of());
+        Application application = new Application();
+        application.setId(1L);
+        application.setNameApplication("TestApp");
+        application.setUsers(Set.of());
 
         assertEquals(1L, application.getId());
         assertEquals("TestApp", application.getNameApplication());

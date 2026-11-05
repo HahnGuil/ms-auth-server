@@ -49,7 +49,7 @@ public class PasswordController extends AbstractController implements PasswordAp
         validatePasswordFormat(changePasswordRequest.getOldPassword());
 
         log.info("PasswordController: validate if the token is valid for user: {}, at: {}", changePasswordRequest.getEmail(), DateTimeConverter.formatInstantNow());
-        passwordService.validateTokenForChangePassword(extractJwtFromContext());
+        passwordService.validateTokenForChangePassword(extractJwtFromContext(), changePasswordRequest.getApplicationPublicId());
 
         passwordService.changePassword(changePasswordRequest);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
@@ -71,14 +71,14 @@ public class PasswordController extends AbstractController implements PasswordAp
      * @return a {@link ResponseEntity} containing a {@link SuccessResponse} and HTTP status of 200 (OK)
      */
     @Override
-    public ResponseEntity<SuccessResponse> postPasswordResetRequest(PasswordResetRequest passwordResetRequest) {
+    public ResponseEntity<SuccessResponse> postPasswordRecoverCodeRequest(PasswordRecoverCodeRequest passwordResetRequest) {
         log.info("PasswordController: Starting generate validate code flow for user email: {}, at: {}", passwordResetRequest.getEmail(), DateTimeConverter.formatInstantNow());
 
         log.info("PasswordController: Validate format email of reset request at: {}", DateTimeConverter.formatInstantNow());
         validateEmailFormat(passwordResetRequest.getEmail());
 
         log.info("PasswordController: Validate cod send to user email: {}, at: {}", passwordResetRequest.getEmail(), DateTimeConverter.formatInstantNow());
-        var response = passwordService.requestValidateCode(passwordResetRequest);
+        var response = passwordService.passwordRecoveryCodeRequest(passwordResetRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
@@ -97,7 +97,7 @@ public class PasswordController extends AbstractController implements PasswordAp
      * @return a {@link ResponseEntity} containing a {@link ValidateCodeResponse} and HTTP status of 201 (Created)
      */
     @Override
-    public ResponseEntity<ValidateCodeResponse> postRequestValidateCode(ValidateCodeRequest validateCodeRequest) {
+    public ResponseEntity<ValidateCodeResponse> postValidateRecoveryCode(ValidateCodeRequest validateCodeRequest) {
         log.info("PasswordController: Starting generate validate for recovery code to user: {}, at: {}", validateCodeRequest.getEmail(), DateTimeConverter.formatInstantNow());
 
         var response = passwordService.validateResetCode(validateCodeRequest);

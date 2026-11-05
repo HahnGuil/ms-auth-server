@@ -12,11 +12,17 @@ import java.util.UUID;
 @Repository
 public interface LoggedNowRepository extends JpaRepository<LoggedNow, UUID> {
 
-    List<LoggedNow> findByUserId(UUID userId);
+    List<LoggedNow> findByUserIdAndApplicationPublicId(UUID userId, UUID applicationPublicId);
+
+    List<LoggedNow> findByUserIdAndApplicationPublicIdIsNull(UUID userId);
 
     @Modifying
-    @Query("DELETE FROM LoggedNow ln WHERE ln.userId = :userId")
-    void deleteByUserId(UUID userId);
+    @Query("DELETE FROM LoggedNow ln WHERE ln.userId = :userId AND ln.applicationPublicId = :applicationPublicId")
+    void deleteByUserIdAndApplicationPublicId(UUID userId, UUID applicationPublicId);
+
+    @Modifying
+    @Query("DELETE FROM LoggedNow ln WHERE ln.userId = :userId AND ln.applicationPublicId IS NULL")
+    void deleteByUserIdWithoutApplication(UUID userId);
 
 
 }

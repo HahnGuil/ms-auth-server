@@ -49,7 +49,7 @@ class ScopeTokenTest {
     void shouldReturnAllEnumValues() {
         ScopeToken[] allScopeTokens = ScopeToken.values();
 
-        assertEquals(4, allScopeTokens.length);
+        assertEquals(6, allScopeTokens.length);
         assertNotNull(allScopeTokens);
     }
 
@@ -61,6 +61,8 @@ class ScopeTokenTest {
         assertEquals(2, ScopeToken.REGISTER_TOKEN.getCode());
         assertEquals(3, ScopeToken.RECOVER_CODE.getCode());
         assertEquals(4, ScopeToken.REFRESH_TOKEN.getCode());
+        assertEquals(5, ScopeToken.APPLICATION_TOKEN.getCode());
+        assertEquals(6, ScopeToken.APPLICATION_REFRESH_TOKEN.getCode());
 
         // Verify all codes are unique
         long uniqueCodesCount = java.util.Arrays.stream(allScopeTokens)
@@ -68,7 +70,7 @@ class ScopeTokenTest {
                 .distinct()
                 .count();
 
-        assertEquals(4, uniqueCodesCount);
+        assertEquals(6, uniqueCodesCount);
     }
 
     @Test
@@ -81,7 +83,7 @@ class ScopeTokenTest {
                 .distinct()
                 .count();
 
-        assertEquals(4, uniqueValuesCount);
+        assertEquals(6, uniqueValuesCount);
     }
 
     @Test
@@ -95,6 +97,8 @@ class ScopeTokenTest {
         assertEquals("register_token", ScopeToken.REGISTER_TOKEN.getValue());
         assertEquals("recoverCode", ScopeToken.RECOVER_CODE.getValue());
         assertEquals("refresh_token", ScopeToken.REFRESH_TOKEN.getValue());
+        assertEquals("application_token", ScopeToken.APPLICATION_TOKEN.getValue());
+        assertEquals("application_refresh_token", ScopeToken.APPLICATION_REFRESH_TOKEN.getValue());
     }
 }
 

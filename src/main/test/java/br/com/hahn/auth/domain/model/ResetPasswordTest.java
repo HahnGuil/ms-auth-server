@@ -1,5 +1,6 @@
 package br.com.hahn.auth.domain.model;
 
+import java.time.ZoneId;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -13,9 +14,13 @@ class ResetPasswordTest {
         Long id = 1L;
         String recoverCode = "ABC123";
         String userEmail = "user@example.com";
-        LocalDateTime expirationDate = LocalDateTime.now().plusHours(1);
+        LocalDateTime expirationDate = LocalDateTime.now(ZoneId.systemDefault()).plusHours(1);
 
-        ResetPassword resetPassword = new ResetPassword(id, recoverCode, userEmail, expirationDate);
+        ResetPassword resetPassword = new ResetPassword();
+        resetPassword.setId(id);
+        resetPassword.setRecoverCode(recoverCode);
+        resetPassword.setUserEmail(userEmail);
+        resetPassword.setExpirationDate(expirationDate);
 
         assertEquals(id, resetPassword.getId());
         assertEquals(recoverCode, resetPassword.getRecoverCode());
@@ -43,7 +48,7 @@ class ResetPasswordTest {
 
     @Test
     void shouldHandleNullValuesForOptionalFields() {
-        ResetPassword resetPassword = new ResetPassword(null, null, null, null);
+        ResetPassword resetPassword = new ResetPassword();
 
         assertNull(resetPassword.getId());
         assertNull(resetPassword.getRecoverCode());
@@ -53,10 +58,10 @@ class ResetPasswordTest {
 
     @Test
     void shouldVerifyExpirationDateIsInFuture() {
-        LocalDateTime futureDate = LocalDateTime.now().plusDays(1);
+        LocalDateTime futureDate = LocalDateTime.now(ZoneId.systemDefault()).plusDays(1);
         ResetPassword resetPassword = new ResetPassword();
         resetPassword.setExpirationDate(futureDate);
 
-        assertTrue(resetPassword.getExpirationDate().isAfter(LocalDateTime.now()));
+        assertTrue(resetPassword.getExpirationDate().isAfter(LocalDateTime.now(ZoneId.systemDefault())));
     }
 }

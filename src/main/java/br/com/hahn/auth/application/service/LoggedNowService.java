@@ -20,57 +20,37 @@ public class LoggedNowService {
     private final LoggedNowRepository loggedNowRepository;
 
     /**
-     * Retrieves a list of LoggedNow entities associated with the given user ID.
-     *
-     * @author HahnGuil
-     * @param userId the unique identifier of the user whose LoggedNow records are to be retrieved
-     * @return a list of LoggedNow entities associated with the specified user ID
+     * Finds the active sessions of a user in one application (null for sessions without application).
      */
-    public List<LoggedNow> findByUserId(UUID userId){
-        log.info("LoggedNowServe: Find LoggedNow for user: {} at: {}", userId, DateTimeConverter.formatInstantNow());
-        return loggedNowRepository.findByUserId(userId);
+    public List<LoggedNow> findByUserIdAndApplication(UUID userId, UUID applicationPublicId){
+        log.info("LoggedNowServe: Find LoggedNow for user: {} and application: {} at: {}", userId, applicationPublicId, DateTimeConverter.formatInstantNow());
+        return applicationPublicId == null
+                ? loggedNowRepository.findByUserIdAndApplicationPublicIdIsNull(userId)
+                : loggedNowRepository.findByUserIdAndApplicationPublicId(userId, applicationPublicId);
     }
 
-    /**
-     * Persists a new LoggedNow entity in the database for the specified user.
-     *
-     * @author HahnGuil
-     * @param userId the unique identifier of the user for whom the LoggedNow record is being saved
-     * @param tokenLogId the unique identifier of the token log associated with the login event
-     * @param dateLogin the date and time of the login event
-     */
     @Transactional
-    public void save(UUID userId, UUID tokenLogId, LocalDateTime dateLogin){
-        log.info("LoggedNowService: Save LoggedNow to user: {}, with token id: {}, at: {}", userId, tokenLogId, DateTimeConverter.formatInstantNow());
-        var loggedNow = convertToEntity(userId, tokenLogId, dateLogin);
+    public void save(UUID userId, UUID applicationPublicId, UUID tokenLogId, LocalDateTime dateLogin){
+        log.info("LoggedNowService: Save LoggedNow to user: {}, application: {}, with token id: {}, at: {}", userId, applicationPublicId, tokenLogId, DateTimeConverter.formatInstantNow());
+        var loggedNow = convertToEntity(userId, applicationPublicId, tokenLogId, dateLogin);
         loggedNowRepository.save(loggedNow);
     }
 
-    /**
-     * Deletes all LoggedNow entities associated with the specified user ID.
-     *
-     * @author HahnGuil
-     * @param userId the unique identifier of the user whose LoggedNow records are to be deleted
-     */
     @Transactional
-    public void deleteByUserId(UUID userId){
-        log.info("LoggedNowService: Delete LoggedNow for user: {}, at: {}", userId, DateTimeConverter.formatInstantNow());
-        loggedNowRepository.deleteByUserId(userId);
+    public void deleteByUserIdAndApplication(UUID userId, UUID applicationPublicId){
+        log.info("LoggedNowService: Delete LoggedNow for user: {} and application: {}, at: {}", userId, applicationPublicId, DateTimeConverter.formatInstantNow());
+        if(applicationPublicId == null){
+            loggedNowRepository.deleteByUserIdWithoutApplication(userId);
+        } else {
+            loggedNowRepository.deleteByUserIdAndApplicationPublicId(userId, applicationPublicId);
+        }
     }
 
-    /**
-     * Converts the provided user ID, token log ID, and login date into a LoggedNow entity.
-     *
-     * @author HahnGuil
-     * @param userId the unique identifier of the user
-     * @param tokenLogId the unique identifier of the token log associated with the login event
-     * @param dateLogin the date and time of the login event
-     * @return a LoggedNow entity populated with the provided data
-     */
-    private LoggedNow convertToEntity(UUID userId, UUID tokenLogId, LocalDateTime dateLogin){
+    private LoggedNow convertToEntity(UUID userId, UUID applicationPublicId, UUID tokenLogId, LocalDateTime dateLogin){
         log.info("LoggedNowService: Convert to LoggedNow Entity, for user: {}, with token id: {} at: {}", userId, tokenLogId, DateTimeConverter.formatInstantNow());
         LoggedNow loggedNow = new LoggedNow();
         loggedNow.setUserId(userId);
+        loggedNow.setApplicationPublicId(applicationPublicId);
         loggedNow.setTokenLogId(tokenLogId);
         loggedNow.setDateLogin(dateLogin);
         loggedNow.setUseRefresh(false);

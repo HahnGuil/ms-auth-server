@@ -65,7 +65,7 @@ class TypeInvalidationTest {
     void shouldReturnAllEnumValues() {
         TypeInvalidation[] allTypeInvalidations = TypeInvalidation.values();
 
-        assertEquals(6, allTypeInvalidations.length);
+        assertEquals(7, allTypeInvalidations.length);
         assertNotNull(allTypeInvalidations);
     }
 
@@ -83,7 +83,7 @@ class TypeInvalidationTest {
                 .distinct()
                 .count();
 
-        assertEquals(6, uniqueValuesCount);
+        assertEquals(7, uniqueValuesCount);
     }
 
     @Test
@@ -96,6 +96,7 @@ class TypeInvalidationTest {
         assertEquals(TypeInvalidation.NEW_LOGIN, allTypeInvalidations[3]);
         assertEquals(TypeInvalidation.CHANGE_PASSWORD, allTypeInvalidations[4]);
         assertEquals(TypeInvalidation.RESET_PASSWORD, allTypeInvalidations[5]);
+        assertEquals(TypeInvalidation.APPLICATION_REFRESH, allTypeInvalidations[6]);
     }
 
     @Test
@@ -116,6 +117,7 @@ class TypeInvalidationTest {
         assertEquals(3, TypeInvalidation.NEW_LOGIN.ordinal());
         assertEquals(4, TypeInvalidation.CHANGE_PASSWORD.ordinal());
         assertEquals(5, TypeInvalidation.RESET_PASSWORD.ordinal());
+        assertEquals(6, TypeInvalidation.APPLICATION_REFRESH.ordinal());
     }
 }
 

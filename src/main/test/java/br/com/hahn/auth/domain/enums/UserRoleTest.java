@@ -33,7 +33,7 @@ class UserRoleTest {
     void shouldReturnAllEnumValues() {
         UserRole[] allUserRoles = UserRole.values();
 
-        assertEquals(2, allUserRoles.length);
+        assertEquals(3, allUserRoles.length);
         assertNotNull(allUserRoles);
     }
 
@@ -51,7 +51,7 @@ class UserRoleTest {
                 .distinct()
                 .count();
 
-        assertEquals(2, uniqueValuesCount);
+        assertEquals(3, uniqueValuesCount);
     }
 
     @Test
@@ -60,6 +60,7 @@ class UserRoleTest {
 
         assertEquals(UserRole.USER_ADMIN, allUserRoles[0]);
         assertEquals(UserRole.USER_NORMAL, allUserRoles[1]);
+        assertEquals(UserRole.SUPER_USER, allUserRoles[2]);
     }
 
     @Test
@@ -76,6 +77,7 @@ class UserRoleTest {
     void shouldTestEnumOrdinal() {
         assertEquals(0, UserRole.USER_ADMIN.ordinal());
         assertEquals(1, UserRole.USER_NORMAL.ordinal());
+        assertEquals(2, UserRole.SUPER_USER.ordinal());
     }
 
     @Test

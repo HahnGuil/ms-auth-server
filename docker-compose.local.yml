@@ -3,9 +3,9 @@ services:
     image: postgres:16
     container_name: postgres-auth-local
     environment:
-      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
-      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      POSTGRES_DB: authdb-local
+      POSTGRES_USER: ${SPRING_DATASOURCE_LOCAL_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_LOCAL_PASSWORD}
+      POSTGRES_DB: authdb-service-local
     ports:
       - "5050:5432"
     volumes:
@@ -13,7 +13,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_USERNAME} -d authdb-local"]
+      test: ["CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_LOCAL_USERNAME} -d authdb-service-local"]
       interval: 10s
       timeout: 5s
 

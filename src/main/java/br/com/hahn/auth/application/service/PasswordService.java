@@ -1,5 +1,6 @@
 package br.com.hahn.auth.application.service;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.application.execption.*;
 import br.com.hahn.auth.domain.enums.*;
 import br.com.hahn.auth.domain.model.*;
@@ -14,7 +15,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Random;
+import java.security.SecureRandom;
 import java.util.UUID;
 
 @Service
@@ -22,7 +23,7 @@ import java.util.UUID;
 @Slf4j
 public class PasswordService {
 
-    private final Random random = new Random();
+    private final SecureRandom random = new SecureRandom();
 
     private final UserService userService;
     private final AuthService authService;
@@ -31,6 +32,7 @@ public class PasswordService {
     private final EmailService emailService;
     private final TokenService tokenService;
     private final TokenLogService tokenLogService;
+    private final ApplicationService applicationService;
 
     /**
      * Changes the password of a user.
@@ -58,13 +60,14 @@ public class PasswordService {
         checkIfItIsAuthUser(user);
 
         log.info("PasswordService: Call AuthService, to validate the oldPassword for user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        authService.validateOldPassword(user, changePasswordRequest.getOldPassword());
+        var passwordParameters = userService.findPasswordParameters(user, changePasswordRequest.getApplicationPublicId());
+        authService.validateOldPassword(passwordParameters, changePasswordRequest.getOldPassword());
 
         log.info("PasswordService: Call UserService to update user password to user: {} at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        userService.updatePassword(user.getEmail(), user.getUserId(), passwordEncoder.encode(changePasswordRequest.getNewPassword()), LocalDateTime.now());
+        userService.updatePassword(passwordParameters, passwordEncoder.encode(changePasswordRequest.getNewPassword()), LocalDateTime.now(ZoneId.systemDefault()));
 
         log.info("PasswordService: Deactivate the token use for do the change password of user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        authService.doLogOff(user.getUserId(), TypeInvalidation.CHANGE_PASSWORD);
+        authService.doLogOff(user.getUserId(), passwordParameters.getApplication().getPublicId(), TypeInvalidation.CHANGE_PASSWORD);
     }
 
     /**
@@ -84,26 +87,29 @@ public class PasswordService {
      * @throws UserNotFoundException if the user is not found by the provided email
      * @throws InvalidOperationException if there is a failure in sending the email
      */
-    public SuccessResponse requestValidateCode(PasswordResetRequest passwordResetRequest){
+    public SuccessResponse passwordRecoveryCodeRequest(PasswordRecoverCodeRequest passwordResetRequest){
         log.info("PasswordService: Starting requesting for a validate code for email: {}, at: {}", passwordResetRequest.getEmail(), DateTimeConverter.formatInstantNow());
 
         log.info("PasswordService: Find user by email: {}, at: {}", passwordResetRequest.getEmail(), DateTimeConverter.formatInstantNow());
         var user = userService.findByEmail(passwordResetRequest.getEmail());
 
+        log.info("PasswordService: Find the password of user: {} for application: {}, at: {}", user.getUserId(), passwordResetRequest.getApplicationPublicId(), DateTimeConverter.formatInstantNow());
+        var application = userService.findPasswordParameters(user, passwordResetRequest.getApplicationPublicId()).getApplication();
+
         log.info("PasswordService: Check user: {} is OAuth at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         checkIfItIsAuthUser(user);
 
         log.info("PasswordService: Verify if already exists one change reset password for this email: {}, at: {}", passwordResetRequest.getEmail(), DateTimeConverter.formatInstantNow());
-        findAnDeleteResetPassword(passwordResetRequest);
+        findAnDeleteResetPassword(passwordResetRequest.getEmail(), application.getId());
         
         log.info("PasswordService: Creating recover code for user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         var recoverCode = generateRecoverCode();
         
         log.info("PasswordService: Creating reset password for the user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
-        createResetPassword(user, passwordEncoder.encode(recoverCode));
+        createResetPassword(user, application, passwordEncoder.encode(recoverCode));
         
         log.info("PasswordService: Send validation code to user email: {}, at: {}", user.getEmail(), DateTimeConverter.formatInstantNow());
-        sendEmail(user.getEmail(), buildResetEmailBody(user.getFirstName() + " " +  user.getLastName(), recoverCode));
+        sendEmail(application, user.getEmail(), buildResetEmailBody(user.getFirstName() + " " +  user.getLastName(), recoverCode));
 
         return generateResponse();
     }
@@ -127,16 +133,17 @@ public class PasswordService {
         log.info("PasswordService: Starting validating recover code for user with email: {}, at: {}", validateCodeRequest.getEmail(), DateTimeConverter.formatInstantNow());
 
         log.info("PasswordService: Find recover code for user email: {}, at: {}", validateCodeRequest.getEmail(), DateTimeConverter.formatInstantNow());
-        var resetPassword = findResetPasswordByEmail(validateCodeRequest.getEmail());
+        var application = applicationService.findByPublicId(validateCodeRequest.getApplicationPublicId());
+        var resetPassword = findResetPasswordByEmail(validateCodeRequest.getEmail(), application.getId());
 
         log.info("PasswordService: Validate if the recovery code of user email: {}, is not expired, at: {}", validateCodeRequest.getEmail(), DateTimeConverter.formatInstantNow());
         validateRecoverCodeValues(resetPassword, validateCodeRequest);
 
         log.info("PasswordService: Create TokenLog for request of user: {}, at: {}", validateCodeRequest.getEmail(), DateTimeConverter.formatInstantNow());
-        var tokenLog = tokenLogService.saveTokenLog(userService.findByEmail(resetPassword.getUserEmail()), ScopeToken.RECOVER_CODE, LocalDateTime.now());
+        var tokenLog = tokenLogService.saveTokenLog(userService.findByEmail(resetPassword.getUserEmail()), application, ScopeToken.RECOVER_CODE, LocalDateTime.now(ZoneId.systemDefault()));
 
         log.info("PasswordService: Generate Recover token for user: {}, at: {}", resetPassword.getUserEmail(), DateTimeConverter.formatInstantNow());
-        return generateRecoveryToken(tokenService.generateRecoverToken(resetPassword, tokenLog));
+        return generateRecoveryToken(tokenService.generateRecoverToken(resetPassword, tokenLog, application.getPublicId()));
     }
 
     /**
@@ -164,10 +171,12 @@ public class PasswordService {
         log.info("PasswordService: User id: {}, and user email: {}, were successfully extracted at: {}", userId, userEmail, DateTimeConverter.formatInstantNow());
 
         log.info("PasswordService: Call UserService for reset password from User: {} at: {}", userId, DateTimeConverter.formatInstantNow());
-        userService.updatePassword(userEmail, userId, passwordEncoder.encode(newPasswordRequest.getNewPassword()), LocalDateTime.now());
+        var applicationPublicId = UUID.fromString(jwt.getClaimAsString("application_public_id"));
+        var passwordParameters = userService.findPasswordParameters(userService.findByEmail(userEmail), applicationPublicId);
+        userService.updatePassword(passwordParameters, passwordEncoder.encode(newPasswordRequest.getNewPassword()), LocalDateTime.now(ZoneId.systemDefault()));
 
         log.info("PasswordService: Deactivated recover token for user: {}, at: {}", userId, DateTimeConverter.formatInstantNow());
-        tokenLogService.deactivateActiveUserToken(userId, TypeInvalidation.RESET_PASSWORD);
+        tokenLogService.deactivateActiveUserToken(userId, applicationPublicId, TypeInvalidation.RESET_PASSWORD);
     }
 
     /**
@@ -199,12 +208,18 @@ public class PasswordService {
      * @param jwt the JWT containing the token log ID and user information
      * @throws InvalidTokenException if the token log is invalid or has an unexpected scope
      */
-    public void validateTokenForChangePassword(Jwt jwt){
+    public void validateTokenForChangePassword(Jwt jwt, UUID applicationPublicId){
         log.info("PasswordServe: Extract tokens id and user and for jwt at: {}", DateTimeConverter.formatInstantNow());
         var tokensId = UUID.fromString(jwt.getClaim("token_log_id"));
 
         log.info("PasswordService: Find token by id: {} at: {}", tokensId, DateTimeConverter.formatInstantNow());
         var token = tokenLogService.findById(tokensId);
+
+        var tokenApplication = jwt.getClaimAsString("application_public_id");
+        if(tokenApplication != null && !tokenApplication.equals(applicationPublicId.toString())){
+            log.error("PasswordService: Token application does not match the requested application. Throw InvalidTokenException at: {}", DateTimeConverter.formatInstantNow());
+            throw new InvalidTokenException(ErrorsResponses.INVALID_TOKEN.getMessage());
+        }
 
         tokenLogService.isExpectedScopeToken(token);
         tokenLogService.isTokenLogValid(token);
@@ -274,7 +289,7 @@ public class PasswordService {
      */
     private void validateRecoverCodeExpirationTime(ResetPassword resetPassword){
         log.info("PasswordService: Validate recover code expiration time, for user email: {}, at: {}", resetPassword.getUserEmail() , DateTimeConverter.formatInstantNow());
-        if(resetPassword.getExpirationDate().isBefore(LocalDateTime.now())){
+        if(resetPassword.getExpirationDate().isBefore(LocalDateTime.now(ZoneId.systemDefault()))){
             log.error("PasswordService: Recovery Code of user {}, is expired. Throw InvalidRecoverCodeException at: {}", resetPassword.getUserEmail(), DateTimeConverter.formatInstantNow());
             throw new InvalidRecoverCodeException(ErrorsResponses.EXPIRED_RECOVERY_CODE.getMessage());
         }
@@ -292,12 +307,13 @@ public class PasswordService {
      * @param user the user for whom the reset password entry is being created
      * @param recoverCode the recovery code to be associated with the reset password entry
      */
-    private void createResetPassword(User user, String recoverCode){
+    private void createResetPassword(User user, Application application, String recoverCode){
         log.info("ResetPasswordService: Create reset password for user: {}, at: {}", user.getUserId(), DateTimeConverter.formatInstantNow());
         ResetPassword resetPassword = new ResetPassword();
         resetPassword.setRecoverCode(recoverCode);
         resetPassword.setUserEmail(user.getEmail());
-        resetPassword.setExpirationDate(LocalDateTime.now().plusMinutes(30));
+        resetPassword.setApplicationId(application.getId());
+        resetPassword.setExpirationDate(LocalDateTime.now(ZoneId.systemDefault()).plusMinutes(30));
         resetPasswordRepository.save(resetPassword);
     }
 
@@ -324,22 +340,12 @@ public class PasswordService {
      * - If found, retrieves the reset password entry and deletes it by its ID.
      *
      * @author HahnGuil
-     * @param passwordResetRequest the request object containing the user's email
      */
-    private void findAnDeleteResetPassword(PasswordResetRequest passwordResetRequest){
-        if(resetPasswordRepository.existsByUserEmail(passwordResetRequest.getEmail())){
-            var resetPassword = findResetPasswordByEmail(passwordResetRequest.getEmail());
-            resetPasswordRepository.deleteById(resetPassword.getId());
-        }
+    private void findAnDeleteResetPassword(String email, Long applicationId){
+        resetPasswordRepository.findByUserEmailAndApplicationId(email, applicationId)
+                .ifPresent(resetPassword -> resetPasswordRepository.deleteById(resetPassword.getId()));
     }
 
-    /**
-     * Generates a recovery code for password reset.
-     * This method creates a random 6-digit number and returns it as a string.
-     *
-     * @author HahnGuil
-     * @return a string representation of the generated 6-digit recovery code
-     */
     private String generateRecoverCode() {
         int code = random.nextInt(900000) + 100000;
         return String.valueOf(code);
@@ -371,14 +377,18 @@ public class PasswordService {
      * - If an exception occurs, logs the failure and throws an InvalidOperationExecption.
      *
      * @author HahnGuil
+     * @param application the application whose Resend API key and email are used to send the message
      * @param email the recipient's email address
      * @param htmlBody the HTML content of the email
      * @throws InvalidOperationException if the email fails to send
      */
-    private void sendEmail(String email, String htmlBody) {
+    private void sendEmail(Application application, String email, String htmlBody) {
         log.info("PasswordService: Send email with validate code for user email: {}, at: {}", email, DateTimeConverter.formatInstantNow());
         try {
-            emailService.sendEmail(email, "Password Reset Request", htmlBody).block();
+            if (application.getResendApiKey() == null || application.getResendApiKey().isBlank()) {
+                throw new IllegalStateException("Application without Resend API key");
+            }
+            emailService.sendEmail(application.getResendApiKey(), application.getApplicationEmail(), email, "Password Reset Request", htmlBody).block();
         } catch (Exception _) {
             log.error("PasswordService: Fail to send email to user email: {}. Throw InvalidOperationException at: {}", email, DateTimeConverter.formatInstantNow());
             log.error("AuthService: Failed to send email");
@@ -398,9 +408,9 @@ public class PasswordService {
      * @return the ResetPassword object associated with the user's email
      * @throws NotFoundResetPasswordRequestForUser if no reset password entry is found for the provided email
      */
-    private ResetPassword findResetPasswordByEmail(String email){
+    private ResetPassword findResetPasswordByEmail(String email, Long applicationId){
         log.info("PasswordService: Find resetPassword for user email: {}, at: {}", email, DateTimeConverter.formatInstantNow());
-        return resetPasswordRepository.findByUserEmail(email).orElseThrow(() -> {
+        return resetPasswordRepository.findByUserEmailAndApplicationId(email, applicationId).orElseThrow(() -> {
             log.error("PasswordService: Not found validation code to reset password for the user with email: {}. Throw NotFoundResetPasswordRequestForUser at: {}", email, DateTimeConverter.formatInstantNow());
             return new NotFoundResetPasswordRequestForUser("There is no registered user for this email address. Check email and password or register a new user.");
         });

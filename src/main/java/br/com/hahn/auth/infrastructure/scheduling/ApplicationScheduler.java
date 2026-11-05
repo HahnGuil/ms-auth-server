@@ -1,12 +1,13 @@
 package br.com.hahn.auth.infrastructure.scheduling;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.application.service.PasswordService;
 import br.com.hahn.auth.application.service.TokenLogService;
 import br.com.hahn.auth.application.service.UserService;
 import br.com.hahn.auth.domain.enums.TypeInvalidation;
 import br.com.hahn.auth.domain.enums.UserRole;
 import br.com.hahn.auth.domain.model.TokenLog;
-import br.com.hahn.auth.domain.model.User;
+import br.com.hahn.auth.domain.model.PasswordParameters;
 import br.com.hahn.auth.infrastructure.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +47,7 @@ public class ApplicationScheduler {
     @Transactional
     public void cleanExpiredResetRecoverCodes(){
         log.info("ApplicationScheduler: Starting routine to delete expired Recover Code at: {}", Instant.now());
-        int deleteCount = passwordService.deleteByExpirationDateBefore(LocalDateTime.now());
+        int deleteCount = passwordService.deleteByExpirationDateBefore(LocalDateTime.now(ZoneId.systemDefault()));
         log.info("ApplicationScheduler: Routine completed: Records deleted: {} at: {}", deleteCount, Instant.now());
     }
 
@@ -56,8 +57,8 @@ public class ApplicationScheduler {
      * This scheduled method runs daily at midnight and performs the following steps:
      * - Logs the start of the notification routine with the current timestamp.
      * - Iterates through a predefined set of warning days (20, 15, 10, 5).
-     * - For each warning day, retrieves the list of users whose passwords will expire in that number of days.
-     * - Sends an email notification to each user with the expiration details, if the user has a normal role.
+     * - For each warning day, retrieves the PasswordParameters (user + application) whose passwords will expire in exactly that number of days, according to the password policy of each application.
+     * - Sends an email notification to each user with the expiration details if the user has a normal role.
      * - Logs success or failure for each email sent.
      * - Logs the completion of the notification routine.
      * <p>
@@ -71,12 +72,19 @@ public class ApplicationScheduler {
 
         int[] warningDays = {20, 15, 10, 5};
         for (int days : warningDays) {
-            List<User> usersToWarn = userService.getUsersWithPasswordExpiringInDays(days);
-            usersToWarn.forEach(user -> {
+            List<PasswordParameters> passwordsToWarn = userService.getUsersWithPasswordExpiringInDays(days);
+            passwordsToWarn.forEach(passwordParameters -> {
+                var user = passwordParameters.getUser();
+                var application = passwordParameters.getApplication();
+                var applicationName = application.getNameApplication();
+                if(application.getResendApiKey() == null || application.getResendApiKey().isBlank()){
+                    log.warn("ApplicationScheduler: Application {} has no Resend API key. Notification skipped at: {}", applicationName, Instant.now());
+                    return;
+                }
                 if(user.getRole() == UserRole.USER_NORMAL){
                     String subject = "Your password will expire soon";
-                    String body = String.format("Hello %s, your password will expire in %d days. Please update it.", user.getFirstName(), days);
-                    emailService.sendEmail(user.getEmail(), subject, body)
+                    String body = String.format("Hello %s, your password for the application %s will expire in %d days. Please update it.", user.getFirstName(), applicationName, days);
+                    emailService.sendEmail(application.getResendApiKey(), application.getApplicationEmail(), user.getEmail(), subject, body)
                             .doOnError(_ -> log.error("ApplicationScheduler: Failed to send email to {}: at: {}", user.getEmail(), Instant.now()))
                             .doFinally(signal -> {
                                 if (signal == SignalType.ON_COMPLETE) {
@@ -102,11 +110,11 @@ public class ApplicationScheduler {
      * @author HahnGuil
      */
     @Scheduled(cron = "0 0 0 * * *")
-//    @Transactional
-//    public void blockUser(){
-//        log.info("ApplicationScheduler: Start block user routine at: {}", Instant.now());
-//        userService.findUserToBlock();
-//    }
+    @Transactional
+    public void blockUser(){
+        log.info("ApplicationScheduler: Start block user routine at: {}", Instant.now());
+        userService.findUserToBlock();
+    }
 
     /**
      * Invalidates expired tokens.
@@ -128,11 +136,11 @@ public class ApplicationScheduler {
     @Transactional
     public void invalidTokenScheduler() {
         log.info("ApplicationScheduler: Starting routine to invalidate expired tokens at: {}", Instant.now());
-        LocalDateTime expirationTime = LocalDateTime.now().minusMinutes(15);
+        LocalDateTime expirationTime = LocalDateTime.now(ZoneId.systemDefault()).minusMinutes(15);
         List<TokenLog> expiredTokens = tokenLogService.findExpiredActiveTokens(expirationTime);
 
         for (TokenLog tokenLog : expiredTokens) {
-            tokenLogService.deactivateActiveUserToken(tokenLog.getUserId(), TypeInvalidation.EXPIRATION_TIME);
+            tokenLogService.deactivateActiveUserToken(tokenLog.getUserId(), tokenLog.getApplication() == null ? null : tokenLog.getApplication().getPublicId(), TypeInvalidation.EXPIRATION_TIME);
             log.info("ApplicationScheduler: Expired token invalidated for user.: {} at: {}", tokenLog.getUserId(), Instant.now()) ;
         }
         log.info("ApplicationScheduler: Routine for invalidating expired tokens completed at: {}", Instant.now());

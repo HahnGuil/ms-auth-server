@@ -49,6 +49,7 @@ class SecurityConfigTest {
 
     @Test
     void shouldBuildSecurityFilterChainSuccessfully() throws Exception {
+        when(httpSecurity.cors(any())).thenReturn(httpSecurity);
         when(httpSecurity.csrf(any())).thenReturn(httpSecurity);
         when(httpSecurity.sessionManagement(any())).thenReturn(httpSecurity);
         when(httpSecurity.authorizeHttpRequests(any())).thenReturn(httpSecurity);
@@ -62,6 +63,7 @@ class SecurityConfigTest {
 
         assertNotNull(filterChain);
         assertEquals(securityFilterChain, filterChain);
+        verify(httpSecurity).cors(any());
         verify(httpSecurity).csrf(any());
         verify(httpSecurity).sessionManagement(any());
         verify(httpSecurity).authorizeHttpRequests(any());
@@ -70,6 +72,18 @@ class SecurityConfigTest {
         verify(httpSecurity).oauth2ResourceServer(any());
         verify(httpSecurity).addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
         verify(httpSecurity).build();
+    }
+
+    @Test
+    void shouldBuildCorsConfiguration() {
+        var source = securityConfig.corsConfigurationSource();
+        HttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest("GET", "/application/register");
+        var cors = source.getCorsConfiguration(request);
+        assertNotNull(cors);
+        assertTrue(cors.getAllowedOrigins().contains("https://toxicbet.com.br"));
+        assertTrue(cors.getAllowedMethods().contains("PATCH"));
+        assertTrue(cors.getAllowedHeaders().contains("applicationPublicId"));
+        assertTrue(cors.getAllowCredentials());
     }
 
     @Test
@@ -121,13 +135,13 @@ class SecurityConfigTest {
         AuthenticationSuccessHandler successHandler = securityConfig.oAuth2AuthenticationSuccessHandler();
         successHandler.onAuthenticationSuccess(request, response, authentication);
 
-        verify(response).setContentType("application/json");
+        verify(response).setContentType("text/html;charset=UTF-8");
         verify(authService).processOAuthUser(oAuth2User);
 
         String jsonResponse = stringWriter.toString();
-        assertFalse(jsonResponse.contains("\"userName\": \"John Doe\""));
-        assertTrue(jsonResponse.contains("\"email\": \"john.doe@example.com\""));
-        assertTrue(jsonResponse.contains("\"token\": \"jwt-token-123\""));
-        assertTrue(jsonResponse.contains("\"refreshToken\": \"refresh-token-456\""));
+        assertTrue(jsonResponse.contains("name: \"John Doe\""));
+        assertTrue(jsonResponse.contains("email: \"john.doe@example.com\""));
+        assertTrue(jsonResponse.contains("token: \"jwt-token-123\""));
+        assertTrue(jsonResponse.contains("refreshToken: \"refresh-token-456\""));
     }
 }

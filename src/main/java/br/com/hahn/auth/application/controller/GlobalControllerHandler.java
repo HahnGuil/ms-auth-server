@@ -22,7 +22,7 @@ import java.time.ZoneOffset;
  * a descriptive message and a UTC timestamp.</p>
  *
  * <p>The class is intended to be used as a {@code @ControllerAdvice} and provides
- * {@code @ExceptionHandler} methods for various domain exceptions (for example:
+ * {@code @ExceptionHandler} methods for various domain exceptions (for example,
  * resource not found, invalid credentials, invalid tokens, validation errors, and
  * database access errors), translating them into appropriate HTTP status codes.</p>
  *
@@ -36,6 +36,12 @@ public class GlobalControllerHandler {
     public ResponseEntity<ErrorResponse> handlerUserAlreadyExistForApplicationException(ResourceAlreadyExistException ex){
         var error = generateErrorResponse(ex.getMessage(), Instant.now());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ResponseEntity<ErrorResponse> handleForbiddenOperationException(ForbiddenOperationException ex){
+        var error = generateErrorResponse(ex.getMessage(), Instant.now());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     @ExceptionHandler(DataAccessException.class)

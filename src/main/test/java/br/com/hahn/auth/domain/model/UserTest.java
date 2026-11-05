@@ -1,5 +1,6 @@
 package br.com.hahn.auth.domain.model;
 
+import java.time.ZoneId;
 import br.com.hahn.auth.domain.enums.TypeUser;
 import br.com.hahn.auth.domain.enums.UserRole;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ class UserTest {
         UUID userId = UUID.randomUUID();
         String username = "testUser";
         String password = "password123";
-        LocalDateTime passwordCreateDate = LocalDateTime.now();
+        LocalDateTime passwordCreateDate = LocalDateTime.now(ZoneId.systemDefault());
         String email = "test@example.com";
         String firstName = "John";
         String lastName = "Doe";
@@ -26,7 +27,7 @@ class UserTest {
         TypeUser typeUser = TypeUser.OAUTH_USER;
         UserRole role = UserRole.USER_NORMAL;
 
-        User user = new User(userId, username, password, passwordCreateDate, email, firstName, lastName, pictureUrl, blockUser, typeUser, role, null, null);
+        User user = new User(userId, username, password, passwordCreateDate, email, firstName, lastName, pictureUrl, blockUser, typeUser, role, null, null, null);
 
         assertEquals(userId, user.getUserId());
         assertEquals(username, user.getUsername());
@@ -46,7 +47,7 @@ class UserTest {
         UUID userId = UUID.randomUUID();
         String username = "testUser";
         String password = "password123";
-        LocalDateTime passwordCreateDate = LocalDateTime.now();
+        LocalDateTime passwordCreateDate = LocalDateTime.now(ZoneId.systemDefault());
         String email = "test@example.com";
         String firstName = "John";
         String lastName = "Doe";
@@ -55,7 +56,7 @@ class UserTest {
         TypeUser typeUser = TypeUser.DIRECT_USER;
         UserRole role = UserRole.USER_NORMAL;
 
-        User user = new User(userId, username, password, passwordCreateDate, email, firstName, lastName, pictureUrl, blockUser, typeUser, role, null, null);
+        User user = new User(userId, username, password, passwordCreateDate, email, firstName, lastName, pictureUrl, blockUser, typeUser, role, null, null, null);
 
         assertEquals(userId, user.getUserId());
         assertEquals(username, user.getUsername());
@@ -90,7 +91,7 @@ class UserTest {
 
     @Test
     void shouldHandleNullValuesForOptionalFields() {
-        User user = new User(null, null, null, null, null, null, null, null, null, null, null, null, null);
+        User user = new User(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         assertNull(user.getUserId());
         assertNull(user.getUsername());
@@ -109,10 +110,10 @@ class UserTest {
 
     @Test
     void shouldVerifyPasswordCreateDateIsInPast() {
-        LocalDateTime pastDate = LocalDateTime.now().minusDays(1);
+        LocalDateTime pastDate = LocalDateTime.now(ZoneId.systemDefault()).minusDays(1);
         User user = new User();
         user.setPasswordCreateDate(pastDate);
 
-        assertTrue(user.getPasswordCreateDate().isBefore(LocalDateTime.now()));
+        assertTrue(user.getPasswordCreateDate().isBefore(LocalDateTime.now(ZoneId.systemDefault())));
     }
 }
